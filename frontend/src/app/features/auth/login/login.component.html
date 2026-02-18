@@ -1,0 +1,74 @@
+<div class="auth-container">
+  <div class="auth-card">
+
+    <!-- Header -->
+    <div class="auth-header">
+      <h1>BIAT IT</h1>
+      <p>CV Intelligence Platform</p>
+    </div>
+
+    <h2>Sign In</h2>
+
+    <!-- Error Alert -->
+    <div class="alert alert-error" *ngIf="errorMessage">
+      {{ errorMessage }}
+    </div>
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+
+      <!-- Email Field -->
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          placeholder="you@biat-it.com.tn"
+          [class.input-error]="email.invalid && email.touched"
+        />
+        <span class="error-text" *ngIf="email.invalid && email.touched">
+          <span *ngIf="email.errors?.['required']">Email is required</span>
+          <span *ngIf="email.errors?.['email']">Please enter a valid email</span>
+        </span>
+      </div>
+
+      <!-- Password Field -->
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="input-wrapper">
+          <input
+            id="password"
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="password"
+            placeholder="Enter your password"
+            [class.input-error]="password.invalid && password.touched"
+          />
+          <button
+            type="button"
+            class="toggle-password"
+            (click)="showPassword = !showPassword"
+          >
+            {{ showPassword ? '🙈' : '👁️' }}
+          </button>
+        </div>
+        <span class="error-text" *ngIf="password.invalid && password.touched">
+          <span *ngIf="password.errors?.['required']">Password is required</span>
+          <span *ngIf="password.errors?.['minlength']">Minimum 8 characters</span>
+        </span>
+      </div>
+
+      <!-- Submit -->
+      <button type="submit" class="btn-primary" [disabled]="isLoading">
+        <span *ngIf="!isLoading">Sign In</span>
+        <span *ngIf="isLoading">Signing in...</span>
+      </button>
+
+    </form>
+
+    <p class="auth-footer">
+      Don't have an account?
+      <a routerLink="/auth/signup">Create account</a>
+    </p>
+
+  </div>
+</div>
