@@ -39,7 +39,7 @@ $ npm run start
 
 # watch mode
 $ npm run start:dev
-
+x 
 # production mode
 $ npm run start:prod
 ```
