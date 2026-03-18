@@ -24,5 +24,6 @@ import { GroqService }             from './groq.service';
     Phi3IntentService,
     GroqService,
   ],
+  exports: [ChatbotService], // ✅ allows JobOffersModule to inject ChatbotService
 })
 export class ChatbotModule {}

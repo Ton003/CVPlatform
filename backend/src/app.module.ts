@@ -11,6 +11,8 @@ import { NotesModule }         from './notes/notes.module';
 import { AssessFirstModule }   from './assessfirst/assessfirst.module';
 import { MailModule }          from './mail/mail.module';
 import { ExportModule }        from './export/export.module';
+import { DashboardModule }     from './dashboard/dashboard.module';
+import { JobOffersModule }     from './job-offers/job-offer.module';
 
 import { User }                from './users/entities/user.entity';
 import { Candidate }           from './candidates/entities/candidates.entity';
@@ -18,7 +20,8 @@ import { Cv }                  from './cvs/entities/cv.entity';
 import { CvParsedData }        from './cv-parsed-data/entities/cv-parsed-data.entity';
 import { CandidateNote }       from './notes/candidate-note.entity';
 import { AssessFirstResult }   from './assessfirst/assessfirst-result.entity';
-import { DashboardModule } from './dashboard/dashboard.module';
+import { JobOffer }            from './job-offers/job-offer.entity';
+
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
@@ -32,7 +35,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
         username:    cfg.get<string>('DB_USERNAME'),
         password:    cfg.get<string>('DB_PASSWORD'),
         database:    cfg.get<string>('DB_DATABASE'),
-        entities:    [User, Candidate, Cv, CvParsedData, CandidateNote, AssessFirstResult],
+        entities:    [User, Candidate, Cv, CvParsedData, CandidateNote, AssessFirstResult, JobOffer],
         synchronize: true,
         logging:     false,
       }),
@@ -47,6 +50,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     MailModule,
     ExportModule,
     DashboardModule,
+    JobOffersModule,
   ],
 })
 export class AppModule {}

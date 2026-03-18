@@ -40,7 +40,6 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/chatbot/chatbot.component').then(m => m.ChatbotComponent),
   },
-  // ✅ list before :id, both before **
   {
     path: 'candidates',
     canActivate: [authGuard],
@@ -52,6 +51,19 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadComponent: () =>
       import('./features/candidate-profile/candidate-profile.component').then(m => m.CandidateProfileComponent),
+  },
+  // ── Job Offers ─────────────────────────────────────────────────
+  {
+    path: 'job-offers',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/job-offers/job-offers.component').then(m => m.JobOffersComponent),
+  },
+  {
+    path: 'job-offers/:id/matches',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/job-offers/job-offer-matches.component').then(m => m.JobOfferMatchesComponent),
   },
   {
     path: '**',
