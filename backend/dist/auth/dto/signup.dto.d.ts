@@ -3,6 +3,6 @@ export declare class SignupDto {
     password: string;
     first_name: string;
     last_name: string;
-    role?: 'admin' | 'hr' | 'manager';
+    role?: 'hr' | 'manager';
     department?: string;
 }

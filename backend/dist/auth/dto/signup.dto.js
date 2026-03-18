@@ -32,18 +32,20 @@ __decorate([
 ], SignupDto.prototype, "password", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(1, { message: 'First name is required' }),
     (0, class_validator_1.MaxLength)(100),
     __metadata("design:type", String)
 ], SignupDto.prototype, "first_name", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MinLength)(1, { message: 'Last name is required' }),
     (0, class_validator_1.MaxLength)(100),
     __metadata("design:type", String)
 ], SignupDto.prototype, "last_name", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsIn)(['admin', 'hr', 'manager'], {
-        message: 'Role must be admin, hr, or manager',
+    (0, class_validator_1.IsIn)(['hr', 'manager'], {
+        message: 'Role must be hr or manager',
     }),
     __metadata("design:type", String)
 ], SignupDto.prototype, "role", void 0);

@@ -1,71 +1,99 @@
-<div class="auth-container">
+<div class="auth-shell">
+
+  <!-- Ambient background glow -->
+  <div class="auth-glow" aria-hidden="true"></div>
+  <div class="auth-grid" aria-hidden="true"></div>
+
   <div class="auth-card">
 
-    <!-- Header -->
-    <div class="auth-header">
-      <h1>BIAT IT</h1>
-      <p>CV Intelligence Platform</p>
+    <!-- Logo -->
+    <div class="auth-logo">
+      <div class="logo-mark">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L2 7l10 5 10-5-10-5z" fill="currentColor" opacity=".9"/>
+          <path d="M2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="logo-name">BIAT IT</span>
     </div>
 
-    <h2>Sign In</h2>
+    <div class="auth-heading">
+      <h1>Welcome back</h1>
+      <p>Sign in to your CV Intelligence Platform</p>
+    </div>
 
     <!-- Error Alert -->
-    <div class="alert alert-error" *ngIf="errorMessage">
+    <div class="alert alert-error" *ngIf="errorMessage" role="alert">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
       {{ errorMessage }}
     </div>
 
-    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
 
-      <!-- Email Field -->
-      <div class="form-group">
-        <label for="email">Email Address</label>
-        <input
-          id="email"
-          type="email"
-          formControlName="email"
-          placeholder="you@biat-it.com.tn"
-          [class.input-error]="email.invalid && email.touched"
-        />
-        <span class="error-text" *ngIf="email.invalid && email.touched">
-          <span *ngIf="email.errors?.['required']">Email is required</span>
-          <span *ngIf="email.errors?.['email']">Please enter a valid email</span>
+      <div class="field">
+        <label for="email">Email address</label>
+        <div class="input-wrap">
+          <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="m2 7 10 7 10-7"/>
+          </svg>
+          <input
+            id="email"
+            type="email"
+            formControlName="email"
+            placeholder="you@biat-it.com.tn"
+            autocomplete="email"
+            [class.is-error]="email.invalid && email.touched"
+          />
+        </div>
+        <span class="field-error" *ngIf="email.invalid && email.touched">
+          <ng-container *ngIf="email.errors?.['required']">Email is required</ng-container>
+          <ng-container *ngIf="email.errors?.['email']">Please enter a valid email</ng-container>
         </span>
       </div>
 
-      <!-- Password Field -->
-      <div class="form-group">
+      <div class="field">
         <label for="password">Password</label>
-        <div class="input-wrapper">
+        <div class="input-wrap">
+          <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
           <input
             id="password"
             [type]="showPassword ? 'text' : 'password'"
             formControlName="password"
             placeholder="Enter your password"
-            [class.input-error]="password.invalid && password.touched"
+            autocomplete="current-password"
+            [class.is-error]="password.invalid && password.touched"
           />
-          <button
-            type="button"
-            class="toggle-password"
-            (click)="showPassword = !showPassword"
-          >
-            {{ showPassword ? '🙈' : '👁️' }}
+          <button type="button" class="btn-eye" (click)="showPassword = !showPassword" [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+            <svg *ngIf="!showPassword" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+            </svg>
+            <svg *ngIf="showPassword" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M1 1l22 22"/>
+            </svg>
           </button>
         </div>
-        <span class="error-text" *ngIf="password.invalid && password.touched">
-          <span *ngIf="password.errors?.['required']">Password is required</span>
-          <span *ngIf="password.errors?.['minlength']">Minimum 8 characters</span>
+        <span class="field-error" *ngIf="password.invalid && password.touched">
+          <ng-container *ngIf="password.errors?.['required']">Password is required</ng-container>
+          <ng-container *ngIf="password.errors?.['minlength']">Minimum 8 characters</ng-container>
         </span>
       </div>
 
-      <!-- Submit -->
       <button type="submit" class="btn-primary" [disabled]="isLoading">
         <span *ngIf="!isLoading">Sign In</span>
-        <span *ngIf="isLoading">Signing in...</span>
+        <span *ngIf="isLoading" class="btn-loading">
+          <span class="spinner"></span> Signing in...
+        </span>
       </button>
 
     </form>
 
-    <p class="auth-footer">
+    <p class="auth-switch">
       Don't have an account?
       <a routerLink="/auth/signup">Create account</a>
     </p>

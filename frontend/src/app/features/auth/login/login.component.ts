@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
@@ -21,6 +21,7 @@ export class LoginComponent {
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
     private readonly router: Router,
+    private readonly route: ActivatedRoute, // ✅ Fix #3 — inject ActivatedRoute
   ) {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
@@ -43,13 +44,23 @@ export class LoginComponent {
     this.authService.login(this.loginForm.value).subscribe({
       next: () => {
         this.isLoading = false;
-        this.router.navigate(['/dashboard']);
+        // ✅ Fix #3 — respect returnUrl, fall back to /dashboard
+        const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+        this.router.navigateByUrl(returnUrl);
       },
-      error: (err) => {
-        this.isLoading = false;
-        this.errorMessage =
-          err.error?.message || 'Login failed. Please try again.';
-      },
+      // login.component.ts
+error: (err) => {
+  const raw = err.error?.message;
+  const message = Array.isArray(raw) ? raw[0] : raw;
+
+  if (err.status === 401) {
+    this.errorMessage = 'Invalid email or password.';
+  } else if (err.status === 0) {
+    this.errorMessage = 'Cannot reach the server. Please try again.';
+  } else {
+    this.errorMessage = message || 'Login failed. Please try again.';
+  }
+},
     });
   }
 }

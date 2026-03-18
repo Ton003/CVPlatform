@@ -3,13 +3,19 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, tap } from 'rxjs';
 import { isPlatformBrowser } from '@angular/common';
-import { User, AuthResponse, LoginPayload, SignupPayload } from '../../shared/models/user.model';
+import { environment } from '../../../environments/environment';
+import {
+  User,
+  AuthResponse,
+  LoginPayload,
+  SignupPayload,
+} from '../../shared/models/user.model';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthService {
-  private readonly API_URL = 'http://localhost:3000/api';
+  private readonly API_URL = environment.apiUrl; // ✅ no more hardcode
   private readonly TOKEN_KEY = 'biat_access_token';
   private readonly USER_KEY = 'biat_user';
   private readonly isBrowser: boolean;
@@ -22,7 +28,6 @@ export class AuthService {
     private readonly router: Router,
     @Inject(PLATFORM_ID) private platformId: object,
   ) {
-    // Only access localStorage in the browser, not during SSR
     this.isBrowser = isPlatformBrowser(this.platformId);
     if (this.isBrowser) {
       this.currentUserSubject.next(this.getUserFromStorage());
@@ -30,22 +35,19 @@ export class AuthService {
   }
 
   login(payload: LoginPayload): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.API_URL}/auth/login`, payload).pipe(
-      tap((response) => this.handleAuthSuccess(response))
-    );
+    return this.http
+      .post<AuthResponse>(`${this.API_URL}/auth/login`, payload)
+      .pipe(tap((response) => this.handleAuthSuccess(response)));
   }
 
   signup(payload: SignupPayload): Observable<AuthResponse> {
-    return this.http.post<AuthResponse>(`${this.API_URL}/auth/signup`, payload).pipe(
-      tap((response) => this.handleAuthSuccess(response))
-    );
+    return this.http
+      .post<AuthResponse>(`${this.API_URL}/auth/signup`, payload)
+      .pipe(tap((response) => this.handleAuthSuccess(response)));
   }
 
   logout(): void {
-    if (this.isBrowser) {
-      localStorage.removeItem(this.TOKEN_KEY);
-      localStorage.removeItem(this.USER_KEY);
-    }
+    this.clearStorage(); // ✅ centralized
     this.currentUserSubject.next(null);
     this.router.navigate(['/auth/login']);
   }
@@ -60,9 +62,13 @@ export class AuthService {
     const token = this.getToken();
     if (!token) return false;
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      const parts = token.split('.');
+      if (parts.length !== 3) return false; // ✅ validate structure
+      const payload = JSON.parse(atob(parts[1]));
+      if (!payload.exp) return false;       // ✅ guard no-expiry tokens
       return payload.exp * 1000 > Date.now();
     } catch {
+      this.clearStorage();                  // ✅ corrupt token → clean up
       return false;
     }
   }
@@ -76,6 +82,18 @@ export class AuthService {
     if (!user) return false;
     if (Array.isArray(role)) return role.includes(user.role);
     return user.role === role;
+  }
+
+  // ✅ Call this on app init or after role changes
+  refreshUser(): Observable<User> {
+    return this.http.get<User>(`${this.API_URL}/auth/me`).pipe(
+      tap((user) => {
+        if (this.isBrowser) {
+          localStorage.setItem(this.USER_KEY, JSON.stringify(user));
+        }
+        this.currentUserSubject.next(user);
+      })
+    );
   }
 
   private handleAuthSuccess(response: AuthResponse): void {
@@ -93,5 +111,11 @@ export class AuthService {
     } catch {
       return null;
     }
+  }
+
+  private clearStorage(): void {
+    if (!this.isBrowser) return;
+    localStorage.removeItem(this.TOKEN_KEY);
+    localStorage.removeItem(this.USER_KEY);
   }
 }

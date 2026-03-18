@@ -45,17 +45,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
-const config_1 = require("@nestjs/config");
 const bcrypt = __importStar(require("bcrypt"));
 const users_service_1 = require("../users/users.service");
 let AuthService = class AuthService {
     usersService;
     jwtService;
-    configService;
-    constructor(usersService, jwtService, configService) {
+    constructor(usersService, jwtService) {
         this.usersService = usersService;
         this.jwtService = jwtService;
-        this.configService = configService;
     }
     async signup(dto) {
         const exists = await this.usersService.emailExists(dto.email.toLowerCase());
@@ -83,7 +80,7 @@ let AuthService = class AuthService {
     async login(dto) {
         const user = await this.usersService.findByEmail(dto.email.toLowerCase());
         if (!user) {
-            throw new common_1.UnauthorizedException('email already exists');
+            throw new common_1.UnauthorizedException('Invalid email or password');
         }
         if (!user.is_active) {
             throw new common_1.UnauthorizedException('Your account has been suspended. Contact your administrator.');
@@ -107,10 +104,7 @@ let AuthService = class AuthService {
     }
     generateToken(userId, email, role) {
         const payload = { sub: userId, email, role };
-        return this.jwtService.sign(payload, {
-            secret: this.configService.get('JWT_SECRET'),
-            expiresIn: this.configService.get('JWT_EXPIRES_IN'),
-        });
+        return this.jwtService.sign(payload);
     }
     sanitizeUser(user) {
         const { password_hash, ...safeUser } = user;
@@ -121,7 +115,6 @@ exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [users_service_1.UsersService,
-        jwt_1.JwtService,
-        config_1.ConfigService])
+        jwt_1.JwtService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map
