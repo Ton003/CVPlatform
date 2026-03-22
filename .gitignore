@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+.venv/
+venv/
+
+# Environment
+.env
+
+# Python cache
+__pycache__/
+services/__pycache__/
+*.pyc
+*.pyo
+
+# ML model files
+*.gguf
+*.bin
+*.safetensors
+models/
+
+# Build output
+dist/
+.angular/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+.docker/

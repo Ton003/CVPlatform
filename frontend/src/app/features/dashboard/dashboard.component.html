@@ -1,0 +1,52 @@
+<header class="topbar">
+  <div>
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-sub">Welcome back, {{ currentUser?.first_name }}</p>
+  </div>
+  <div class="topbar-right">
+    <span class="role-chip" [attr.data-role]="currentUser?.role">{{ getRoleBadgeLabel(currentUser?.role || '') }}</span>
+  </div>
+</header>
+<section class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon-wrap stat-icon-wrap--blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+    <div class="stat-body"><span class="stat-val"><span *ngIf="statsLoading" class="skeleton-val"></span><span *ngIf="!statsLoading">{{ stats?.totalCandidates ?? 0 }}</span></span><span class="stat-lbl">Total Candidates</span></div>
+    <div class="stat-trend" *ngIf="!statsLoading && stats?.addedThisWeek">+{{ stats?.addedThisWeek }} this week</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon-wrap stat-icon-wrap--purple"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div>
+    <div class="stat-body"><span class="stat-val"><span *ngIf="statsLoading" class="skeleton-val"></span><span *ngIf="!statsLoading">{{ totalInPipeline }}</span></span><span class="stat-lbl">In Pipeline</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon-wrap stat-icon-wrap--amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+    <div class="stat-body"><span class="stat-val"><span *ngIf="statsLoading" class="skeleton-val"></span><span *ngIf="!statsLoading">{{ stats?.stages?.interview ?? 0 }}</span></span><span class="stat-lbl">In Interview</span></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon-wrap stat-icon-wrap--green"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
+    <div class="stat-body"><span class="stat-val"><span *ngIf="statsLoading" class="skeleton-val"></span><span *ngIf="!statsLoading">{{ stats?.stages?.offer ?? 0 }}</span></span><span class="stat-lbl">Offers Extended</span></div>
+  </div>
+</section>
+<section class="quick-actions">
+  <h2 class="section-title">Quick Actions</h2>
+  <div class="action-cards">
+    <a class="action-card" routerLink="/cv-upload"><div class="action-icon action-icon--indigo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 12 15 15"/></svg></div><div class="action-body"><span class="action-title">Upload CV</span><span class="action-desc">Parse and store candidate resumes with AI</span></div><svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></a>
+    <a class="action-card" routerLink="/chatbot"><div class="action-icon action-icon--purple"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div class="action-body"><span class="action-title">Search Candidates</span><span class="action-desc">AI-powered candidate matching and recommendations</span></div><svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></a>
+    <a class="action-card" routerLink="/candidates"><div class="action-icon action-icon--teal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg></div><div class="action-body"><span class="action-title">Browse Candidates</span><span class="action-desc">View and manage your full candidate database</span></div><svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></a>
+    <a class="action-card" routerLink="/job-offers"><div class="action-icon action-icon--amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/><line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/></svg></div><div class="action-body"><span class="action-title">Job Offers</span><span class="action-desc">Post roles and match candidates with AI</span></div><svg class="action-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></a>
+  </div>
+</section>
+<section class="content-grid">
+  <div class="panel">
+    <div class="panel-head"><span class="panel-title">Recent Candidates</span><a routerLink="/candidates" class="panel-link">View all</a></div>
+    <div *ngIf="statsLoading" class="recent-list"><div *ngFor="let i of [1,2,3,4,5]" class="recent-item recent-item--skeleton"><div class="skeleton skeleton--avatar"></div><div class="skeleton-body"><div class="skeleton skeleton--name"></div><div class="skeleton skeleton--sub"></div></div></div></div>
+    <div *ngIf="!statsLoading && !stats?.recentCandidates?.length" class="empty-panel"><div class="empty-icon-wrap"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div><p class="empty-title">No candidates yet</p><p class="empty-sub">Upload CVs to start building your talent pool.</p><a class="btn-ghost" routerLink="/cv-upload">Upload first CV</a></div>
+    <div *ngIf="!statsLoading && stats?.recentCandidates?.length" class="recent-list"><div *ngFor="let c of stats!.recentCandidates" class="recent-item" (click)="openProfile(c.candidateId)"><div class="recent-avatar">{{ initials(c.name) }}</div><div class="recent-body"><p class="recent-name">{{ c.name }}</p><p class="recent-title">{{ c.currentTitle || 'Candidate' }}</p></div><span class="recent-date">{{ formatDate(c.createdAt) }}</span></div></div>
+  </div>
+  <div class="panel">
+    <div class="panel-head"><span class="panel-title">Pipeline Breakdown</span><span class="panel-count" *ngIf="!statsLoading">{{ totalInPipeline }} total</span></div>
+    <div *ngIf="statsLoading" class="pipeline-body"><div *ngFor="let i of [1,2,3,4]" class="pipeline-row"><div class="skeleton skeleton--stage-label"></div><div class="skeleton skeleton--stage-bar"></div><div class="skeleton skeleton--stage-count"></div></div></div>
+    <div *ngIf="!statsLoading && totalInPipeline === 0" class="empty-panel"><div class="empty-icon-wrap"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg></div><p class="empty-title">No pipeline data yet</p><p class="empty-sub">Add notes with stages to candidates to track their progress.</p></div>
+    <div *ngIf="!statsLoading && totalInPipeline > 0" class="pipeline-body"><div class="pipeline-row" *ngFor="let stage of ['screening','interview','offer','rejected']"><span class="pipeline-label">{{ stage | titlecase }}</span><div class="pipeline-bar-wrap"><div class="pipeline-bar" [attr.data-stage]="stage" [style.width.%]="stageBarWidth(getStageCount(stage))"></div></div><span class="pipeline-count">{{ getStageCount(stage) }}</span></div></div>
+    <div *ngIf="!statsLoading && stats?.topSkills?.length" class="top-skills"><p class="skills-heading">Top skills in database</p><div class="skills-chips"><span *ngFor="let s of stats!.topSkills" class="skill-chip-sm">{{ s.skill }}<span class="skill-chip-count">{{ s.count }}</span></span></div></div>
+  </div>
+</section>

@@ -1,0 +1,48 @@
+// signup.component.scss
+@use '../auth-shared' as *;
+
+.auth-card--wide { max-width: 480px; }
+
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.875rem;
+
+  .input-wrap input { padding-left: 1rem; }
+}
+
+.select-wrap {
+  position: relative;
+
+  select {
+    width: 100%;
+    padding: 0.75rem 2.5rem 0.75rem 1rem;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+
+    option { background: var(--bg-surface); color: var(--text-primary); }
+    &:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+  }
+
+  .select-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    pointer-events: none;
+  }
+}
+
+.label-opt {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-weight: 400;
+}

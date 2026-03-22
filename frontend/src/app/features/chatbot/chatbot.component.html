@@ -1,0 +1,299 @@
+<!-- ══════════════ TOPBAR ══════════════ -->
+<header class="topbar">
+  <div class="topbar-left">
+    <h1 class="page-title">Candidate Search</h1>
+    <p class="page-sub">AI-powered matching and recommendations</p>
+  </div>
+
+  <div class="topbar-right">
+    <!-- Mode toggle: API first -->
+    <div class="mode-toggle">
+      <button class="mode-btn" [class.active]="mode === 'groq'" (click)="toggleMode('groq')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        AI Mode
+        <span class="mode-chip groq">Groq</span>
+      </button>
+      <button class="mode-btn" [class.active]="mode === 'local'" (click)="toggleMode('local')">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <line x1="8" y1="21" x2="16" y2="21"/>
+          <line x1="12" y1="17" x2="12" y2="21"/>
+        </svg>
+        Local
+        <span class="mode-chip local">Phi-3</span>
+      </button>
+    </div>
+
+  </div>
+</header>
+
+<!-- ══════════════ GROQ CHAT ══════════════ -->
+<ng-container *ngIf="mode === 'groq'">
+  <div class="chat-outer">
+
+    <!-- Scrollable messages -->
+    <div class="messages-scroll" #scrollContainer>
+
+      <!-- Empty state -->
+      <div class="chat-empty" *ngIf="chatMessages.length === 0">
+        <div class="empty-icon-ring">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </div>
+        <p class="empty-title">AI Candidate Search</p>
+        <p class="empty-sub">Describe the role you're hiring for and I'll find the best matches from your candidate pool.</p>
+        <div class="suggestion-row">
+          <button type="button" class="chip"
+            (click)="chatInput = 'Find a Python developer with machine learning experience'; sendChat()">
+            Python + ML developer
+          </button>
+          <button type="button" class="chip"
+            (click)="chatInput = 'Who has the most DevOps experience?'; sendChat()">
+            Best DevOps candidate
+          </button>
+          <button type="button" class="chip"
+            (click)="chatInput = 'Find a French-speaking full stack developer'; sendChat()">
+            French-speaking full stack
+          </button>
+        </div>
+      </div>
+
+      <!-- Messages -->
+      <div class="msg-list" *ngIf="chatMessages.length > 0">
+        <ng-container *ngFor="let msg of chatMessages">
+
+          <!-- User -->
+          <div class="msg msg-user" *ngIf="msg.role === 'user'">
+            <div class="msg-bubble user-bubble">{{ msg.content }}</div>
+            <span class="msg-time">{{ msg.timestamp | date:'HH:mm' }}</span>
+          </div>
+
+          <!-- AI loading -->
+          <div class="msg msg-ai" *ngIf="msg.role === 'assistant' && msg.loading">
+            <div class="ai-avatar">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <div class="typing-dots">
+              <span></span><span></span><span></span>
+            </div>
+          </div>
+
+          <!-- AI response -->
+          <div class="msg msg-ai" *ngIf="msg.role === 'assistant' && !msg.loading">
+            <div class="ai-avatar">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <div class="ai-body">
+              <div class="msg-bubble ai-bubble">{{ msg.content }}</div>
+
+              <!-- Candidate cards -->
+              <ng-container *ngIf="msg.result && msg.result.candidates.length > 0">
+
+                <!-- Best match highlight -->
+                <div class="best-match-bar" *ngIf="getBestMatch(msg) as bm">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  </svg>
+                  <span>{{ bm }}</span>
+                </div>
+
+                <div class="cand-cards">
+                  <div class="cand-card" *ngFor="let c of msg.result.candidates">
+                    <div class="cand-row">
+                      <div class="cand-info">
+                        <button class="cand-name cand-name--btn" (click)="openProfile(c.candidateId)">
+                          {{ c.name }}
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="cand-link-icon">
+                            <path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/>
+                          </svg>
+                        </button>
+                        <span class="cand-title" *ngIf="c.currentTitle">{{ c.currentTitle }}</span>
+                      </div>
+                      <span class="score-pill"
+                        [style.color]="getScoreColor(c.matchScore)"
+                        [style.border-color]="getScoreColor(c.matchScore) + '44'"
+                        [style.background]="getScoreColor(c.matchScore) + '15'">
+                        {{ c.matchScore }}%
+                      </span>
+                    </div>
+
+                    <div class="cand-meta-row">
+                      <span *ngIf="c.location" class="meta-item">
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                        </svg>
+                        {{ c.location }}
+                      </span>
+                      <span *ngIf="c.yearsExp" class="meta-item">{{ c.yearsExp }} yrs exp</span>
+                    </div>
+
+                    <!-- Fit chip + strengths + gaps from RAG -->
+                    <ng-container *ngIf="getNoteForCandidate(getCandidateNotes(msg), c.name) as note">
+                      <span class="fit-chip" [attr.data-fit]="note.fit">{{ note.fit | titlecase }} fit</span>
+                      <div class="note-line strength-line" *ngIf="note.strengths?.length > 0">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                        <span>{{ note.strengths[0] }}</span>
+                      </div>
+                      <div class="note-line gap-line" *ngIf="note.gaps?.length > 0">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/><circle cx="12" cy="12" r="10"/>
+                        </svg>
+                        <span>{{ note.gaps[0] }}</span>
+                      </div>
+                    </ng-container>
+
+                    <div class="skill-row">
+                      <span class="skill matched" *ngFor="let s of c.matchedSkills">{{ s }}</span>
+                      <ng-container *ngFor="let s of c.skills.slice(0,6)">
+                        <span class="skill" *ngIf="!c.matchedSkills.includes(s)">{{ s }}</span>
+                      </ng-container>
+                      <span class="skill-more" *ngIf="c.skills.length > 6">+{{ c.skills.length - 6 }}</span>
+                    </div>
+
+                    <a class="cand-email" *ngIf="c.email" [href]="'mailto:' + c.email">{{ c.email }}</a>
+                  </div>
+                </div><!-- /cand-cards -->
+
+                <!-- Follow-up suggestion -->
+                <button
+                  type="button"
+                  class="followup-chip"
+                  *ngIf="getFollowUpQuestion(msg) as fuq"
+                  (click)="sendFollowUp(fuq)"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  {{ fuq }}
+                </button>
+
+              </ng-container>
+
+              <span class="msg-time">{{ msg.timestamp | date:'HH:mm' }}</span>
+            </div>
+          </div>
+
+        </ng-container>
+        <div #chatEnd></div>
+      </div>
+    </div>
+
+    <!-- Input bar — always at bottom -->
+    <div class="input-bar">
+      <button
+        type="button"
+        class="btn-clear"
+        *ngIf="chatMessages.length > 0"
+        (click)="clearChat()"
+        title="Clear conversation"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6"/>
+          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+          <path d="M10 11v6M14 11v6M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+        </svg>
+      </button>
+      <textarea
+        class="chat-input"
+        [(ngModel)]="chatInput"
+        (keydown)="onChatKeydown($event)"
+        placeholder="Describe the role or ask about candidates... (Enter to send)"
+        rows="1"
+        [disabled]="chatLoading"
+      ></textarea>
+      <button type="button" class="btn-send" (click)="sendChat()" [disabled]="!canChat">
+        <svg *ngIf="!chatLoading" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+        </svg>
+        <span *ngIf="chatLoading" class="spinner"></span>
+      </button>
+    </div>
+
+  </div>
+</ng-container>
+
+<!-- ══════════════ LOCAL MODE ══════════════ -->
+<ng-container *ngIf="mode === 'local'">
+  <div class="local-wrap">
+
+    <div class="search-panel">
+      <label class="field-label">Job Description</label>
+      <textarea
+        [(ngModel)]="jobDescription"
+        placeholder="e.g. We need a DevOps engineer with Docker and Kubernetes experience..."
+        class="search-textarea"
+        rows="5"
+      ></textarea>
+      <div class="search-actions">
+        <button class="btn-ghost" (click)="clearSearch()" [disabled]="loading">Clear</button>
+        <button class="btn-primary" (click)="search()" [disabled]="!canSearch">
+          <svg *ngIf="!loading" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <span *ngIf="loading" class="spinner"></span>
+          {{ loading ? 'Searching...' : 'Find Candidates' }}
+        </button>
+      </div>
+    </div>
+
+    <div class="alert-error" *ngIf="error">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      {{ error }}
+    </div>
+
+    <div *ngIf="result && result.candidates.length > 0">
+      <p class="results-meta">{{ result.message }}</p>
+      <div class="candidates-grid">
+        <div class="cand-card" *ngFor="let c of result.candidates">
+          <div class="cand-row">
+            <div class="cand-info">
+              <span class="cand-name">{{ c.name }}</span>
+              <span class="cand-title" *ngIf="c.currentTitle">{{ c.currentTitle }}</span>
+            </div>
+            <span class="score-pill"
+              [style.color]="getScoreColor(c.matchScore)"
+              [style.border-color]="getScoreColor(c.matchScore) + '44'"
+              [style.background]="getScoreColor(c.matchScore) + '15'">
+              {{ c.matchScore }}%
+            </span>
+          </div>
+          <div class="cand-meta-row">
+            <span *ngIf="c.location" class="meta-item">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+              {{ c.location }}
+            </span>
+            <span *ngIf="c.yearsExp" class="meta-item">{{ c.yearsExp }} yrs exp</span>
+          </div>
+          <div class="skill-row">
+            <span class="skill matched" *ngFor="let s of c.matchedSkills">{{ s }}</span>
+            <ng-container *ngFor="let s of c.skills.slice(0,7)">
+              <span class="skill" *ngIf="!c.matchedSkills.includes(s)">{{ s }}</span>
+            </ng-container>
+            <span class="skill-more" *ngIf="c.skills.length > 7">+{{ c.skills.length - 7 }}</span>
+          </div>
+          <p class="cand-summary" *ngIf="c.summary">{{ c.summary.slice(0,150) }}{{ c.summary.length > 150 ? '...' : '' }}</p>
+          <a class="cand-email" *ngIf="c.email" [href]="'mailto:' + c.email">{{ c.email }}</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-results" *ngIf="result && result.candidates.length === 0">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <p>{{ result.message }}</p>
+    </div>
+
+  </div>
+</ng-container>

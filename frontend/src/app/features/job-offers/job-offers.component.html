@@ -1,0 +1,188 @@
+<!-- ══ Topbar ══════════════════════════════════════════════════════ -->
+<div class="topbar">
+  <div>
+    <h1 class="page-title">Job Offers</h1>
+    <p class="page-sub">Post roles and match candidates with AI</p>
+  </div>
+  <div class="topbar-right">
+    <!-- View Toggle -->
+    <div class="view-toggle">
+      <button class="view-btn" [class.active]="viewMode === 'grid'" (click)="viewMode = 'grid'" title="Grid view">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+        </svg>
+      </button>
+      <button class="view-btn" [class.active]="viewMode === 'list'" (click)="viewMode = 'list'" title="List view">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+    </div>
+    <span class="role-chip" [attr.data-role]="userRole">{{ userRole }}</span>
+    <button class="btn-action btn-action--primary" (click)="openForm()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+      </svg>
+      New Offer
+    </button>
+  </div>
+</div>
+
+<!-- Error banner -->
+<div class="alert-error" *ngIf="error">
+  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  </svg>
+  {{ error }}
+  <button class="alert-close" (click)="error = ''">✕</button>
+</div>
+
+<!-- Create form -->
+<div class="form-card" *ngIf="showForm">
+  <div class="form-card-head">
+    <span class="form-card-title">New Job Offer</span>
+    <button class="btn-icon" (click)="cancelForm()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+  <div class="form-body">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="field-label">Job Title *</label>
+        <input class="field-input" [(ngModel)]="form.title" placeholder="e.g. Senior Angular Developer" maxlength="200"/>
+      </div>
+      <div class="form-group">
+        <label class="field-label">Location</label>
+        <input class="field-input" [(ngModel)]="form.location" placeholder="e.g. Tunis, Tunisia"/>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="field-label">Description *</label>
+      <textarea class="field-textarea" [(ngModel)]="form.description" rows="4"
+        placeholder="Describe the role, responsibilities and requirements..."></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="field-label">Required Skills <span class="field-hint">(comma-separated)</span></label>
+        <input class="field-input" [(ngModel)]="form.requiredSkills" placeholder="e.g. Angular, TypeScript, RxJS"/>
+      </div>
+      <div class="form-group form-group--sm">
+        <label class="field-label">Min. Experience (years)</label>
+        <input class="field-input" [(ngModel)]="form.minYears" type="number" min="0" placeholder="e.g. 3"/>
+      </div>
+      <div class="form-group form-group--sm">
+        <label class="field-label">Status</label>
+        <select class="field-select" [(ngModel)]="form.status">
+          <option value="open">Open</option>
+          <option value="closed">Closed</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn-action" (click)="cancelForm()">Cancel</button>
+      <button class="btn-action btn-action--primary" (click)="submitForm()" [disabled]="saving || !form.title.trim() || !form.description.trim()">
+        <span class="spinner" *ngIf="saving"></span>
+        {{ saving ? 'Creating…' : 'Create Offer' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Skeleton loading -->
+<div class="offers-grid" *ngIf="loading">
+  <div class="offer-card offer-card--skeleton" *ngFor="let i of [1,2,3]">
+    <div class="skel skel--title"></div>
+    <div class="skel skel--sub"></div>
+    <div class="skel skel--sub" style="width:55%"></div>
+  </div>
+</div>
+
+<!-- Empty state -->
+<div class="empty-state" *ngIf="!loading && !error && offers.length === 0 && !showForm">
+  <div class="empty-icon-wrap">
+    <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+    </svg>
+  </div>
+  <p class="empty-title">No job offers yet</p>
+  <p class="empty-sub">Create your first job offer and let AI match the best candidates from your pool.</p>
+  <button class="btn-action btn-action--primary" (click)="openForm()">Create First Offer</button>
+</div>
+
+<!-- Offers grid / list -->
+<div class="offers-grid" [class.offers-list]="viewMode === 'list'" *ngIf="!loading && offers.length > 0">
+  <div class="offer-card" *ngFor="let offer of offers" (click)="viewMatches(offer.id)">
+    <div class="offer-card-head">
+      <div class="offer-info">
+        <h3 class="offer-title">{{ offer.title }}</h3>
+        <div class="offer-meta">
+          <span class="meta-item" *ngIf="offer.location">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            {{ offer.location }}
+          </span>
+          <span class="meta-item" *ngIf="offer.minYears">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            {{ offer.minYears }}+ yrs
+          </span>
+          <span class="meta-item">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            {{ formatDate(offer.createdAt) }}
+          </span>
+        </div>
+      </div>
+      <div class="offer-actions">
+        <span class="status-chip" [class.status-chip--open]="offer.status === 'open'" [class.status-chip--closed]="offer.status === 'closed'">
+          {{ offer.status }}
+        </span>
+        <button class="btn-icon btn-icon--danger" (click)="requestDelete(offer.id, $event)" title="Delete offer">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <p class="offer-desc">{{ offer.description }}</p>
+
+    <div class="skills-row" *ngIf="offer.requiredSkills.length">
+      <span class="skill-chip" *ngFor="let s of offer.requiredSkills.slice(0, 6)">{{ s }}</span>
+      <span class="skill-more" *ngIf="offer.requiredSkills.length > 6">+{{ offer.requiredSkills.length - 6 }}</span>
+    </div>
+
+    <div class="offer-footer">
+      <span class="match-cta">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+        </svg>
+        Click to find matching candidates
+      </span>
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="arrow-icon">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<app-confirm-modal
+  [open]="deleteModal"
+  title="Delete Job Offer"
+  message="This will permanently remove the job offer and all associated data. This action cannot be undone."
+  confirmText="Delete"
+  cancelText="Keep it"
+  [isDanger]="true"
+  (confirmed)="confirmDelete()"
+  (cancelled)="cancelDelete()">
+</app-confirm-modal>
