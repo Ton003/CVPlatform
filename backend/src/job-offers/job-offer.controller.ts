@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Delete, Body, Param,
+  Controller, Get, Post, Patch, Delete, Body, Param,
   Query, UseGuards, Req, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { SkipThrottle }      from '@nestjs/throttler';
@@ -38,6 +38,15 @@ export class JobOffersController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
     return this.jobOffersService.remove(id);
+  }
+
+  // ── PATCH /job-offers/:id ────────────────────────────────────────
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() dto: import('./dto/update-job-offer.dto').UpdateJobOfferDto,
+  ) {
+    return this.jobOffersService.update(id, dto);
   }
 
   // ── GET /job-offers/:id/matches?mode=groq&apiKey=... ─────────────

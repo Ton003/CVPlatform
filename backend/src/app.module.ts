@@ -21,7 +21,7 @@ import { CvParsedData }        from './cv-parsed-data/entities/cv-parsed-data.en
 import { CandidateNote }       from './notes/candidate-note.entity';
 import { AssessFirstResult }   from './assessfirst/assessfirst-result.entity';
 import { JobOffer }            from './job-offers/job-offer.entity';
-
+import { AgentModule } from './agent/agent.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
@@ -51,6 +51,7 @@ import { JobOffer }            from './job-offers/job-offer.entity';
     ExportModule,
     DashboardModule,
     JobOffersModule,
+    AgentModule,
   ],
 })
 export class AppModule {}

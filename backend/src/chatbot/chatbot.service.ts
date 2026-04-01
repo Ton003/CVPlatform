@@ -137,19 +137,14 @@ export class ChatbotService {
     const llmScores = await this.groqService.scoreWithLLM(dto.message, enriched, dto.apiKey!);
     this.logger.log(`🎯 LLM scored — ${Date.now() - t0}ms`);
 
-    // Build score lookup (fuzzy first-name fallback for partial name matches)
+    // Build an ID-keyed score map — avoids wrong score assignment when
+    // two candidates share the same first name (e.g. "John Smith" vs "John Doe").
     const scoreMap = new Map<string, number>();
-    for (const s of llmScores) scoreMap.set((s.name ?? '').toLowerCase().trim(), s.score);
+    for (const s of llmScores) {
+      if (s.candidateId) scoreMap.set(s.candidateId, s.score);
+    }
 
-    const getLLMScore = (name: string): number => {
-      const key = name.toLowerCase().trim();
-      if (scoreMap.has(key)) return scoreMap.get(key)!;
-      const first = key.split(' ')[0];
-      for (const [k, v] of scoreMap.entries()) {
-        if (k.split(' ')[0] === first) return v;
-      }
-      return 0;
-    };
+    const getLLMScore = (candidateId: string): number => scoreMap.get(candidateId) ?? 0;
 
     // Build scored list sorted by LLM score
     const scoredCandidates: CandidateMatchDto[] = enriched
@@ -162,7 +157,7 @@ export class ChatbotService {
         yearsExp:      c.yearsExp     ?? null,
         skills:        c.skills       ?? [],
         summary:       c.summary      ?? null,
-        matchScore:    getLLMScore(c.name),
+        matchScore:    getLLMScore(c.candidateId),
         matchedSkills: [],
       } as CandidateMatchDto))
       .sort((a, b) => b.matchScore - a.matchScore);

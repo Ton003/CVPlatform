@@ -40,7 +40,7 @@
 <!-- Create form -->
 <div class="form-card" *ngIf="showForm">
   <div class="form-card-head">
-    <span class="form-card-title">New Job Offer</span>
+    <span class="form-card-title">{{ editingId ? 'Edit Job Offer' : 'New Job Offer' }}</span>
     <button class="btn-icon" (click)="cancelForm()">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -87,7 +87,7 @@
       <button class="btn-action" (click)="cancelForm()">Cancel</button>
       <button class="btn-action btn-action--primary" (click)="submitForm()" [disabled]="saving || !form.title.trim() || !form.description.trim()">
         <span class="spinner" *ngIf="saving"></span>
-        {{ saving ? 'Creating…' : 'Create Offer' }}
+        {{ saving ? 'Saving…' : (editingId ? 'Save Changes' : 'Create Offer') }}
       </button>
     </div>
   </div>
@@ -146,7 +146,12 @@
         <span class="status-chip" [class.status-chip--open]="offer.status === 'open'" [class.status-chip--closed]="offer.status === 'closed'">
           {{ offer.status }}
         </span>
-        <button class="btn-icon btn-icon--danger" (click)="requestDelete(offer.id, $event)" title="Delete offer">
+        <button class="btn-icon" (click)="editOffer(offer, $event)" title="Edit offer" style="margin-right: -4px;">
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
+          </svg>
+        </button>
+        <button class="btn-icon btn-action--danger" (click)="requestDelete(offer.id, $event)" title="Delete offer" style="background: none; color: var(--text-secondary); box-shadow: none; padding: 6px; border-radius: var(--radius-sm);">
           <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
           </svg>

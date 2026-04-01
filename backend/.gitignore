@@ -7,7 +7,10 @@ __pycache__/
 *.gguf
 *.bin
 *.safetensors
-models/
+**/models/*.gguf
+**/models/*.bin
+**/models/*.safetensors
+services/models/
 dist/
 .angular/
 *.log

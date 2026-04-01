@@ -176,19 +176,21 @@ Rules:
     query:      string,
     candidates: any[],
     apiKey:     string,
-  ): Promise<Array<{ name: string; score: number; reason: string }>> {
+  ): Promise<Array<{ candidateId: string; name: string; score: number; reason: string }>> {
 
     const domain = getRoleDomain(query);
     const domainHint = domain
       ? `\nDOMAIN CONTEXT: For this role, core skills are: ${domain.coreSkills.slice(0, 8).join(', ')}`
       : '';
 
+    // Include candidateId in the prompt so the LLM returns scores keyed by ID,
+    // not by name — this prevents collision when two candidates share a first name.
     const profiles = candidates.slice(0, 15).map((c: any, i: number) => {
       const exp = (c.experience ?? []).slice(0, 3)
         .map((e: any) => `${e.title ?? ''}${e.company ? ' @ ' + e.company : ''}`.trim())
         .filter(Boolean).join(', ') || 'no experience listed';
 
-      return `[${i + 1}] ${c.name}
+      return `[${i + 1}] ID:${c.candidateId} | ${c.name}
 Skills: ${(c.skills ?? []).join(', ') || 'none'}
 Experience: ${c.yearsExp != null ? c.yearsExp + ' yrs' : 'unspecified'} — ${exp}
 Summary: ${c.summary?.substring(0, 150) ?? 'N/A'}`;
@@ -221,7 +223,7 @@ STRICT RULES:
 Return ONLY valid JSON, no markdown:
 {
   "scores": [
-    { "name": "exact name as given", "score": 85, "reason": "one sentence referencing their actual skills" }
+    { "candidateId": "uuid-here", "name": "exact name", "score": 85, "reason": "one sentence" }
   ]
 }`;
 
@@ -234,10 +236,11 @@ Return ONLY valid JSON, no markdown:
         ),
       );
       const parsed = parseJSON(response.data?.choices?.[0]?.message?.content ?? '{}');
-      const scores = Array.isArray(parsed.scores) ? parsed.scores : [];
+      const scores: Array<{ candidateId: string; name: string; score: number; reason: string }> =
+        Array.isArray(parsed.scores) ? parsed.scores : [];
       this.logger.log(
         `🎯 Scored ${scores.length}: ` +
-        scores.slice(0, 5).map((s: any) => `${s.name?.split(' ')[0]}:${s.score}`).join(' | ')
+        scores.slice(0, 5).map((s: any) => `${s.candidateId?.substring(0, 8)}:${s.score}`).join(' | ')
       );
       return scores;
     } catch (err) {
@@ -263,7 +266,7 @@ Return ONLY valid JSON, no markdown:
       const exp   = (c.experience ?? []).slice(0, 1)
         .map((e: any) => `${e.title ?? ''}${e.company ? ' @ ' + e.company : ''}`.trim())
         .filter(Boolean).join(', ') || 'N/A';
-      return `[${i + 1}] ${c.name} | Score:${score} | ${c.currentTitle ?? 'N/A'} | ${c.yearsExp ?? '?'} yrs | ${c.location ?? 'N/A'}
+      return `[${i + 1}] ID:${c.candidateId} | ${c.name} | Score:${score} | ${c.currentTitle ?? 'N/A'} | ${c.yearsExp ?? '?'} yrs | ${c.location ?? 'N/A'}
 Skills: ${(c.skills ?? []).slice(0, 12).join(', ') || 'N/A'}
 Work: ${exp}`;
     }).join('\n\n');
@@ -297,6 +300,7 @@ Return ONLY valid JSON, no markdown:
   "rankedOrder": ["name1", "name2"],
   "candidateNotes": [
     {
+      "candidateId": "uuid-from-above",
       "name": "exact name",
       "score": 75,
       "fit": "good",
@@ -327,12 +331,21 @@ Return ONLY valid JSON, no markdown:
 
       const parsed = parseJSON(response.data?.choices?.[0]?.message?.content ?? '');
 
+      // Build ID → score map from preScoredByRank so the narrative step
+      // can look up authoritative scores by ID rather than by name.
+      // This prevents wrong scores when two candidates share a first name.
+      const idScoreMap = new Map<string, number>();
+      for (const p of (preScoredByRank ?? [])) {
+        idScoreMap.set(p.candidateId, p.matchScore ?? p.score ?? 0);
+      }
+
       const notes: RerankedCandidate[] = (Array.isArray(parsed.candidateNotes) ? parsed.candidateNotes : [])
         .map((n: any) => {
-          const preScored = (preScoredByRank ?? []).find(
-            p => p.name.toLowerCase().trim() === (n.name ?? '').toLowerCase().trim()
-          );
-          const authScore = preScored?.matchScore ?? preScored?.score ?? n.score ?? 0;
+          // Prefer ID-based lookup; fall back to name match only as a safety net
+          const authScore = idScoreMap.get(n.candidateId ?? '') ??
+            (preScoredByRank ?? []).find(
+              p => p.name.toLowerCase().trim() === (n.name ?? '').toLowerCase().trim()
+            )?.matchScore ?? n.score ?? 0;
           return {
             name:           n.name           ?? '',
             score:          authScore,

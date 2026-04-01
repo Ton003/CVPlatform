@@ -43,6 +43,8 @@ export class JobOffersComponent implements OnInit {
   deleteModal = false;
   pendingDeleteId = '';
 
+  editingId = '';
+
   form = {
     title:          '',
     description:    '',
@@ -73,13 +75,37 @@ export class JobOffersComponent implements OnInit {
     });
   }
 
-  openForm(): void {
+  openForm(offer?: JobOffer): void {
     this.showForm = true;
-    this.form = { title: '', description: '', location: '', requiredSkills: '', minYears: null, status: 'open' };
+    if (offer) {
+      this.editingId = offer.id;
+      this.form = {
+        title:          offer.title,
+        description:    offer.description,
+        location:       offer.location || '',
+        requiredSkills: offer.requiredSkills.join(', '),
+        minYears:       offer.minYears,
+        status:         offer.status,
+      };
+    } else {
+      this.editingId = '';
+      this.form = { title: '', description: '', location: '', requiredSkills: '', minYears: null, status: 'open' };
+    }
     this.cdr.detectChanges();
   }
 
-  cancelForm(): void { this.showForm = false; this.cdr.detectChanges(); }
+  cancelForm(): void {
+    this.showForm = false;
+    this.editingId = '';
+    this.cdr.detectChanges();
+  }
+
+  editOffer(offer: JobOffer, event: MouseEvent): void {
+    event.stopPropagation();
+    // Scroll to top or just open the form
+    this.openForm(offer);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
   submitForm(): void {
     if (!this.form.title.trim() || !this.form.description.trim()) return;
@@ -92,16 +118,31 @@ export class JobOffersComponent implements OnInit {
       minYears:       this.form.minYears ? Number(this.form.minYears) : null,
       status:         this.form.status,
     };
-    this.http.post<JobOffer>(`${environment.apiUrl}/job-offers`, payload).pipe(
-      finalize(() => { this.saving = false; this.cdr.detectChanges(); }),
-    ).subscribe({
-      next: offer => {
-        this.offers   = [offer, ...this.offers];
-        this.showForm = false;
-        this.toast.success('Job offer created successfully.');
-      },
-      error: () => { this.toast.error('Failed to create job offer. Please try again.'); },
-    });
+
+    if (this.editingId) {
+      this.http.patch<JobOffer>(`${environment.apiUrl}/job-offers/${this.editingId}`, payload).pipe(
+        finalize(() => { this.saving = false; this.cdr.detectChanges(); }),
+      ).subscribe({
+        next: updated => {
+          this.offers = this.offers.map(o => o.id === this.editingId ? updated : o);
+          this.showForm = false;
+          this.editingId = '';
+          this.toast.success('Job offer updated successfully.');
+        },
+        error: () => { this.toast.error('Failed to update job offer.'); },
+      });
+    } else {
+      this.http.post<JobOffer>(`${environment.apiUrl}/job-offers`, payload).pipe(
+        finalize(() => { this.saving = false; this.cdr.detectChanges(); }),
+      ).subscribe({
+        next: offer => {
+          this.offers   = [offer, ...this.offers];
+          this.showForm = false;
+          this.toast.success('Job offer created successfully.');
+        },
+        error: () => { this.toast.error('Failed to create job offer. Please try again.'); },
+      });
+    }
   }
 
   requestDelete(id: string, event: MouseEvent): void {

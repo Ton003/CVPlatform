@@ -15,8 +15,8 @@ export class CandidateNote {
   @Column({ type: 'uuid', name: 'candidate_id' })
   candidateId: string;
 
-  @Column({ type: 'uuid', name: 'user_id' })
-  userId: string;
+  @Column({ type: 'uuid', name: 'user_id', nullable: true })
+userId: string | null;
 
   @Column({ type: 'text' })
   note: string;

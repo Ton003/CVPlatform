@@ -50,85 +50,126 @@ export class MailService {
     return this.cfg.get<string>('MAIL_FROM') ?? 'BIAT CV Platform <no-reply@biat.com.tn>';
   }
 
-  /** Send an invitation email to the candidate */
-  async sendInvite(to: string, candidateName: string): Promise<void> {
-    const info = await this.transporter.sendMail({
-      from:    this.from,
-      to,
-      subject: 'You have been invited to apply — BIAT IT',
-      html: `
-        <div style="font-family:Inter,Arial,sans-serif;max-width:600px;margin:auto;padding:32px;background:#f8fafc;border-radius:12px">
-          <div style="text-align:center;margin-bottom:28px">
-            <h1 style="font-size:22px;color:#0f172a;margin:0">BIAT IT</h1>
-            <p style="color:#64748b;font-size:13px;margin:4px 0 0">CV Intelligence Platform</p>
-          </div>
-          <div style="background:#fff;border-radius:8px;padding:28px;border:1px solid #e2e8f0">
-            <h2 style="font-size:18px;color:#1e293b;margin:0 0 12px">Hello ${candidateName},</h2>
-            <p style="color:#475569;line-height:1.7;margin:0 0 16px">
-              We are pleased to invite you to apply for an opportunity with <strong>BIAT IT</strong>.
-              Our team has reviewed your profile and believes you could be a great fit.
-            </p>
-            <p style="color:#475569;line-height:1.7;margin:0 0 24px">
-              Please reply to this email or contact your recruiter to proceed with the next steps.
-            </p>
-            <div style="border-top:1px solid #e2e8f0;padding-top:20px;color:#94a3b8;font-size:12px">
-              This email was sent from the BIAT IT CV Intelligence Platform.
-            </div>
-          </div>
+  private wrapHtml(content: string): string {
+    return `
+      <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+        <div style="background-color: #f8fafc; padding: 24px; text-align: center; border-bottom: 1px solid #e5e7eb;">
+          <h1 style="color: #0f172a; font-size: 24px; margin: 0; font-weight: 700;">BIAT Recruitment</h1>
         </div>
-      `,
-    });
-    this.logger.log(`Invite sent to ${to} — ${nodemailer.getTestMessageUrl(info) || info.messageId}`);
+        <div style="padding: 32px 24px; color: #334155; line-height: 1.6; font-size: 16px;">
+          ${content}
+        </div>
+        <div style="background-color: #f8fafc; padding: 20px; text-align: center; color: #64748b; font-size: 12px; border-top: 1px solid #e5e7eb;">
+          © ${new Date().getFullYear()} BIAT. All rights reserved.<br/>
+          This is an automated message, please do not reply directly to this address.
+        </div>
+      </div>
+    `;
   }
 
-  /** Notify candidate of a status update */
+  async sendAssessFirstRequest(to: string, candidateName: string): Promise<void> {
+    const html = this.wrapHtml(`
+      <p>Dear ${candidateName},</p>
+      <p>Thank you for your interest in joining our team at BIAT.</p>
+      <p>As part of our recruitment process, we would like you to complete an <strong>AssessFirst</strong> personality and aptitude assessment.</p>
+      <p>Please complete your profile and <strong>reply to the recruiter with your generated PDF report</strong> attached.</p>
+      <br/>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="https://app.assessfirst.com/" style="background-color: #3b82f6; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Go to AssessFirst</a>
+      </div>
+      <p>We look forward to receiving your assessment results.</p>
+      <p>Best regards,<br/><strong>The BIAT Recruitment Team</strong></p>
+    `);
+    const info = await this.transporter.sendMail({ from: this.from, to, subject: 'Next Step: AssessFirst Assessment Request', html });
+    this.logger.log(`AssessFirst Request sent to ${to} — ${nodemailer.getTestMessageUrl(info) || info.messageId}`);
+  }
+
+  async sendInterviewInvite(to: string, candidateName: string, date: string, location: string): Promise<void> {
+    const formattedDate = new Date(date).toLocaleString('en-US', { dateStyle: 'full', timeStyle: 'short' });
+    const html = this.wrapHtml(`
+      <p>Dear ${candidateName},</p>
+      <p>We were impressed by your profile and would like to invite you to an interview for the position you applied for at BIAT.</p>
+      <div style="background-color: #f1f5f9; padding: 20px; border-radius: 6px; margin: 24px 0;">
+        <p style="margin: 0 0 10px 0; color: #0f172a;"><strong>📅 Date & Time:</strong><br/>${formattedDate}</p>
+        <p style="margin: 0; color: #0f172a;"><strong>📍 Location / Link:</strong><br/>
+          <a href="${location}" style="color: #3b82f6;">${location}</a>
+        </p>
+      </div>
+      <p>Please reply directly to the recruiter to confirm your availability. If you need to reschedule, let us know as soon as possible.</p>
+      <p>We look forward to speaking with you soon!</p>
+      <p>Best regards,<br/><strong>The BIAT Recruitment Team</strong></p>
+    `);
+    const info = await this.transporter.sendMail({ from: this.from, to, subject: 'Invitation to Interview at BIAT', html });
+    this.logger.log(`Interview Invite sent to ${to} — ${nodemailer.getTestMessageUrl(info) || info.messageId}`);
+  }
+
   async sendStatusUpdate(to: string, candidateName: string, status: string): Promise<void> {
-    const statusLabels: Record<string, { label: string; color: string; message: string }> = {
-      screening: {
-        label:   'Under Review',
-        color:   '#3b82f6',
-        message: 'Your application is currently being reviewed by our HR team. We will be in touch shortly.',
-      },
-      interview: {
-        label:   'Interview Stage',
-        color:   '#8b5cf6',
-        message: 'Congratulations! We would like to invite you to an interview. Our team will contact you to arrange a suitable time.',
-      },
-      offer: {
-        label:   'Offer Extended',
-        color:   '#10b981',
-        message: 'We are delighted to extend you an offer. Please expect a formal offer letter from our team very soon.',
-      },
-      rejected: {
-        label:   'Application Update',
-        color:   '#64748b',
-        message: 'Thank you for your interest in joining BIAT IT. After careful consideration, we have decided to move forward with other candidates at this time. We encourage you to apply again in the future.',
-      },
+    const statusLabels: Record<string, { label: string; color: string }> = {
+      screening: { label: 'Under Review', color: '#3b82f6' },
+      interview: { label: 'Interview Stage', color: '#8b5cf6' },
+      offer:     { label: 'Offer Extended', color: '#10b981' },
+      rejected:  { label: 'Application Update', color: '#64748b' },
     };
+    const s = statusLabels[status] ?? { label: status, color: '#64748b' };
+    
+    const html = this.wrapHtml(`
+      <p>Dear ${candidateName},</p>
+      <p>We are writing to update you on the status of your application at BIAT.</p>
+      <p>Your application has been moved to the following stage: <strong style="color: ${s.color};">${s.label}</strong>.</p>
+      <p>Our recruitment team will be in touch shortly with any next steps or additional information as required.</p>
+      <p>Thank you for your continued interest in building your career with us.</p>
+      <p>Best regards,<br/><strong>The BIAT Recruitment Team</strong></p>
+    `);
 
-    const s = statusLabels[status] ?? { label: status, color: '#64748b', message: 'Your application status has been updated.' };
-
-    const info = await this.transporter.sendMail({
-      from:    this.from,
-      to,
-      subject: `Your application status: ${s.label} — BIAT IT`,
-      html: `
-        <div style="font-family:Inter,Arial,sans-serif;max-width:600px;margin:auto;padding:32px;background:#f8fafc;border-radius:12px">
-          <div style="text-align:center;margin-bottom:28px">
-            <h1 style="font-size:22px;color:#0f172a;margin:0">BIAT IT</h1>
-            <p style="color:#64748b;font-size:13px;margin:4px 0 0">CV Intelligence Platform</p>
-          </div>
-          <div style="background:#fff;border-radius:8px;padding:28px;border:1px solid #e2e8f0">
-            <div style="display:inline-block;background:${s.color}18;color:${s.color};border-radius:6px;padding:4px 12px;font-size:12px;font-weight:600;margin-bottom:16px;letter-spacing:0.5px;text-transform:uppercase">${s.label}</div>
-            <h2 style="font-size:18px;color:#1e293b;margin:0 0 12px">Hello ${candidateName},</h2>
-            <p style="color:#475569;line-height:1.7;margin:0 0 24px">${s.message}</p>
-            <div style="border-top:1px solid #e2e8f0;padding-top:20px;color:#94a3b8;font-size:12px">
-              This email was sent from the BIAT IT CV Intelligence Platform.
-            </div>
-          </div>
-        </div>
-      `,
-    });
+    const info = await this.transporter.sendMail({ from: this.from, to, subject: `Your application status: ${s.label} — BIAT IT`, html });
     this.logger.log(`Status email sent to ${to} — ${nodemailer.getTestMessageUrl(info) || info.messageId}`);
   }
+  
+  async sendAssessFirstSuccess(to: string, candidateName: string): Promise<void> {
+  const html = this.wrapHtml(`
+    <p style="color:#1e293b;font-size:16px;margin:0 0 12px">Dear ${candidateName},</p>
+    <p style="color:#475569;line-height:1.7;margin:0 0 16px">
+      We have successfully received and processed your <strong>AssessFirst PDF report</strong>.
+    </p>
+    <p style="color:#475569;line-height:1.7;margin:0 0 16px">
+      Your profile has been updated automatically by our AI system. You are now moving to the
+      <strong style="color:#8b5cf6">Interview Phase</strong>.
+    </p>
+    <p style="color:#475569;line-height:1.7;margin:0">
+      Our team will be in touch shortly to schedule your interview.
+    </p>
+  `);
+  await this.transporter.sendMail({
+    from:    this.from,
+    to,
+    subject: 'AssessFirst Report Received — BIAT IT',
+    html,
+  });
+  this.logger.log(`AssessFirst success email sent to ${to}`);
+}
+
+async sendAssessFirstInvalid(to: string, candidateName: string, reason: string): Promise<void> {
+  const html = this.wrapHtml(`
+    <p style="color:#1e293b;font-size:16px;margin:0 0 12px">Dear ${candidateName},</p>
+    <p style="color:#475569;line-height:1.7;margin:0 0 16px">
+      We received your email, but our system could not process your attached PDF.
+    </p>
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:0 0 16px">
+      <p style="color:#dc2626;margin:0;font-size:14px">
+        <strong>Reason:</strong> ${reason}
+      </p>
+    </div>
+    <p style="color:#475569;line-height:1.7;margin:0">
+      Please reply to this email with the correct AssessFirst PDF document attached and we will process it automatically.
+    </p>
+  `);
+  await this.transporter.sendMail({
+    from:    this.from,
+    to,
+    subject: 'Action Required: Issue Processing Your PDF — BIAT IT',
+    html,
+  });
+  this.logger.log(`AssessFirst invalid email sent to ${to}`);
+}
+
 }

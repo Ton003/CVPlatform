@@ -1,12 +1,12 @@
-import { Component }               from '@angular/core';
-import { CommonModule }            from '@angular/common';
-import { FormsModule }             from '@angular/forms';
-import { HttpClient }              from '@angular/common/http';
-import { finalize }                from 'rxjs';
-import { AuthService }             from '../../core/services/auth.service';
-import { ApiKeyService }           from '../../core/services/api-key.service';
-import { ToastService }            from '../../core/services/toast.service';
-import { environment }             from '../../../environments/environment';
+import { Component, ChangeDetectorRef } from '@angular/core';
+import { CommonModule }                  from '@angular/common';
+import { FormsModule }                   from '@angular/forms';
+import { HttpClient }                    from '@angular/common/http';
+import { finalize }                      from 'rxjs';
+import { AuthService }                   from '../../core/services/auth.service';
+import { ApiKeyService }                 from '../../core/services/api-key.service';
+import { ToastService }                  from '../../core/services/toast.service';
+import { environment }                   from '../../../environments/environment';
 
 @Component({
   selector:    'app-cv-upload',
@@ -37,6 +37,7 @@ export class CvUploadComponent {
     private readonly authService: AuthService,
     private readonly apiKey:      ApiKeyService,
     private readonly toast:       ToastService,
+    private readonly cdr:         ChangeDetectorRef,
   ) {}
 
   toggleMode(m: 'local' | 'groq') { this.mode = m; this.result = null; this.error = ''; }
@@ -87,6 +88,7 @@ export class CvUploadComponent {
     this.isLoading = true;
     this.error     = '';
     this.result    = null;
+    this.cdr.detectChanges();
 
     const formData = new FormData();
     formData.append('file',        this.selectedFile);
@@ -95,12 +97,13 @@ export class CvUploadComponent {
     if (this.mode === 'groq') formData.append('apiKey', this.apiKey.get());
 
     this.http.post<any>(`${environment.apiUrl}/cv-upload`, formData).pipe(
-      finalize(() => this.isLoading = false)
+      finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
     ).subscribe({
       next: (res) => {
-        this.result = res;
+        this.result       = res;
         this.selectedFile = null;
         this.toast.success('CV uploaded and processed successfully.');
+        this.cdr.detectChanges();
       },
       error: (err) => {
         if      (err.status === 401) this.error = 'Session expired. Please log in again.';
@@ -108,6 +111,7 @@ export class CvUploadComponent {
         else if (err.status === 0)   this.error = 'Cannot reach the server. Make sure the backend is running.';
         else                         this.error = err.error?.message ?? 'Upload failed. Please try again.';
         this.toast.error(this.error);
+        this.cdr.detectChanges();
       },
     });
   }

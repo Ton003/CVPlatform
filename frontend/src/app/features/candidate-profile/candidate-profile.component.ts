@@ -107,6 +107,7 @@ export class CandidateProfileComponent implements OnInit {
   notes:       CandidateNoteDto[] = [];
   notesLoading = false;
   submitting   = false;
+  deletingNoteId = '';
   newNote      = '';
   newRating    = 0;
   newStage: NoteStage = 'screening';
@@ -120,8 +121,10 @@ export class CandidateProfileComponent implements OnInit {
   scoreLoading = false;
 
   showEmailModal   = false;
-  emailType: 'invite' | 'status' = 'invite';
+  emailType: 'assessfirst' | 'interview' | 'status' = 'assessfirst';
   emailStatus: NoteStage = 'screening';
+  interviewDate = '';
+  interviewLocation = '';
   emailSubmitting  = false;
 
   exportingPdf   = false;
@@ -229,6 +232,32 @@ export class CandidateProfileComponent implements OnInit {
     });
   }
 
+  deleteNote(noteId: string): void {
+    if (!this.candidate) return;
+    if (!confirm('Are you sure you want to delete this note?')) return;
+    this.deletingNoteId = noteId;
+    this.cdr.detectChanges();
+    this.http.delete(`${this.apiUrl}/candidates/${this.candidate.candidateId}/notes/${noteId}`)
+      .pipe(finalize(() => { this.deletingNoteId = ''; this.cdr.detectChanges(); }))
+      .subscribe({
+        next: () => {
+          const removedNote = this.notes.find(n => n.id === noteId);
+          this.notes = this.notes.filter(n => n.id !== noteId);
+          this.showSuccess('Note deleted successfully.');
+          if (removedNote?.rating && removedNote.rating > 0 && this.candidate) {
+            this.loadScore(this.candidate.candidateId);
+          }
+        },
+        error: () => { this.showError('Failed to delete note.'); }
+      });
+  }
+
+  canDeleteNote(note: CandidateNoteDto): boolean {
+    const user = this.auth.getCurrentUser();
+    if (!user) return false;
+    return note.author.id === user.id || user.role === 'admin';
+  }
+
   // ── AssessFirst ────────────────────────────────────────────────
   loadAssessFirst(candidateId: string): void {
     this.afLoading = true;
@@ -299,9 +328,17 @@ export class CandidateProfileComponent implements OnInit {
   sendEmail(): void {
     if (!this.candidate) return;
     this.emailSubmitting = true;
+    
+    const payload: any = { type: this.emailType };
+    if (this.emailType === 'status')    payload.status = this.emailStatus;
+    if (this.emailType === 'interview') {
+      payload.interviewDate = this.interviewDate;
+      payload.interviewLocation = this.interviewLocation;
+    }
+
     this.http.post(
       `${this.apiUrl}/candidates/${this.candidate.candidateId}/send-email`,
-      { type: this.emailType, status: this.emailType === 'status' ? this.emailStatus : undefined },
+      payload
     ).pipe(finalize(() => { this.emailSubmitting = false; this.cdr.detectChanges(); }))
     .subscribe({
       next:  () =>  { this.closeEmailModal(); this.showSuccess('Email sent successfully.'); },

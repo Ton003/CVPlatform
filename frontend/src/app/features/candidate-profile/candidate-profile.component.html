@@ -277,6 +277,14 @@
             <div class="note-meta">
               <span class="note-stage" [attr.data-stage]="n.stage">{{ stageLabel(n.stage) }}</span>
               <span class="note-date">{{ formatNoteDate(n.createdAt) }}</span>
+              <button *ngIf="canDeleteNote(n)" class="btn-icon btn-action--danger" 
+                      (click)="deleteNote(n.id)" [disabled]="deletingNoteId === n.id"
+                      style="background: none; color: var(--text-secondary); box-shadow: none; padding: 4px; margin-left: 8px;">
+                <span *ngIf="deletingNoteId === n.id" class="spinner-sm" style="border-width: 1.5px; width: 12px; height: 12px"></span>
+                <svg *ngIf="deletingNoteId !== n.id" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
             </div>
           </div>
           <div *ngIf="n.rating > 0" class="note-stars">
@@ -654,27 +662,43 @@
           </div>
           <div class="modal-body">
             <div class="form-row">
-              <label class="form-label">Email Type</label>
+              <label class="form-label">Email Template</label>
               <select class="note-textarea" style="min-height: auto; padding: .6rem 1rem;" [(ngModel)]="emailType">
-                <option value="invite">Platform Invitation (Set Password)</option>
+                <option value="assessfirst">Request AssessFirst Assessment</option>
+                <option value="interview">Schedule an Interview</option>
                 <option value="status">Application Status Update</option>
               </select>
             </div>
+            
             <div class="form-row" *ngIf="emailType === 'status'">
               <label class="form-label">Status Context <span class="form-label-hint">— What stage are they at?</span></label>
               <select class="note-textarea" style="min-height: auto; padding: .6rem 1rem;" [(ngModel)]="emailStatus">
                 <option *ngFor="let s of stages" [value]="s.value">{{ s.label }}</option>
               </select>
             </div>
+
+            <div class="form-row" *ngIf="emailType === 'interview'">
+              <div class="form-group" style="margin-bottom: 1rem;">
+                <label class="form-label">Interview Date & Time</label>
+                <input type="datetime-local" class="note-textarea" style="min-height: auto; padding: .6rem 1rem;" [(ngModel)]="interviewDate">
+              </div>
+              <div class="form-group">
+                <label class="form-label">Location / Meeting Link</label>
+                <input type="text" class="note-textarea" style="min-height: auto; padding: .6rem 1rem;" 
+                       placeholder="e.g. Google Meet link or HQ Address" [(ngModel)]="interviewLocation">
+              </div>
+            </div>
+
             <p class="summary-text" style="padding: 0; background: var(--bg-surface); padding: 1rem; border-radius: var(--radius-md); border: 1px dashed var(--border-default);">
               An automated, branded email will be dispatched to <strong>{{ candidate.email }}</strong> using the selected template.
-              <span *ngIf="emailType === 'invite'">They will receive a secure portal link.</span>
+              <span *ngIf="emailType === 'assessfirst'">They will be asked to complete the AssessFirst test and reply with their PDF report.</span>
+              <span *ngIf="emailType === 'interview'">They will receive a calendar invitation and instructions for the scheduled date and location.</span>
               <span *ngIf="emailType === 'status'">They will be informed of their application status securely.</span>
             </p>
           </div>
           <div class="modal-footer">
             <button class="btn-cancel" (click)="closeEmailModal()" [disabled]="emailSubmitting">Cancel</button>
-            <button class="btn-submit" (click)="sendEmail()" [disabled]="emailSubmitting">
+            <button class="btn-submit" (click)="sendEmail()" [disabled]="emailSubmitting || (emailType === 'interview' && (!interviewDate || !interviewLocation))">
               <span *ngIf="emailSubmitting" class="spinner-sm"></span>
               {{ emailSubmitting ? 'Sending...' : 'Send Message' }}
             </button>

@@ -81,6 +81,60 @@ export class JobOffersService {
     return rows[0];
   }
 
+  // ── Update ───────────────────────────────────────────────────────
+  async update(id: string, dto: import('./dto/update-job-offer.dto').UpdateJobOfferDto) {
+    // Check if it exists
+    const offer = await this.findOne(id);
+
+    // Build SET clause dynamically based on provided fields
+    const updates: string[] = [];
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    if (dto.title !== undefined) {
+      updates.push(`title = $${paramIndex++}`);
+      params.push(dto.title);
+    }
+    if (dto.description !== undefined) {
+      updates.push(`description = $${paramIndex++}`);
+      params.push(dto.description);
+    }
+    if (dto.location !== undefined) {
+      updates.push(`location = $${paramIndex++}`);
+      params.push(dto.location);
+    }
+    if (dto.requiredSkills !== undefined) {
+      updates.push(`required_skills = $${paramIndex++}`);
+      params.push(JSON.stringify(dto.requiredSkills));
+    }
+    if (dto.minYears !== undefined) {
+      updates.push(`min_years = $${paramIndex++}`);
+      params.push(dto.minYears);
+    }
+    if (dto.status !== undefined) {
+      updates.push(`status = $${paramIndex++}`);
+      params.push(dto.status);
+    }
+
+    if (updates.length === 0) {
+      return offer; // Nothing to update
+    }
+
+    params.push(id); // For the WHERE clause
+    const setClause = updates.join(', ');
+
+    const rows = await this.dataSource.query(`
+      UPDATE job_offers
+      SET ${setClause}
+      WHERE id = $${paramIndex}::uuid
+      RETURNING id::text AS "id", title, description, location,
+                required_skills AS "requiredSkills", min_years AS "minYears",
+                status, created_at AS "createdAt"
+    `, params);
+
+    return rows[0];
+  }
+
   // ── Delete ───────────────────────────────────────────────────────
   async remove(id: string) {
     const rows = await this.dataSource.query(

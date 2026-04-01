@@ -1,9 +1,10 @@
 import { Injectable, Logger }  from '@nestjs/common';
 import { InjectRepository }    from '@nestjs/typeorm';
+import { ConfigService }       from '@nestjs/config';
 import { Repository }          from 'typeorm';
+import * as crypto             from 'crypto';
 import * as fs                 from 'fs';
 import * as path               from 'path';
-import * as crypto             from 'crypto';
 import { Candidate }           from '../candidates/entities/candidates.entity';
 import { Cv }                  from '../cvs/entities/cv.entity';
 import { CvParsedData }        from '../cv-parsed-data/entities/cv-parsed-data.entity';
@@ -24,6 +25,7 @@ export class CvStorageService {
     @InjectRepository(CvParsedData)
     private parsedRepo: Repository<CvParsedData>,
     private readonly pdfExtractor: PdfExtractorService,
+    private readonly configService: ConfigService,
   ) {}
 
   async store(
@@ -98,20 +100,28 @@ export class CvStorageService {
       }
     }
 
-    // ── Step 4: Save PDF file to disk ─────────────────────────────────────
-    // ✅ Guard against oversized files reaching disk
+    // ── Step 4: Save PDF to Local Disk ────────────────────────────────────
+    // ✅ Guard against oversized files
     if (file.buffer.length > MAX_FILE_SIZE) {
       throw new Error(`File too large: ${file.buffer.length} bytes`);
     }
 
-    const uploadsDir = path.join(process.cwd(), 'uploads');
-    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
-    const filePath = path.join(uploadsDir, `${fileHash}.pdf`);
-    if (!fs.existsSync(filePath)) {
-      fs.writeFileSync(filePath, file.buffer);
-      this.logger.log(`💾 PDF saved to disk: ${filePath}`);
+    const fileName = `${fileHash}.pdf`;
+    const uploadDir = path.join(process.cwd(), 'uploads');
+    
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
     }
+
+    const fullPath = path.join(uploadDir, fileName);
+    
+    // Write file to disk
+    await fs.promises.writeFile(fullPath, file.buffer);
+    this.logger.log(`💾 PDF saved to disk: ${fullPath}`);
+
+    // In a real app with local storage, you'd serve the static files or use a proxy.
+    // For now, we store the local relative path.
+    const filePath = `/uploads/${fileName}`;
 
     // ── Step 5: Save CV record ────────────────────────────────────────────
     const cv = this.cvRepo.create({
