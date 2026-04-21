@@ -1,0 +1,402 @@
+<div class="ja-root">
+
+  <!-- ══ Sidebar Tree ══════════════════════════════════════════════ -->
+  <aside class="ja-sidebar">
+    <div class="ja-sidebar-header">
+      <div class="ja-sidebar-brand">
+        <div class="ja-sidebar-brand-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+          </svg>
+        </div>
+        <span class="ja-sidebar-brand-name">Job Titles</span>
+      </div>
+      <button class="ja-icon-btn ja-icon-btn--accent" title="Add Business Unit" (click)="openAddNode('bu')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="ja-tree" *ngIf="!loadingTree">
+      <ng-container *ngFor="let node of nodes">
+        <ng-container *ngTemplateOutlet="treeNode; context: { $implicit: node }"></ng-container>
+      </ng-container>
+      <div *ngIf="nodes.length === 0" class="ja-tree-empty">
+        No units yet. Click <strong>+</strong> to add one.
+      </div>
+    </div>
+
+    <div *ngIf="loadingTree" class="ja-tree-loading">
+      <span class="ja-spinner"></span>
+    </div>
+  </aside>
+
+  <!-- ══ Main Content ══════════════════════════════════════════════ -->
+  <div class="ja-main">
+
+    <!-- Empty placeholder -->
+    <div *ngIf="!selectedRole" class="ja-placeholder">
+      <div class="ja-placeholder-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+        </svg>
+      </div>
+      <h2>Select a Role</h2>
+      <p>Choose a job role from the sidebar to view and manage its competency requirements.</p>
+    </div>
+
+    <!-- Role detail view -->
+    <div *ngIf="selectedRole" class="ja-detail">
+
+      <!-- Role header bar -->
+      <div class="ja-detail-header">
+        <div class="ja-detail-header-left">
+          <span class="ja-status-pill" [class]="'ja-status-pill--' + (selectedRoleDetails?.status || 'draft').toLowerCase()">
+            {{ selectedRoleDetails?.status || 'DRAFT' }}
+          </span>
+          <div>
+            <h1 class="ja-detail-title">{{ selectedRoleDetails?.name || selectedRole.name }}</h1>
+            <p class="ja-detail-sub">{{ selectedRoleDetails?.levels?.length || 0 }} career ranks · {{ getTotalCompetencies() }} competency assignments</p>
+          </div>
+        </div>
+        <button class="ja-btn ja-btn--primary" (click)="openAssignModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Add Competency
+        </button>
+      </div>
+
+      <!-- Rank tabs -->
+      <div class="ja-rank-strip" *ngIf="selectedRoleDetails?.levels?.length">
+        <button
+          *ngFor="let rank of selectedRoleDetails?.levels"
+          class="ja-rank-pill"
+          [class.ja-rank-pill--active]="selectedRank?.id === rank.id"
+          (click)="selectRankTab(rank)">
+          <span class="ja-rank-pill-num">R{{ rank.levelNumber }}</span>
+          <span class="ja-rank-pill-name">{{ rank.title || 'Rank ' + rank.levelNumber }}</span>
+        </button>
+      </div>
+
+      <!-- Rank content -->
+      <div class="ja-rank-body" *ngIf="selectedRank && !loadingRank">
+
+        <!-- Rank top bar -->
+        <div class="ja-rank-topbar">
+          <div>
+            <h2 class="ja-rank-name">{{ selectedRank.title || 'Rank ' + selectedRank.levelNumber }}</h2>
+            <p class="ja-rank-mission" *ngIf="selectedRank.mission">{{ selectedRank.mission }}</p>
+          </div>
+          <button class="ja-btn ja-btn--ghost" (click)="openRankSettings()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+            Rank Settings
+          </button>
+        </div>
+
+        <!-- Competency section heading -->
+        <div class="ja-section-head">
+          <span class="ja-section-label">Required Competencies</span>
+          <span class="ja-section-count" *ngIf="selectedRank.competencyRequirements?.length">
+            {{ selectedRank.competencyRequirements?.length }} assigned
+          </span>
+        </div>
+
+        <!-- Competency cards grid -->
+        <div class="ja-comp-grid" *ngIf="selectedRank.competencyRequirements?.length">
+          <div class="ja-comp-card" *ngFor="let req of selectedRank.competencyRequirements">
+            <div class="ja-comp-card-family">{{ req.competence?.family?.name }}</div>
+            <div class="ja-comp-card-name">{{ req.competence?.name }}</div>
+            <p class="ja-comp-card-desc" *ngIf="req.competence?.description">{{ req.competence?.description }}</p>
+            <div class="ja-comp-card-meta">
+              <span class="ja-proficiency-label">Level {{ req.requiredLevel }}/5</span>
+              <button class="ja-remove-btn" title="Remove" (click)="removeCompetency(req)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12">
+                  <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Add competency card -->
+          <button class="ja-comp-card ja-comp-card--add" (click)="openAssignModal()">
+            <div class="ja-comp-card-add-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </div>
+            <span>Add Competency</span>
+          </button>
+        </div>
+
+        <!-- Empty competency state -->
+        <div *ngIf="!selectedRank.competencyRequirements?.length" class="ja-comp-empty">
+          <div class="ja-comp-empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+            </svg>
+          </div>
+          <h3>No competencies yet</h3>
+          <p>Define what skills and behaviours are required at this rank.</p>
+          <button class="ja-btn ja-btn--primary" (click)="openAssignModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Add First Competency
+          </button>
+        </div>
+      </div>
+
+      <!-- Rank loading -->
+      <div *ngIf="loadingRank" class="ja-rank-loading">
+        <span class="ja-spinner"></span>
+        <p>Loading rank…</p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══ Rank Settings Side Panel ════════════════════════════════ -->
+  <div class="ja-settings-backdrop" *ngIf="showRankSettings" (click)="closeRankSettings()"></div>
+  <aside class="ja-settings-panel" [class.ja-settings-panel--open]="showRankSettings" *ngIf="selectedRank">
+    <div class="ja-settings-header">
+      <h3>Rank Settings</h3>
+      <button class="ja-icon-btn" (click)="closeRankSettings()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="ja-settings-body">
+      <div class="ja-field">
+        <label>Rank Title</label>
+        <input type="text" [(ngModel)]="selectedRank.title" placeholder="e.g. Senior Engineer">
+      </div>
+      <div class="ja-field">
+        <label>Mission & Purpose</label>
+        <textarea [(ngModel)]="selectedRank.mission" rows="4" placeholder="Core purpose of this role at this seniority…"></textarea>
+      </div>
+      <div class="ja-field">
+        <label>Description</label>
+        <textarea [(ngModel)]="selectedRank.description" rows="3" placeholder="Additional context…"></textarea>
+      </div>
+    </div>
+    <div class="ja-settings-footer">
+      <button class="ja-btn ja-btn--ghost" (click)="closeRankSettings()">Cancel</button>
+      <button class="ja-btn ja-btn--primary" (click)="saveRankDetails()" [disabled]="loadingRank">
+        {{ loadingRank ? 'Saving…' : 'Save Changes' }}
+      </button>
+    </div>
+  </aside>
+
+</div>
+
+<!-- ══ Recursive Tree Node Template ════════════════════════════════ -->
+<ng-template #treeNode let-node>
+  <div class="ja-node">
+    <div class="ja-node-row"
+         [class.ja-node-row--selected]="selectedRole?.id === node.id"
+         (click)="selectNode(node)">
+      <button class="ja-caret"
+              [style.visibility]="node.children?.length ? 'visible' : 'hidden'"
+              (click)="toggleNode(node, $event)">
+        <svg [class.rotated]="node.expanded" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+
+      <span class="ja-node-type-icon">
+        <svg *ngIf="node.type === 'bu'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        <svg *ngIf="node.type === 'department'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
+        </svg>
+        <svg *ngIf="node.type === 'role'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/>
+          <polyline points="17 11 19 13 23 9"/>
+        </svg>
+      </span>
+
+      <span class="ja-node-label">{{ node.name }}</span>
+
+      <span class="ja-status-dot" *ngIf="node.type === 'role'"
+            [class]="'ja-status-dot--' + (node.originalObject?.status || 'DRAFT').toLowerCase()"></span>
+
+      <div class="ja-node-actions">
+        <button class="ja-icon-btn ja-icon-btn--sm" title="Edit" (click)="openEditNode(node, $event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+            <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+          </svg>
+        </button>
+        <button class="ja-icon-btn ja-icon-btn--sm ja-icon-btn--danger" title="Delete" (click)="requestDelete(node, $event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+            <path d="M10 11v6M14 11v6M9 6V4h6v2"/>
+          </svg>
+        </button>
+        <button *ngIf="node.type !== 'role'" class="ja-icon-btn ja-icon-btn--sm ja-icon-btn--accent"
+                title="Add child" (click)="openAddNode(node.type === 'bu' ? 'department' : 'role', node.id, $event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="ja-children" *ngIf="node.expanded && node.children?.length">
+      <ng-container *ngFor="let child of node.children">
+        <ng-container *ngTemplateOutlet="treeNode; context: { $implicit: child }"></ng-container>
+      </ng-container>
+    </div>
+  </div>
+</ng-template>
+
+<!-- ══ Add / Edit Node Modal ════════════════════════════════════════ -->
+<div class="ja-overlay" *ngIf="showAddModal" (click)="closeAddModal()">
+  <div class="ja-modal" (click)="$event.stopPropagation()">
+    <div class="ja-modal-header">
+      <h3>{{ editingNode ? 'Edit' : 'Create' }} {{ addNodeType === 'bu' ? 'Business Unit' : addNodeType === 'department' ? 'Department' : 'Role' }}</h3>
+      <button class="ja-icon-btn" (click)="closeAddModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <form [formGroup]="addForm" (ngSubmit)="submitAddNode()" class="ja-modal-body">
+      <div class="ja-field">
+        <label>Name</label>
+        <input type="text" formControlName="name" placeholder="Enter name…">
+      </div>
+      <div class="ja-field" *ngIf="addNodeType !== 'role'">
+        <label>Description</label>
+        <textarea formControlName="description" rows="2" placeholder="Brief summary…"></textarea>
+      </div>
+      <ng-container *ngIf="addNodeType === 'role'">
+        <div class="ja-field" *ngIf="!editingNode">
+          <label>Career Ranks</label>
+          <div class="ja-range-row">
+            <input type="range" formControlName="rankCount" min="1" max="7" step="1">
+            <span class="ja-range-val">{{ addForm.value.rankCount }}</span>
+          </div>
+          <p class="ja-field-hint">Generates {{ addForm.value.rankCount }} seniority ranks.</p>
+        </div>
+        <div class="ja-field" *ngIf="editingNode">
+          <label>Status</label>
+          <select formControlName="status">
+            <option value="DRAFT">Draft</option>
+            <option value="ACTIVE">Active</option>
+            <option value="ARCHIVED">Archived</option>
+          </select>
+        </div>
+      </ng-container>
+      <div class="ja-modal-footer">
+        <button type="button" class="ja-btn ja-btn--ghost" (click)="closeAddModal()">Cancel</button>
+        <button type="submit" class="ja-btn ja-btn--primary" [disabled]="addForm.invalid || savingNode">
+          {{ savingNode ? 'Saving…' : 'Confirm' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══ Assign Competency Modal ═══════════════════════════════════════ -->
+<div class="ja-overlay" *ngIf="showAssignModal" (click)="closeAssignModal()">
+  <div class="ja-modal ja-modal--wide" (click)="$event.stopPropagation()">
+    <div class="ja-modal-header">
+      <h3>Assign Competency — {{ selectedRank?.title || 'Rank ' + selectedRank?.levelNumber }}</h3>
+      <button class="ja-icon-btn" (click)="closeAssignModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="ja-assign-layout">
+      <!-- Family pane -->
+      <div class="ja-assign-pane ja-assign-pane--families">
+        <p class="ja-assign-pane-title">Category</p>
+        <div class="ja-field ja-field--compact">
+          <input type="text" [(ngModel)]="assignSearch" placeholder="Search…">
+        </div>
+        <div class="ja-family-list">
+          <button *ngFor="let fam of getFilteredFamilies()"
+                  class="ja-family-item"
+                  [class.ja-family-item--active]="assignSelectedFamilyId === fam.id"
+                  (click)="selectLibFamily(fam.id)">
+            {{ fam.name }}
+          </button>
+        </div>
+      </div>
+
+      <!-- Competence pane -->
+      <div class="ja-assign-pane ja-assign-pane--comps">
+        <p class="ja-assign-pane-title">Competency</p>
+        <div class="ja-comp-list">
+          <button *ngFor="let comp of libCompetences"
+                  class="ja-comp-item"
+                  [class.ja-comp-item--active]="assignSelectedCompetence?.id === comp.id"
+                  (click)="selectLibCompetence(comp)">
+            <span class="ja-comp-item-name">{{ comp.name }}</span>
+            <span class="ja-comp-item-desc" *ngIf="comp.description">{{ comp.description }}</span>
+          </button>
+          <p *ngIf="!libCompetences.length" class="ja-assign-hint">Select a category first.</p>
+        </div>
+      </div>
+
+      <!-- Proficiency pane -->
+      <div class="ja-assign-pane ja-assign-pane--ranks">
+        <p class="ja-assign-pane-title">Required Level</p>
+        <div *ngIf="assignSelectedCompetence" class="ja-prof-list">
+          <button *ngFor="let lv of assignSelectedCompetence.levels"
+                  class="ja-prof-item"
+                  [class.ja-prof-item--active]="assignRequiredLevel === lv.level"
+                  (click)="selectLevel(lv.level)">
+            <div class="ja-prof-item-top">
+              <span class="ja-prof-badge">Rank {{ lv.level }}</span>
+              <svg *ngIf="assignRequiredLevel === lv.level" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" width="14" height="14">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <p class="ja-prof-item-desc">{{ lv.description }}</p>
+          </button>
+        </div>
+        <p *ngIf="!assignSelectedCompetence" class="ja-assign-hint">Select a competency first.</p>
+      </div>
+    </div>
+
+    <div class="ja-modal-footer">
+      <button class="ja-btn ja-btn--ghost" (click)="closeAssignModal()">Cancel</button>
+      <button class="ja-btn ja-btn--primary" (click)="submitAssignment()" [disabled]="!assignRequiredLevel || savingAssign">
+        {{ savingAssign ? 'Assigning…' : 'Confirm Assignment' }}
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Delete Confirmation Modal ════════════════════════════════════ -->
+<div class="ja-overlay" *ngIf="showDeleteModal" (click)="closeDeleteModal()">
+  <div class="ja-modal ja-modal--sm" (click)="$event.stopPropagation()">
+    <div class="ja-delete-body">
+      <div class="ja-delete-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+      </div>
+      <h3>Delete "{{ nodeToDelete?.name }}"?</h3>
+      <p>This permanently removes the node and all its nested content. This cannot be undone.</p>
+      <div class="ja-delete-actions">
+        <button class="ja-btn ja-btn--ghost" (click)="closeDeleteModal()">Cancel</button>
+        <button class="ja-btn ja-btn--danger" (click)="confirmDelete()" [disabled]="deletingNode">
+          {{ deletingNode ? 'Deleting…' : 'Delete' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

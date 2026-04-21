@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_DATABASE}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
@@ -24,25 +24,28 @@ services:
     build:
       context: ./services
       dockerfile: Dockerfile
+    pull_policy: never
     container_name: biat_python
     restart: unless-stopped
     ports:
       - "8002:8002"
     environment:
       PYTHONUNBUFFERED: "1"
+      HF_HUB_OFFLINE: "1"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       # Increased start_period: models load from disk on first startup
-      start_period: 30s
+      start_period: 60s
 
+  # ── NestJS Backend
   # ── NestJS Backend
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev        # ← use dev dockerfile
     container_name: biat_backend
     restart: unless-stopped
     ports:
@@ -56,10 +59,9 @@ services:
       postgres:
         condition: service_healthy
       python-service:
-        # Changed from service_started → service_healthy
-        # Ensures python service is fully up before backend connects
         condition: service_healthy
     volumes:
+      - ./backend/src:/app/src          # ← fixed indentation
       - ./backend/uploads:/app/uploads
 
   # ── Angular Frontend
@@ -73,6 +75,5 @@ services:
       - "80:80"
     depends_on:
       - backend
-
-volumes:
-  postgres_data:
+    volumes:
+      - ./frontend/src:/app/src         # ← fixed (was /app/srcs typo)

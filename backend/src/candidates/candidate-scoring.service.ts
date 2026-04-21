@@ -19,7 +19,6 @@ const ROLE_CATALOG: Record<string, string[]> = {
 
 export interface ScoreBreakdown {
   technical:   { score: number; weight: number; role: string; available: boolean };
-  assessfirst: { score: number | null; weight: number; available: boolean };
   manager:     { score: number | null; weight: number; available: boolean; noteCount: number };
 }
 
@@ -63,16 +62,6 @@ export class CandidateScoringService {
       managerScore = Math.round((avg / 5) * 100);
     }
 
-    // ── 3. AssessFirst score ───────────────────────────────────────────
-    // NOTE: Previously this was a "bullet density" count, which is not a real score.
-    // The AssessFirst PDF does not expose numeric dimension scores via text extraction,
-    // so we no longer fabricate a score from it. It is reported as unavailable until
-    // a real numeric data source (e.g. AssessFirst API) is integrated.
-    const afRows = await this.dataSource.query(`
-      SELECT id FROM assessfirst_results WHERE candidate_id = $1 LIMIT 1
-    `, [candidateId]);
-    const afScore: number | null = null; // Not computed — no reliable source
-    const afAvailable = afRows.length > 0;
 
     // ── 4. Technical match score — best role overlap from catalog ──────
     let technicalScore = 0;
@@ -90,8 +79,7 @@ export class CandidateScoringService {
     }
 
     // ── 5. Composite score ─────────────────────────────────────────────
-    // AssessFirst is excluded from weighting since we have no real score.
-    // When a real score source is available, add it back with its weight.
+
     const weights = { technical: 0.80, manager: 0.20 };
 
     let weightedSum   = technicalScore * weights.technical;
@@ -129,7 +117,6 @@ export class CandidateScoringService {
       label,
       breakdown: {
         technical:   { score: technicalScore, weight: 80, role: bestRoleMatch, available: true },
-        assessfirst: { score: afScore,        weight: 0,  available: afAvailable },
         manager:     { score: managerScore,   weight: 20, available: managerScore !== null, noteCount: noteRows.length },
       },
       roleSuggestions,

@@ -1,0 +1,13 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY tsconfig*.json ./
+# Install ALL deps including devDependencies (@nestjs/cli needed for watch mode)
+RUN npm ci --legacy-peer-deps
+
+# Don't copy src — it will be mounted via volume
+EXPOSE 3000
+
+CMD ["npm", "run", "start:dev"]

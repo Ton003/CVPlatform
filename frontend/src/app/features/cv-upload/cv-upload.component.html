@@ -9,7 +9,27 @@
 
   <!-- Upload Card -->
   <div class="upload-card">
-
+    <div class="job-selector" *ngIf="!preselectedJobId">
+    <label class="field-label">
+      Applying for a job?
+      <span class="field-hint">— optional, links candidate to a pipeline</span>
+    </label>
+    <div class="job-select-wrap">
+      <svg class="job-select-icon" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+      </svg>
+      <select class="field-select" [(ngModel)]="selectedJobId" [disabled]="jobsLoading">
+        <option value="">— No job selected (candidate pool only) —</option>
+        <option *ngFor="let j of jobs" [value]="j.id">{{ j.title }}</option>
+      </select>
+    </div>
+    <div class="job-selector-hint" *ngIf="selectedJobId">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <polyline points="20 6 9 17 4 12"/>
+      </svg>
+      After upload, candidate will be added to this job's pipeline as <strong>Applied</strong>.
+    </div>
+  </div>
     <!-- Mode Toggle -->
     <div class="mode-toggle">
       <button class="mode-btn" [class.active]="mode === 'local'" (click)="toggleMode('local')">
@@ -163,18 +183,6 @@
       </a>
     </div>
 
-  </div>
-
-  <!-- Side Tips -->
-  <div class="tips-panel">
-    <h3 class="tips-title">How it works</h3>
-    <div class="tip-item" *ngFor="let t of tips; let i = index">
-      <div class="tip-num">{{ i + 1 }}</div>
-      <div class="tip-body">
-        <span class="tip-head">{{ t.title }}</span>
-        <span class="tip-desc">{{ t.desc }}</span>
-      </div>
-    </div>
   </div>
 
 </div>

@@ -31,4 +31,16 @@ export class UsersService {
     });
     return count > 0;
   }
+
+  async findAllManagers(): Promise<User[]> {
+    return this.usersRepository.find({
+      where: [
+        { role: 'admin' },
+        { role: 'hr' },
+        { role: 'manager' }
+      ],
+      select: ['id', 'first_name', 'last_name', 'email', 'role'],
+      order: { first_name: 'ASC' }
+    });
+  }
 }

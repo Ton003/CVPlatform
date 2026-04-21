@@ -1,13 +1,12 @@
 import { Component, OnInit, OnDestroy, ChangeDetectorRef, AfterViewInit } from '@angular/core';
 import { CommonModule }          from '@angular/common';
 import { FormsModule }           from '@angular/forms';
-import { Router, RouterLink, RouterLinkActive } from '@angular/router';
+import { Router } from '@angular/router';
 import { HttpClient }            from '@angular/common/http';
 import { Subject }               from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil, finalize } from 'rxjs/operators';
 import { AuthService }             from '../../core/services/auth.service';
 import { CandidatesStateService }  from '../../core/services/candidates-state.service';
-import { SidebarComponent }        from '../../shared/sidebar/sidebar.component';
 import { environment }             from '../../../environments/environment';
 
 interface CandidateCard {
@@ -31,7 +30,7 @@ interface CandidateListResponse {
 @Component({
   selector:    'app-candidates',
   standalone:  true,
-  imports:     [CommonModule, FormsModule, SidebarComponent],
+  imports:     [CommonModule, FormsModule],
   templateUrl: './candidates.component.html',
   styleUrls:   ['./candidates.component.scss'],
 })

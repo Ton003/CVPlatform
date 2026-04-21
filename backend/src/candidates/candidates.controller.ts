@@ -3,9 +3,11 @@ import {
   NotFoundException, HttpCode, HttpStatus,
 } from '@nestjs/common';
 import { SkipThrottle }            from '@nestjs/throttler';
-import { InjectDataSource }        from '@nestjs/typeorm';
-import { DataSource }              from 'typeorm';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { DataSource, Repository }          from 'typeorm';
 import { JwtAuthGuard }            from '../auth/jwt-auth.guard';
+import { Candidate }               from './entities/candidates.entity';
+import { Cv }                      from '../cvs/entities/cv.entity';
 import { CandidateScoringService } from './candidate-scoring.service';
 
 @Controller('candidates')
@@ -15,6 +17,10 @@ export class CandidatesController {
   constructor(
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    @InjectRepository(Candidate)
+    private readonly candidateRepo: Repository<Candidate>,
+    @InjectRepository(Cv)
+    private readonly cvRepo: Repository<Cv>,
     private readonly scoringService: CandidateScoringService,
   ) {}
 
@@ -136,15 +142,14 @@ export class CandidatesController {
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteCandidate(@Param('id') id: string) {
-    const rows = await this.dataSource.query(
-      `SELECT id FROM candidates WHERE id = $1::uuid`,
-      [id],
-    );
-    if (!rows.length) throw new NotFoundException(`Candidate ${id} not found`);
+    const candidate = await this.candidateRepo.findOne({ where: { id } });
+    if (!candidate) throw new NotFoundException(`Candidate ${id} not found`);
 
-    await this.dataSource.query(
-      `DELETE FROM candidates WHERE id = $1::uuid`,
-      [id],
-    );
+    // Manually clean up associated CVs since the DB-level CASCADE 
+    // is not currently active to avoid schema sync issues.
+    await this.cvRepo.delete({ candidate_id: id });
+
+    // Deleting the candidate will remove them and (via DB cascade) their applications.
+    await this.candidateRepo.remove(candidate);
   }
 }

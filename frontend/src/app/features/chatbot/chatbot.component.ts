@@ -2,7 +2,7 @@ import { Component, ViewChild, ElementRef, AfterViewChecked, OnInit, ChangeDetec
 import { CommonModule }           from '@angular/common';
 import { FormsModule }            from '@angular/forms';
 import { HttpClient }             from '@angular/common/http';
-import { RouterLink, RouterLinkActive, Router } from '@angular/router';
+import { Router } from '@angular/router';
 import { finalize }               from 'rxjs';
 import { AuthService }            from '../../core/services/auth.service';
 import { ChatStateService }       from '../../core/services/chat-state.service';
@@ -18,7 +18,7 @@ import {
 @Component({
   selector:    'app-chatbot',
   standalone:  true,
-  imports:     [CommonModule, FormsModule, RouterLink, RouterLinkActive],
+  imports:     [CommonModule, FormsModule],
   templateUrl: './chatbot.component.html',
   styleUrls:   ['./chatbot.component.scss'],
 })
@@ -26,6 +26,7 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
   @ViewChild('chatEnd') chatEnd!: ElementRef;
 
   mode: 'local' | 'groq' = 'groq';
+  personTypeFilter: 'all' | 'candidate' | 'employee' = 'all';
 
   jobDescription = '';
   loading        = false;
@@ -92,7 +93,7 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
 
     this.http.post<SearchResult>(
       `${environment.apiUrl}/chatbot/recommend`,
-      { message: this.jobDescription, mode: 'local' }
+      { message: this.jobDescription, mode: 'local', personType: this.personTypeFilter }
     ).pipe(
       finalize(() => { this.loading = false; this.cdr.detectChanges(); })
     ).subscribe({
@@ -130,6 +131,7 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
         apiKey:         this.apiKey.get(),
         history:        this.conversationHistory,
         lastCandidates: this.lastCandidates,
+        personType:     this.personTypeFilter,
       }
     ).pipe(
       finalize(() => { this.chatLoading = false; this.shouldScroll = true; this.cdr.detectChanges(); })

@@ -8,6 +8,7 @@ import * as path               from 'path';
 import { Candidate }           from '../candidates/entities/candidates.entity';
 import { Cv }                  from '../cvs/entities/cv.entity';
 import { CvParsedData }        from '../cv-parsed-data/entities/cv-parsed-data.entity';
+import { CandidateCareerEntry } from '../candidates/entities/candidate-career-entry.entity';
 import { ParsedCvDto }         from './dto/parsed-cv.dto';
 import { PdfExtractorService } from './pdf-extractor.service';
 
@@ -24,6 +25,8 @@ export class CvStorageService {
     private cvRepo: Repository<Cv>,
     @InjectRepository(CvParsedData)
     private parsedRepo: Repository<CvParsedData>,
+    @InjectRepository(CandidateCareerEntry)
+    private careerEntryRepo: Repository<CandidateCareerEntry>,
     private readonly pdfExtractor: PdfExtractorService,
     private readonly configService: ConfigService,
   ) {}
@@ -46,16 +49,27 @@ export class CvStorageService {
     // ── Step 2: Check for exact duplicate ────────────────────────────────
     const existingCv = await this.cvRepo.findOne({ where: { file_hash: fileHash } });
     if (existingCv) {
-      this.logger.log(`⚠️  Duplicate CV detected — cvId: ${existingCv.id}`);
+      this.logger.log(`⚠️  Duplicate CV metadata found — cvId: ${existingCv.id}`);
       const existingCandidate = await this.candidateRepo.findOne({
         where: { id: existingCv.candidate_id },
       });
-      return {
-        message:     'This CV already exists in the database',
-        duplicate:   true,
-        candidateId: existingCandidate?.id ?? null,
-        cvId:        existingCv.id,
-      };
+
+      if (existingCandidate) {
+        this.logger.log(`✅ Associated candidate found: ${existingCandidate.id}`);
+        return {
+          message:     'This CV already exists in the database',
+          duplicate:   true,
+          candidateId: existingCandidate.id,
+          cvId:        existingCv.id,
+        };
+      } else {
+        this.logger.warn(`🛑 Orphaned CV detected (no candidate) — cleaning up...`);
+        // The candidate was deleted but the CV remained. Clean it up and proceed.
+        // Cascade should handle parsed data if defined, but we'll be safe or just let the new save overwrite/conflict if not careful.
+        // Actually, it's better to just delete the old CV record so Step 5 can create a fresh one.
+        await this.cvRepo.remove(existingCv);
+        this.logger.log(`🧹 Orphaned CV record removed. Proceeding with fresh upload.`);
+      }
     }
 
     // ── Step 3: Resolve or create candidate ──────────────────────────────
@@ -162,7 +176,36 @@ export class CvStorageService {
     await this.parsedRepo.save(parsedData);
     this.logger.log(`✅ Parsed data + embedding saved`);
 
-    // ── Step 8: Return clean response ─────────────────────────────────────
+    // ── Step 8: Save Career Entries ───────────────────────────────────────
+    if (parsed.experience?.length) {
+      this.logger.log(`📜 Saving ${parsed.experience.length} career entries...`);
+      // Delete existing AI entries to avoid duplicates on re-upload if logic dictates
+      // For now, we'll just add new ones or handle deduplication
+      const careerEntries = parsed.experience.map(exp => {
+        // Extract average confidence if available in tags
+        const tags = exp.inferredTags || [];
+        const avgConfidence = tags.length > 0 
+          ? tags.reduce((sum: number, t: any) => sum + (t.confidence || 0), 0) / tags.length 
+          : 0;
+
+        return this.careerEntryRepo.create({
+          candidateId:     candidate.id,
+          roleTitle:       exp.title,
+          company:         exp.company,
+          startDate:       this.normalizeDate(exp.start_date),
+          endDate:         this.normalizeDate(exp.end_date),
+          rawDescription:  exp.description,
+          sfiaTags:        tags,
+          source:          'AI',
+          confidenceScore: avgConfidence,
+        });
+      });
+      await this.careerEntryRepo.save(careerEntries);
+      this.logger.log(`✅ Career entries saved`);
+    }
+
+    // ── Step 9: Return clean response ─────────────────────────────────────
+
     return {
       message:     'CV uploaded and parsed successfully',
       duplicate:   false,
@@ -216,4 +259,11 @@ export class CvStorageService {
     if (num >= 0 && num <= 50) return Math.round(num);
     return null;
   }
-}
+
+  private normalizeDate(dateStr: string | null | undefined): string | null {
+    if (!dateStr) return null;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return null; // Fallback to null for unparsable dates like "Present"
+    return d.toISOString().split('T')[0];
+  }
+}

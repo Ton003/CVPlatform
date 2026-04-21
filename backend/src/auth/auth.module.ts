@@ -15,7 +15,7 @@ import { UsersModule } from '../users/users.module';
     UsersModule,
     PassportModule,
     ConfigModule,
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 5 }]),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({

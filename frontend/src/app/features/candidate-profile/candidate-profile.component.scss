@@ -719,6 +719,29 @@
 
 .note-date { font-size: .7rem; color: var(--text-muted); white-space: nowrap; }
 
+.btn-note-delete {
+  background: transparent;
+  border: none;
+  padding: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &:hover:not(:disabled) {
+    background: var(--danger-dim);
+    color: var(--danger);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
 /* Star display */
 .note-stars {
   display: flex;

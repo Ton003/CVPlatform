@@ -73,6 +73,10 @@ export class RecommendDto {
   @ValidateNested({ each: true })
   @Type(() => LastCandidateDto)
   lastCandidates?: LastCandidateDto[];
+
+  @IsOptional()
+  @IsIn(['all', 'candidate', 'employee'])
+  personType?: 'all' | 'candidate' | 'employee';
 }
 
 // Aliases for compatibility

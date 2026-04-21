@@ -8,10 +8,11 @@ const GROQ_MODEL = 'llama-3.3-70b-versatile';
 // ── Output types ──────────────────────────────────────────────────────────────
 
 export interface ExperienceEntry {
-  title:      string;
-  company:    string | null;
-  start_date: string | null;
-  end_date:   string | null;
+  title:       string;
+  company:     string | null;
+  start_date:  string | null;
+  end_date:    string | null;
+  description: string | null;
 }
 
 export interface EducationEntry {
@@ -107,6 +108,69 @@ export class GroqCvParserService {
     }
   }
 
+  /**
+   * INFERENCE PIPELINE
+   * Takes a job description and extracts SFIA competencies with inferred levels (1-5).
+   */
+  async inferProficiencyLevels(description: string, options: GroqParseOptions): Promise<any[]> {
+    if (!description || description.length < 20) return [];
+
+    const prompt = `Identify SFIA-compliant competencies mentioned in the following job description.
+For each competency, infer a proficiency level from 1 to 5 based on the complexity described.
+
+SFIA LEVELS:
+1. Follow (basic)
+2. Assist (some autonomy)
+3. Apply (independent)
+4. Enable (supervise/guide)
+5. Ensure, advise (strategy/leadership)
+
+TEXT:
+${description}
+
+Return ONLY a JSON array of objects:
+[
+  { "skill": "canonical name", "level": 1-5, "confidence": 0-1 }
+]`;
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(
+          GROQ_URL,
+          {
+            model:       GROQ_MODEL,
+            messages:    [{ role: 'user', content: prompt }],
+            temperature: 0.0,
+            max_tokens:  500,
+          },
+          {
+            timeout: 15_000,
+            headers: {
+              Authorization:  `Bearer ${options.apiKey}`,
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      );
+
+      const raw = response.data?.choices?.[0]?.message?.content ?? '[]';
+      const start = raw.indexOf('[');
+      const end   = raw.lastIndexOf(']');
+      if (start === -1 || end === -1) return [];
+      
+      return JSON.parse(raw.substring(start, end + 1)).map(item => ({
+        skill: item.skill,
+        level: Math.min(5, Math.max(1, item.level || 1)),
+        confidence: Math.min(1.0, Math.max(0.0, item.confidence || 0.5))
+      }));
+
+    } catch (err) {
+      this.logger.warn(`Inference failed: ${err.message}`);
+      return [];
+    }
+  }
+
+
   // ── Prompt ────────────────────────────────────────────────────────────────
   // Single prompt that extracts EVERYTHING in one call.
   // Key improvements over old version:
@@ -180,6 +244,7 @@ EXPERIENCE:
 - title: FULL job title, not truncated (e.g. "Développeur Full Stack Junior", "Stage DevOps")
 - company: company name or null if freelance/personal project
 - start_date / end_date: as written in CV (e.g. "Jan 2023", "2022", "Présent", "Aujourd'hui")
+- description: 2-3 sentences summarizing responsibilities and technical projects/tools used in this role.
 - Skip purely academic projects — only real work, internships, freelance
 
 YEARS_EXPERIENCE:
@@ -213,7 +278,7 @@ Return ONLY this JSON, no markdown, no explanation:
     { "degree": null, "institution": null, "date": null }
   ],
   "experience": [
-    { "title": null, "company": null, "start_date": null, "end_date": null }
+    { "title": null, "company": null, "start_date": null, "end_date": null, "description": null }
   ],
   "years_experience": null,
   "summary": ""
@@ -396,6 +461,7 @@ Return ONLY this JSON, no markdown, no explanation:
         company:    typeof e.company    === 'string' ? e.company.trim().substring(0, 100)    : null,
         start_date: typeof e.start_date === 'string' ? e.start_date.trim().substring(0, 30)  : null,
         end_date:   typeof e.end_date   === 'string' ? e.end_date.trim().substring(0, 30)    : null,
+        description: typeof e.description === 'string' ? e.description.trim().substring(0, 1000) : null,
       }))
       .filter(e => e.title.length > 0);
   }

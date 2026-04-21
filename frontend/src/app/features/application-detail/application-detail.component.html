@@ -1,0 +1,730 @@
+<div class="detail-root">
+
+  <!-- ── Loading ── -->
+  <div *ngIf="loading" class="state-center">
+    <div class="spinner-lg"></div>
+    <p class="state-text">Loading application…</p>
+  </div>
+
+  <!-- ── Error ── -->
+  <div *ngIf="!loading && error" class="state-center">
+    <div class="state-icon-err">
+      <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+    </div>
+    <p class="state-title">{{ error }}</p>
+    <button class="btn-ghost" (click)="goBack()">← Back to Pipeline</button>
+  </div>
+
+  <ng-container *ngIf="!loading && app">
+
+    <!-- ── Topbar ── -->
+    <div class="topbar">
+      <nav class="breadcrumbs">
+        <button class="crumb-link" (click)="goBack()">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+          Pipeline
+        </button>
+        <span class="crumb-sep">/</span>
+        <span class="crumb-current">{{ app.candidateName }}</span>
+      </nav>
+      <div class="topbar-actions">
+        <button class="btn-promote" *ngIf="app?.stage === 'offer'" (click)="openPromoteModal()">
+          Promote to Employee ✨
+        </button>
+        <button class="btn-outline" (click)="viewCandidateProfile()">Full Profile</button>
+      </div>
+    </div>
+
+    <!-- ── Hero ── -->
+    <div class="hero-card">
+      <div class="hero-left">
+        <div class="avatar">{{ getInitials(app.candidateName) }}</div>
+        <div class="hero-info">
+          <div class="hero-name-row">
+            <h1 class="hero-name">{{ app.candidateName }}</h1>
+            <div class="stage-select-wrap">
+              <select [ngModel]="app.stage" (ngModelChange)="updateAppStage($event)"
+                class="stage-select" [ngClass]="getStageBadgeClass(app.stage)">
+                <option *ngFor="let s of stageNoteOptions" [value]="s.value">{{ s.label }}</option>
+              </select>
+            </div>
+          </div>
+          <p class="hero-role">{{ app.currentTitle || 'Candidate' }}</p>
+          <div class="hero-chips">
+            <span class="chip" *ngIf="app.jobTitle">
+              <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+              {{ app.jobTitle }}
+            </span>
+            <span class="chip" *ngIf="app.location">
+              <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/></svg>
+              {{ app.location }}
+            </span>
+            <span class="chip" *ngIf="app.email">{{ app.email }}</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="stat-box">
+          <span class="stat-val">{{ app.skills?.length ?? 0 }}</span>
+          <span class="stat-lbl">Skills</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-val">{{ app.experience?.length ?? 0 }}</span>
+          <span class="stat-lbl">Roles</span>
+        </div>
+        <div class="stat-box">
+          <span class="stat-val">{{ notes.length }}</span>
+          <span class="stat-lbl">Notes</span>
+        </div>
+        <div class="stat-box score-box" *ngIf="score">
+          <span class="stat-val" [style.color]="scoreColor(score.compositeScore)">{{ score.compositeScore }}</span>
+          <span class="stat-lbl">Score</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Tabs ── -->
+    <div class="tabs-bar">
+      <button *ngFor="let t of tabs" class="tab-btn" [class.active]="activeTab === t.id" (click)="switchTab(t.id)">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+          <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="t.icon"/>
+        </svg>
+        {{ t.label }}
+        <span *ngIf="t.id === 'notes' && notes.length > 0" class="tab-badge">{{ notes.length }}</span>
+        <span *ngIf="t.id === 'interviews' && interviews.length > 0" class="tab-badge">{{ interviews.length }}</span>
+      </button>
+    </div>
+
+    <!-- ══════════════════════════════════════════ OVERVIEW ══ -->
+    <div *ngIf="activeTab === 'overview'" class="tab-content">
+
+      <div *ngIf="app.summary" class="card">
+        <div class="card-head"><span class="card-label">Summary</span></div>
+        <p class="summary-text">{{ app.summary }}</p>
+      </div>
+
+      <div class="overview-grid">
+        <div class="ov-main">
+
+          <div *ngIf="app.skills?.length" class="card">
+            <div class="card-head">
+              <span class="card-label">Technical Skills</span>
+              <span class="badge">{{ app.skills.length }}</span>
+            </div>
+            <div class="skills-wrap">
+              <span *ngFor="let s of app.skills; let i = index"
+                class="skill-chip" [attr.data-color]="skillColor(i)">{{ s | titlecase }}</span>
+            </div>
+          </div>
+
+          <div *ngIf="app.requiredSkills?.length" class="card">
+            <div class="card-head"><span class="card-label">Required Skills Match</span></div>
+            <div class="skills-wrap">
+              <span *ngFor="let s of app.requiredSkills" class="skill-chip"
+                [class.skill--match]="hasSkill(s)" [class.skill--miss]="!hasSkill(s)">
+                <svg *ngIf="hasSkill(s)" width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                <svg *ngIf="!hasSkill(s)" width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                {{ s | titlecase }}
+              </span>
+            </div>
+          </div>
+
+          <div *ngIf="app.experience?.length" class="card">
+            <div class="card-head"><span class="card-label">Experience</span></div>
+            <div class="timeline">
+              <div *ngFor="let exp of app.experience; let last = last" class="timeline-item">
+                <div class="tl-dot" [class.tl-dot--last]="last"></div>
+                <div *ngIf="!last" class="tl-line"></div>
+                <div class="tl-card">
+                  <div class="tl-head">
+                    <div>
+                      <p class="tl-title">{{ exp.title || 'Position' }}</p>
+                      <p class="tl-company">{{ exp.company }}</p>
+                    </div>
+                    <span class="tl-date">{{ formatDuration(exp.startDate ?? exp.start_date, exp.endDate ?? exp.end_date) }}</span>
+                  </div>
+                  <p *ngIf="exp.description" class="tl-desc">{{ exp.description }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="app.education?.length" class="card">
+            <div class="card-head"><span class="card-label">Education</span></div>
+            <div class="edu-grid">
+              <div *ngFor="let edu of app.education" class="edu-card">
+                <div class="edu-icon">🎓</div>
+                <div>
+                  <p class="edu-degree">{{ edu.degree || 'Degree' }}</p>
+                  <p class="edu-inst">{{ edu.institution }}</p>
+                  <p class="edu-date" *ngIf="edu.date">{{ edu.date }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <aside class="ov-aside">
+          <!-- Contact -->
+          <div class="aside-card">
+            <h4 class="aside-title">Contact</h4>
+            <div class="aside-row"><span class="aside-key">Email</span><span class="aside-val">{{ app.email }}</span></div>
+            <div class="aside-row" *ngIf="app.location"><span class="aside-key">Location</span><span class="aside-val">{{ app.location }}</span></div>
+            <div class="aside-row" *ngIf="app.yearsExp"><span class="aside-key">Experience</span><span class="aside-val">{{ app.yearsExp }} yrs</span></div>
+          </div>
+          <!-- Application -->
+          <div class="aside-card">
+            <h4 class="aside-title">Application</h4>
+            <div class="aside-row"><span class="aside-key">Source</span><span class="aside-val">{{ app.source?.replace('_',' ') | titlecase }}</span></div>
+            <div class="aside-row"><span class="aside-key">Applied</span><span class="aside-val">{{ formatDate(app.createdAt) }}</span></div>
+            <div class="aside-row"><span class="aside-key">Job</span><span class="aside-val">{{ app.jobTitle }}</span></div>
+          </div>
+          <!-- HR Checklist -->
+          <div class="aside-card tasks-card">
+            <h4 class="aside-title">HR Checklist</h4>
+            <div class="task-input-row">
+              <input type="text" [(ngModel)]="newTaskTitle" placeholder="Add task…" (keyup.enter)="addTask()" class="task-input"/>
+              <button class="task-add-btn" (click)="addTask()">
+                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+              </button>
+            </div>
+            <div class="task-list">
+              <div *ngFor="let t of tasks" class="task-item" [class.task-done]="t.completed">
+                <label class="task-check">
+                  <input type="checkbox" [checked]="t.completed" (change)="toggleTask(t)"/>
+                  <span class="checkmark"></span>
+                </label>
+                <span class="task-label">{{ t.title }}</span>
+                <button class="task-del" (click)="deleteTask(t.id)" title="Remove">
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+              </div>
+              <p *ngIf="tasks.length === 0" class="task-empty">No tasks yet</p>
+            </div>
+          </div>
+          <!-- Languages -->
+          <div class="aside-card" *ngIf="app.languages?.length">
+            <h4 class="aside-title">Languages</h4>
+            <div class="lang-list">
+              <div *ngFor="let l of app.languages" class="lang-row">
+                <div class="lang-meta">
+                  <span class="lang-name">{{ l.name || l.language }}</span>
+                  <span class="lang-level">{{ l.level }}</span>
+                </div>
+                <div class="lang-track">
+                  <div class="lang-fill" [style.width.%]="languageLevelWidth(l.level)"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ NOTES ══ -->
+    <div *ngIf="activeTab === 'notes'" class="tab-content">
+      <!-- Add note form -->
+      <div class="card">
+        <div class="card-head"><span class="card-label">Add Note</span></div>
+        <div class="note-form">
+          <div class="form-row-2">
+            <div class="form-field">
+              <label class="field-label">Stage</label>
+              <div class="stage-pills">
+                <button *ngFor="let s of stageNoteOptions" type="button" class="stage-pill"
+                  [class.active]="newStage === s.value" [attr.data-stage]="s.value"
+                  (click)="newStage = s.value">{{ s.label }}</button>
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="field-label">Rating <span class="field-hint">(optional)</span></label>
+              <div class="star-row">
+                <button *ngFor="let s of stars(); let i = index" type="button" class="star-btn"
+                  [class.lit]="i + 1 <= newRating" (click)="setRating(i + 1)">★</button>
+                <button *ngIf="newRating > 0" type="button" class="clear-stars" (click)="setRating(0)">Clear</button>
+              </div>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Note</label>
+            <textarea class="note-textarea" [(ngModel)]="newNote"
+              placeholder="Add interview feedback, observations, or assessment notes…"
+              rows="4" maxlength="2000"></textarea>
+            <span class="char-count">{{ newNote.length }}/2000</span>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" [disabled]="savingNote || !newNote.trim()" (click)="submitNote()">
+              <span *ngIf="savingNote" class="btn-spinner"></span>
+              <span>{{ savingNote ? 'Saving…' : 'Save Note' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="notesLoading" class="loading-row">
+        <div class="spinner-sm"></div><span>Loading notes…</span>
+      </div>
+
+      <div *ngIf="!notesLoading && notes.length === 0" class="empty-state">
+        <span class="empty-icon">📝</span>
+        <p>No notes yet. Add the first one above.</p>
+      </div>
+
+      <div *ngFor="let n of notes; trackBy: trackByNote" class="note-card">
+        <div class="note-header">
+          <div class="note-author">
+            <div class="note-av">{{ noteInitials(n.author?.name || '?') }}</div>
+            <div>
+              <p class="note-name">{{ n.author?.name || 'Unknown' }}</p>
+              <p class="note-role">{{ n.author?.role | titlecase }}</p>
+            </div>
+          </div>
+          <div class="note-meta">
+            <span class="stage-tag" [attr.data-stage]="n.stage">{{ n.stage | titlecase }}</span>
+            <span class="note-date">{{ formatNoteDate(n.createdAt) }}</span>
+            <button *ngIf="canDeleteNote(n)" class="del-btn" (click)="deleteNote(n.id)" [disabled]="deletingNoteId === n.id">
+              <span *ngIf="deletingNoteId === n.id" class="btn-spinner" style="width:11px;height:11px;border-width:1.5px"></span>
+              <svg *ngIf="deletingNoteId !== n.id" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div *ngIf="n.rating > 0" class="note-stars">
+          <span *ngFor="let s of stars(); let i = index" class="note-star" [class.note-star--lit]="i + 1 <= n.rating">★</span>
+        </div>
+        <p class="note-body">{{ n.note }}</p>
+      </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════ EVALUATION ══ -->
+    <div *ngIf="activeTab === 'evaluation'" class="tab-content">
+      <div *ngIf="evaluationLoading" class="loading-row">
+        <div class="spinner-sm"></div><span>Loading requirements…</span>
+      </div>
+
+      <div *ngIf="!loading && jobCompetencies.length > 0">
+        <div class="eval-actions-bar">
+          <button class="btn-primary" (click)="openAssessment()">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+            Start Formal Assessment
+          </button>
+          <p class="eval-actions-hint">Use formal assessments to track Draft/Submitted evaluations with structured scoring.</p>
+        </div>
+
+        <div *ngFor="let group of getEvaluationGroups()" class="card eval-group">
+          <div class="card-head">
+            <span class="card-label">{{ group[0] | titlecase }} Competencies</span>
+            <div class="group-badge" [class.badge--complete]="getCategoryStats(group[1]).pct === 100">
+              {{ getCategoryStats(group[1]).rated }}/{{ getCategoryStats(group[1]).total }} Rated
+            </div>
+          </div>
+
+          <div class="eval-grid">
+            <div class="eval-header-row">
+              <div class="col-name">Competency</div>
+              <div class="col-req">Required</div>
+              <div class="col-eval">Evaluated Level</div>
+              <div class="col-gap">Gap</div>
+            </div>
+
+            <div *ngFor="let jc of group[1]" class="eval-row">
+              <div class="col-name">
+                <p class="comp-name">{{ jc.name }}</p>
+                <p class="comp-desc" *ngIf="jc.description">{{ jc.description }}</p>
+              </div>
+              
+              <div class="col-req">
+                <div class="dot-rating dots--static">
+                  <span *ngFor="let s of stars()" class="dot" [class.dot--filled]="s <= jc.requiredLevel"></span>
+                </div>
+              </div>
+
+              <div class="col-eval">
+                <div class="dot-rating dots--interactive" [class.is-saving]="savingCompId === jc.competenceId">
+                  <button *ngFor="let s of stars()" class="dot-btn" 
+                    [class.dot--filled]="s <= (competencyScores[jc.competenceId] || 0)"
+                    (click)="updateCompetencyRating(jc.competenceId, s)">
+                    <span class="dot-inner"></span>
+                  </button>
+                  <div *ngIf="savingCompId === jc.competenceId" class="spinner-xs rating-spinner"></div>
+                </div>
+                <span *ngIf="competencyScores[jc.competenceId] === undefined" class="unrated-label">Not yet rated</span>
+              </div>
+
+              <div class="col-gap">
+                <div *ngIf="getGapInfo(jc.requiredLevel, competencyScores[jc.competenceId]) as gap" 
+                  class="gap-badge" [attr.data-status]="gap.status" [style.background-color]="getGapColor(jc.requiredLevel, competencyScores[jc.competenceId])">
+                  {{ gap.value }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ══════════════════════════════════════════ SCORING ══ -->
+    <div *ngIf="activeTab === 'scoring'" class="tab-content">
+
+      <div *ngIf="scoreLoading" class="loading-row">
+        <div class="spinner-sm"></div><span>Calculating score…</span>
+      </div>
+
+      <div *ngIf="!scoreLoading && !score" class="empty-state">
+        <span class="empty-icon">📊</span>
+        <p>Could not calculate score. Make sure the candidate has a CV uploaded.</p>
+      </div>
+
+      <ng-container *ngIf="!scoreLoading && score">
+        <!-- Score Hero -->
+        <div class="card score-hero">
+          <div class="gauge-wrap">
+            <svg width="148" height="148" viewBox="0 0 148 148">
+              <circle cx="74" cy="74" r="54" fill="none" stroke="var(--border-subtle)" stroke-width="10"/>
+              <circle cx="74" cy="74" r="54" fill="none"
+                [attr.stroke]="scoreColor(score.totalScore)"
+                stroke-width="10" stroke-linecap="round"
+                stroke-dasharray="339.3"
+                [attr.stroke-dashoffset]="gaugeOffset(score.totalScore)"
+                transform="rotate(-90 74 74)"
+                style="transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1)"/>
+            </svg>
+            <div class="gauge-inner">
+              <span class="gauge-num" [style.color]="scoreColor(score.totalScore)">{{ score.totalScore }}</span>
+              <span class="gauge-denom">/100</span>
+            </div>
+          </div>
+          <div class="score-hero-info">
+            <div class="score-label" [style.background]="scoreGradient(score.totalScore)">{{ score.totalScore >= 80 ? 'Exceptional' : score.totalScore >= 60 ? 'Strong' : score.totalScore >= 40 ? 'Fair' : 'Weak' }}</div>
+            <p class="score-hero-title">Competency-Based Score</p>
+            <p class="score-hero-sub">Evaluated against <strong>{{ app.jobTitle }}</strong></p>
+            <div class="score-sources">
+              <span class="src-chip" [class.src-on]="score.breakdown?.technical?.available">⚙️ Technical</span>
+              <span class="src-chip" [class.src-on]="score.breakdown?.interview?.available">💬 Interviews</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Missing data warning -->
+
+
+        <!-- Breakdown -->
+        <div class="card">
+          <div class="card-head"><span class="card-label">Score Breakdown</span></div>
+          <div class="score-breakdown">
+            <!-- Technical -->
+            <div class="score-row">
+              <div class="score-row-info">
+                <span class="score-row-label">Technical Skills</span>
+                <span class="score-row-sub">Manual ratings & CV match</span>
+              </div>
+              <div class="score-bar-wrap">
+                <div class="score-bar" [style.width.%]="score.breakdown?.technical?.score" [style.background]="scoreColor(score.breakdown?.technical?.score)"></div>
+              </div>
+              <span class="score-pct" [style.color]="scoreColor(score.breakdown?.technical?.score)">{{ score.breakdown?.technical?.score }}%</span>
+              <span class="score-weight">×{{ score.breakdown?.technical?.weight }}%</span>
+            </div>
+
+
+
+            <!-- Interviews -->
+            <div class="score-row">
+              <div class="score-row-info">
+                <span class="score-row-label">Interviews</span>
+                <span class="score-row-sub">Average cross-round score</span>
+              </div>
+              <ng-container *ngIf="score.breakdown?.interview?.available; else interviewNA">
+                <div class="score-bar-wrap">
+                  <div class="score-bar" [style.width.%]="score.breakdown?.interview?.score" [style.background]="scoreColor(score.breakdown?.interview?.score)"></div>
+                </div>
+                <span class="score-pct" [style.color]="scoreColor(score.breakdown?.interview?.score)">{{ score.breakdown?.interview?.score }}%</span>
+                <span class="score-weight">×{{ score.breakdown?.interview?.weight }}%</span>
+              </ng-container>
+              <ng-template #interviewNA><span class="score-na">Complete an interview to include</span></ng-template>
+            </div>
+          </div>
+        </div>
+
+        <!-- Skills Analysis -->
+        <div class="card" *ngIf="score.matchedSkills?.length || score.missingSkills?.length">
+          <div class="card-head"><span class="card-label">Technical Keywords Match</span></div>
+          <div class="skills-analysis">
+            <div *ngIf="score.matchedSkills?.length">
+              <p class="skills-col-title match-title">✓ Found on CV</p>
+              <div class="skills-wrap" style="padding:0;margin-top:8px;gap:.6rem;">
+                <span *ngFor="let s of score.matchedSkills" class="skill-chip skill--match">{{ s | titlecase }}</span>
+              </div>
+            </div>
+            <div *ngIf="score.missingSkills?.length">
+              <p class="skills-col-title miss-title">✕ Missing</p>
+              <div class="skills-wrap" style="padding:0;margin-top:8px;gap:.6rem;">
+                <span *ngFor="let s of score.missingSkills" class="skill-chip skill--miss">{{ s | titlecase }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </div>
+
+    <!-- ══════════════════════════════════════════ INTERVIEWS ══ -->
+    <div *ngIf="activeTab === 'interviews'" class="tab-content">
+
+      <div class="interviews-header">
+        <h3 class="section-title">Scheduled Interviews</h3>
+        <button class="btn-primary" (click)="showInterviewModal = true">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Schedule Interview
+        </button>
+      </div>
+
+      <div *ngIf="interviewsLoading" class="loading-row">
+        <div class="spinner-sm"></div><span>Loading interviews…</span>
+      </div>
+
+      <div *ngIf="!interviewsLoading && interviews.length === 0" class="empty-state">
+        <span class="empty-icon">📅</span>
+        <p>No interviews scheduled yet.</p>
+      </div>
+
+      <div *ngFor="let it of interviews" class="interview-card" [class.iv-completed]="it.status === 'completed'">
+        <div class="iv-header">
+          <div class="iv-type-icon">{{ it.type === 'technical' ? '⚙️' : it.type === 'Final' ? '🏁' : '💬' }}</div>
+          <div class="iv-info">
+            <p class="iv-title">{{ it.type }} Interview</p>
+            <p class="iv-sub">{{ it.interviewerName }} · {{ it.scheduledAt | date:'MMM d, yyyy · HH:mm' }}</p>
+          </div>
+          <span class="iv-status" [attr.data-status]="it.status">{{ it.status | titlecase }}</span>
+        </div>
+        <div class="iv-results" *ngIf="it.status === 'completed'">
+          <div class="iv-scores">
+            <span class="iv-score-chip">⚙️ Technical: {{ it.technicalScore }}/5</span>
+            <span class="iv-score-chip">💬 Communication: {{ it.communicationScore }}/5</span>
+            <span class="iv-decision" [attr.data-decision]="it.decision">{{ it.decision | titlecase }}</span>
+          </div>
+          <p *ngIf="it.feedback" class="iv-feedback">{{ it.feedback }}</p>
+        </div>
+        <div class="iv-actions" *ngIf="it.status !== 'completed'">
+          <button class="btn-outline" (click)="openFeedbackModal(it)">Post Feedback</button>
+          <a *ngIf="it.meetingUrl" [href]="it.meetingUrl" target="_blank" class="btn-meet">Join Meeting ↗</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════════ ACTIVITY ══ -->
+    <div *ngIf="activeTab === 'activity'" class="tab-content">
+      <div *ngIf="activityLoading" class="loading-row">
+        <div class="spinner-sm"></div><span>Loading activity…</span>
+      </div>
+      <div class="card" *ngIf="!activityLoading">
+        <div class="card-head"><span class="card-label">Activity Feed</span></div>
+        <div class="activity-list" *ngIf="activity.length > 0">
+          <div class="act-item" *ngFor="let a of activity; trackBy: trackByAct">
+            <div class="act-icon">{{ getActivityIcon(a.action) }}</div>
+            <div class="act-body">
+              <div class="act-row">
+                <span class="act-label">{{ formatActivityLabel(a.action) }}</span>
+                <span class="act-date">{{ formatDate(a.createdAt) }}</span>
+              </div>
+              <p class="act-desc" *ngIf="a.description">{{ a.description }}</p>
+              <div class="act-stage-change" *ngIf="a.metadata?.from || a.metadata?.to">
+                <span class="stage-tag" [attr.data-stage]="a.metadata?.from">{{ a.metadata?.from | titlecase }}</span>
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                <span class="stage-tag" [attr.data-stage]="a.metadata?.to">{{ a.metadata?.to | titlecase }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="empty-state" style="border:none" *ngIf="activity.length === 0">
+          <span class="empty-icon">🕐</span>
+          <p>No activity yet.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ INTERVIEW MODAL ══ -->
+    <div class="modal-overlay" *ngIf="showInterviewModal" (click)="showInterviewModal = false">
+      <div class="modal" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Schedule Interview</h3>
+          <button class="modal-close" (click)="showInterviewModal = false">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-field">
+            <label class="field-label">Type</label>
+            <select class="field-select" [(ngModel)]="interviewForm.type">
+              <option value="Technical">Technical</option>
+              <option value="HR">HR / Fit</option>
+              <option value="Final">Final</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Date & Time</label>
+            <input type="datetime-local" class="field-input" [(ngModel)]="interviewForm.scheduledAt" [min]="minDate" [max]="maxDate"/>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Interviewer Name</label>
+            <input type="text" class="field-input" [(ngModel)]="interviewForm.interviewerName" placeholder="e.g. Sarah Connor"/>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Meeting URL <span class="field-hint">(optional)</span></label>
+            <input type="text" class="field-input" [(ngModel)]="interviewForm.meetingUrl" placeholder="https://meet.google.com/…"/>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-outline" (click)="showInterviewModal = false">Cancel</button>
+          <button class="btn-primary" (click)="scheduleInterview()" [disabled]="isScheduling">
+            <span *ngIf="isScheduling" class="btn-spinner"></span>
+            {{ isScheduling ? 'Scheduling…' : 'Confirm' }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ FEEDBACK MODAL ══ -->
+    <div class="modal-overlay" *ngIf="showFeedbackModal" (click)="showFeedbackModal = false">
+      <div class="modal modal--wide" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h3>Interview Feedback</h3>
+          <button class="modal-close" (click)="showFeedbackModal = false">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="modal-body">
+
+          <!-- General Scores -->
+          <div class="feedback-section-title">General Interview Scores</div>
+          <div class="feedback-scores">
+            <div class="form-field">
+              <label class="field-label">Technical Score</label>
+              <div class="star-row">
+                <button *ngFor="let s of stars()" class="star-btn" [class.lit]="s <= feedbackForm.technicalScore" (click)="feedbackForm.technicalScore = s">★</button>
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="field-label">Communication</label>
+              <div class="star-row">
+                <button *ngFor="let s of stars()" class="star-btn" [class.lit]="s <= feedbackForm.communicationScore" (click)="feedbackForm.communicationScore = s">★</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Per-Competency Ratings -->
+          <div class="feedback-section-title" *ngIf="jobCompetencies.length > 0">
+            Rate Candidate on Each Required Competency
+            <span class="feedback-comp-hint">{{ jobCompetencies.length }} competencies for this role</span>
+          </div>
+          <div *ngIf="jobCompetencies.length === 0" class="feedback-comp-empty">
+            <span>No competencies defined for this job role.</span>
+          </div>
+          <div class="feedback-comp-grid" *ngIf="jobCompetencies.length > 0">
+            <div *ngFor="let jc of jobCompetencies" class="feedback-comp-row">
+              <div class="feedback-comp-info">
+                <span class="feedback-comp-name">{{ jc.name }}</span>
+                <span class="feedback-comp-cat">{{ jc.category }}</span>
+                <span class="feedback-comp-req">Required: {{ jc.requiredLevel }}/5</span>
+              </div>
+              <div class="feedback-comp-dots">
+                <button *ngFor="let s of stars()" class="dot-btn"
+                  [class.dot--filled]="s <= (feedbackCompRatings[jc.competenceId] || 0)"
+                  (click)="setFeedbackCompRating(jc.competenceId, s)">
+                  <span class="dot-inner"></span>
+                </button>
+                <span class="feedback-comp-val" *ngIf="feedbackCompRatings[jc.competenceId]">
+                  {{ feedbackCompRatings[jc.competenceId] }}/5
+                  <span class="feedback-comp-gap"
+                    [style.color]="getGapColor(jc.requiredLevel, feedbackCompRatings[jc.competenceId])">
+                    {{ getGapInfo(jc.requiredLevel, feedbackCompRatings[jc.competenceId])?.value }}
+                  </span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Decision & Comments -->
+          <div class="form-field" style="margin-top:1.25rem">
+            <label class="field-label">Decision</label>
+            <div class="decision-row">
+              <button class="decision-btn" [class.active-pass]="feedbackForm.decision === 'pass'" (click)="feedbackForm.decision = 'pass'">✅ Pass</button>
+              <button class="decision-btn" [class.active-maybe]="feedbackForm.decision === 'maybe'" (click)="feedbackForm.decision = 'maybe'">➖ Maybe</button>
+              <button class="decision-btn" [class.active-fail]="feedbackForm.decision === 'fail'" (click)="feedbackForm.decision = 'fail'">❌ No-go</button>
+            </div>
+          </div>
+          <div class="form-field">
+            <label class="field-label">Comments</label>
+            <textarea class="field-textarea" [(ngModel)]="feedbackForm.feedback" rows="4" placeholder="Strengths, weaknesses, red flags…"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn-outline" (click)="showFeedbackModal = false">Cancel</button>
+          <button class="btn-primary" (click)="submitFeedback()">Save Feedback & Ratings</button>
+        </div>
+      </div>
+    </div>
+
+
+  </ng-container>
+
+  <!-- Assessment Panel Sidebar -->
+  <app-assessment-panel 
+    *ngIf="showAssessmentPanel"
+    [targetId]="applicationId"
+    type="application"
+    [requirements]="jobCompetencies"
+    (close)="showAssessmentPanel = false"
+    (submitted)="onAssessmentSubmitted()">
+  </app-assessment-panel>
+
+  <!-- ── Promotion Modal ── -->
+  <div class="modal-overlay" *ngIf="showPromoteModal" (click)="showPromoteModal = false">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Promote Candidate to Employee</h3>
+        <button class="modal-close" (click)="showPromoteModal = false">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="promote-intro" style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 0.9rem;">
+          Promoting <strong>{{ app.candidateName }}</strong> will create a new employee record and close this application.
+        </p>
+        
+        <div class="form-field">
+          <label class="field-label">Employee ID <span class="required">*</span></label>
+          <input type="text" class="field-input" [(ngModel)]="promoteForm.employeeId" placeholder="e.g. EMP-1234"/>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">Hire Date <span class="required">*</span></label>
+          <input type="date" class="field-input" [(ngModel)]="promoteForm.hireDate"/>
+        </div>
+
+        <div class="form-field">
+          <label class="field-label">Reporting Manager</label>
+          <select class="field-select" [(ngModel)]="promoteForm.managerId">
+            <option value="">-- No direct manager --</option>
+            <option *ngFor="let m of managers" [value]="m.id">
+              {{ m.first_name }} {{ m.last_name }} ({{ m.role | uppercase }})
+            </option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-outline" (click)="showPromoteModal = false">Cancel</button>
+        <button class="btn-promote" [disabled]="promoting" (click)="confirmPromotion()">
+          <span *ngIf="!promoting">Confirm Promotion ✨</span>
+          <span *ngIf="promoting" class="btn-spinner"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

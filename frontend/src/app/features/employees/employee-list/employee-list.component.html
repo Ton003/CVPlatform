@@ -1,0 +1,271 @@
+<div class="emp-container">
+  <!-- Header -->
+  <header class="emp-header">
+    <div class="emp-header-left">
+      <h1 class="emp-title">Employee Directory</h1>
+      <p class="emp-subtitle">{{ total }} staff members in the database</p>
+    </div>
+    <div class="emp-header-actions">
+      <button class="emp-btn emp-btn--primary" (click)="openAddModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+          <circle cx="8.5" cy="7" r="4" />
+          <line x1="20" y1="8" x2="20" y2="14" />
+          <line x1="23" y1="11" x2="17" y2="11" />
+        </svg>
+        Add Legacy Hire
+      </button>
+    </div>
+  </header>
+
+  <!-- Filters Bar -->
+  <div class="emp-filters card">
+    <div class="filter-group">
+      <label>Business Unit</label>
+      <select [(ngModel)]="filters.buId" (change)="onBUChange()">
+        <option value="">All Units</option>
+        <option *ngFor="let bu of businessUnits" [value]="bu.id">{{ bu.name }}</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Department</label>
+      <select [(ngModel)]="filters.departmentId" (change)="onDepartmentChange()" [disabled]="!filters.buId">
+        <option value="">All Departments</option>
+        <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label>Job Role</label>
+      <select [(ngModel)]="filters.roleId" (change)="loadEmployees()" [disabled]="!filters.departmentId">
+        <option value="">All Roles</option>
+        <option *ngFor="let r of roles" [value]="r.id">{{ r.name }}</option>
+      </select>
+    </div>
+    <!-- FIX: bound [(ngModel)] to filters.search and wired (ngModelChange) to debounced handler -->
+    <div class="filter-group search-box">
+      <label>Search</label>
+      <div class="input-wrapper">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input type="text" [(ngModel)]="filters.search" (ngModelChange)="onSearchChange()"
+          placeholder="Name, email or ID...">
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="emp-table-wrapper card">
+    <div class="loading-overlay" *ngIf="loading">
+      <div class="spinner"></div>
+    </div>
+
+    <table class="emp-table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>ID</th>
+          <th>Job Role &amp; Rank</th>
+          <th>Status</th>
+          <th>Hire Date</th>
+          <th>Manager</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let emp of employees" (click)="goToProfile(emp.id)" class="row-hover">
+          <td>
+            <div class="emp-info">
+              <div class="emp-avatar">{{ getInitials(emp) }}</div>
+              <div class="emp-names">
+                <span class="full-name">{{ emp.firstName }} {{ emp.lastName }}</span>
+                <span class="emp-email">{{ emp.email }}</span>
+              </div>
+            </div>
+          </td>
+          <td><span class="emp-id-tag">{{ emp.employeeId }}</span></td>
+          <td>
+            <div class="role-info">
+              <span class="role-name">{{ emp.jobRole?.name }}</span>
+              <span class="role-rank">Rank {{ emp.jobRoleLevel?.levelNumber }}</span>
+            </div>
+          </td>
+          <td>
+            <span class="status-badge" [attr.data-status]="emp.status">
+              {{ emp.status | titlecase }}
+            </span>
+          </td>
+          <td class="date-cell">{{ emp.hireDate | date:'mediumDate' }}</td>
+          <td>
+            <div class="manager-link" *ngIf="emp.manager">
+              {{ emp.manager.firstName }} {{ emp.manager.lastName }}
+            </div>
+            <span class="no-manager" *ngIf="!emp.manager">—</span>
+          </td>
+          <td class="cell-actions" (click)="$event.stopPropagation()">
+            <button class="icon-btn delete-btn" (click)="requestDelete(emp.id, $event)" title="Delete employee">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+              </svg>
+            </button>
+            <button class="icon-btn" (click)="goToProfile(emp.id)" title="View profile">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </button>
+          </td>
+        </tr>
+        <tr *ngIf="!loading && employees.length === 0">
+          <td colspan="7" class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+              <circle cx="8.5" cy="7" r="4" />
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <p>No employees found matching your criteria.</p>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- FIX: pagination now includes prev/next controls and page numbers -->
+    <div class="emp-pagination" *ngIf="total > filters.limit">
+      <span class="pagination-info">
+        Showing {{ (filters.page - 1) * filters.limit + 1 }}–{{ filters.page * filters.limit < total ? filters.page * filters.limit : total }} of {{ total }}
+      </span>
+      <div class="pagination-controls">
+        <button class="page-btn" (click)="goToPage(filters.page - 1)" [disabled]="filters.page === 1">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="15 18 9 12 15 6" />
+          </svg>
+        </button>
+        <span class="page-indicator">{{ filters.page }} / {{ totalPages }}</span>
+        <button class="page-btn" (click)="goToPage(filters.page + 1)" [disabled]="filters.page === totalPages">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legacy Hire Modal -->
+  <div class="modal-overlay" *ngIf="showAddModal" (click)="showAddModal = false">
+    <div class="modal card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Add Legacy Hire</h2>
+        <button class="close-btn" (click)="showAddModal = false" aria-label="Close">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Employee ID</label>
+            <input type="text" [(ngModel)]="hireForm.employeeId" placeholder="e.g. EMP-1234">
+          </div>
+          <div class="form-group">
+            <label>Hire Date</label>
+            <input type="date" [(ngModel)]="hireForm.hireDate">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>First Name <span class="required">*</span></label>
+            <input type="text" [(ngModel)]="hireForm.firstName" placeholder="First name">
+          </div>
+          <div class="form-group">
+            <label>Last Name</label>
+            <input type="text" [(ngModel)]="hireForm.lastName" placeholder="Last name">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Email Address <span class="required">*</span></label>
+          <input type="email" [(ngModel)]="hireForm.email" placeholder="employee@company.com">
+        </div>
+
+        <hr class="form-sep">
+        <p class="section-hint">Assign to job architecture</p>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Business Unit</label>
+            <select [(ngModel)]="hireForm.buId" (change)="onModalBUChange()">
+              <option value="">Select unit...</option>
+              <option *ngFor="let bu of businessUnits" [value]="bu.id">{{ bu.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Department</label>
+            <select [(ngModel)]="hireForm.departmentId" (change)="onModalDepartmentChange()"
+              [disabled]="!hireForm.buId">
+              <option value="">Select department...</option>
+              <option *ngFor="let d of modalDepartments" [value]="d.id">{{ d.name }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Job Role</label>
+            <select [(ngModel)]="hireForm.roleId" (change)="onModalRoleChange()" [disabled]="!hireForm.departmentId">
+              <option value="">Select role...</option>
+              <option *ngFor="let r of modalRoles" [value]="r.id">{{ r.name }}</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Career Rank <span class="required">*</span></label>
+            <select [(ngModel)]="hireForm.rankId" [disabled]="!hireForm.roleId">
+              <option value="">Select rank...</option>
+              <option *ngFor="let level of modalRanks" [value]="level.id">
+                {{ level.title }} (Level {{ level.levelNumber }})
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div *ngIf="hiringError" class="error-banner">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          {{ hiringError }}
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="showAddModal = false" [disabled]="savingHire">Cancel</button>
+        <button class="btn-primary" (click)="submitLegacyHire()" [disabled]="savingHire">
+          <span *ngIf="savingHire" class="spinner-inline"></span>
+          {{ savingHire ? 'Saving...' : 'Confirm Hire' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" *ngIf="pendingDeleteId" (click)="pendingDeleteId = null">
+    <div class="modal card modal--small" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Confirm Deletion</h2>
+        <button class="close-btn" (click)="pendingDeleteId = null" aria-label="Close">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p class="delete-warning">This action is permanent and will remove the employee along with all associated
+          competency history.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" (click)="pendingDeleteId = null" [disabled]="deleting">Cancel</button>
+        <!-- FIX: both states showed "Delete Permanently" — now shows "Deleting..." while in-flight -->
+        <button class="btn-danger" (click)="confirmDelete()" [disabled]="deleting">
+          <span *ngIf="deleting" class="spinner-inline spinner-inline--danger"></span>
+          {{ deleting ? 'Deleting...' : 'Delete Permanently' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

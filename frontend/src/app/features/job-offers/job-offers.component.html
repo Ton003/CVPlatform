@@ -1,193 +1,474 @@
-<!-- ══ Topbar ══════════════════════════════════════════════════════ -->
+<!-- ───────────────────────── TOPBAR ───────────────────────── -->
 <div class="topbar">
-  <div>
+  <div class="topbar-left">
     <h1 class="page-title">Job Offers</h1>
     <p class="page-sub">Post roles and match candidates with AI</p>
   </div>
+
   <div class="topbar-right">
-    <!-- View Toggle -->
     <div class="view-toggle">
-      <button class="view-btn" [class.active]="viewMode === 'grid'" (click)="viewMode = 'grid'" title="Grid view">
+      <button
+        class="view-btn"
+        [class.active]="viewMode === 'grid'"
+        (click)="viewMode = 'grid'"
+        title="Grid"
+        type="button"
+      >
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
         </svg>
       </button>
-      <button class="view-btn" [class.active]="viewMode === 'list'" (click)="viewMode = 'list'" title="List view">
+
+      <button
+        class="view-btn"
+        [class.active]="viewMode === 'list'"
+        (click)="viewMode = 'list'"
+        title="List"
+        type="button"
+      >
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
     </div>
+
     <span class="role-chip" [attr.data-role]="userRole">{{ userRole }}</span>
-    <button class="btn-action btn-action--primary" (click)="openForm()">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+
+    <button class="btn-primary" (click)="openNewForm()" type="button">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
       </svg>
       New Offer
     </button>
   </div>
 </div>
 
-<!-- Error banner -->
-<div class="alert-error" *ngIf="error">
-  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-  </svg>
-  {{ error }}
-  <button class="alert-close" (click)="error = ''">✕</button>
-</div>
-
-<!-- Create form -->
-<div class="form-card" *ngIf="showForm">
-  <div class="form-card-head">
-    <span class="form-card-title">{{ editingId ? 'Edit Job Offer' : 'New Job Offer' }}</span>
-    <button class="btn-icon" (click)="cancelForm()">
-      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-      </svg>
-    </button>
-  </div>
-  <div class="form-body">
-    <div class="form-row">
-      <div class="form-group">
-        <label class="field-label">Job Title *</label>
-        <input class="field-input" [(ngModel)]="form.title" placeholder="e.g. Senior Angular Developer" maxlength="200"/>
-      </div>
-      <div class="form-group">
-        <label class="field-label">Location</label>
-        <input class="field-input" [(ngModel)]="form.location" placeholder="e.g. Tunis, Tunisia"/>
-      </div>
-    </div>
-
-    <div class="form-group">
-      <label class="field-label">Description *</label>
-      <textarea class="field-textarea" [(ngModel)]="form.description" rows="4"
-        placeholder="Describe the role, responsibilities and requirements..."></textarea>
-    </div>
-
-    <div class="form-row">
-      <div class="form-group">
-        <label class="field-label">Required Skills <span class="field-hint">(comma-separated)</span></label>
-        <input class="field-input" [(ngModel)]="form.requiredSkills" placeholder="e.g. Angular, TypeScript, RxJS"/>
-      </div>
-      <div class="form-group form-group--sm">
-        <label class="field-label">Min. Experience (years)</label>
-        <input class="field-input" [(ngModel)]="form.minYears" type="number" min="0" placeholder="e.g. 3"/>
-      </div>
-      <div class="form-group form-group--sm">
-        <label class="field-label">Status</label>
-        <select class="field-select" [(ngModel)]="form.status">
-          <option value="open">Open</option>
-          <option value="closed">Closed</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="form-actions">
-      <button class="btn-action" (click)="cancelForm()">Cancel</button>
-      <button class="btn-action btn-action--primary" (click)="submitForm()" [disabled]="saving || !form.title.trim() || !form.description.trim()">
-        <span class="spinner" *ngIf="saving"></span>
-        {{ saving ? 'Saving…' : (editingId ? 'Save Changes' : 'Create Offer') }}
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- Skeleton loading -->
-<div class="offers-grid" *ngIf="loading">
-  <div class="offer-card offer-card--skeleton" *ngFor="let i of [1,2,3]">
-    <div class="skel skel--title"></div>
-    <div class="skel skel--sub"></div>
-    <div class="skel skel--sub" style="width:55%"></div>
-  </div>
-</div>
-
-<!-- Empty state -->
-<div class="empty-state" *ngIf="!loading && !error && offers.length === 0 && !showForm">
-  <div class="empty-icon-wrap">
-    <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+<!-- ───────────────────────── ERROR ───────────────────────── -->
+@if (error) {
+  <div class="alert-error">
+    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
+    {{ error }}
+    <button class="alert-close" (click)="error = ''" type="button">✕</button>
   </div>
-  <p class="empty-title">No job offers yet</p>
-  <p class="empty-sub">Create your first job offer and let AI match the best candidates from your pool.</p>
-  <button class="btn-action btn-action--primary" (click)="openForm()">Create First Offer</button>
-</div>
+}
 
-<!-- Offers grid / list -->
-<div class="offers-grid" [class.offers-list]="viewMode === 'list'" *ngIf="!loading && offers.length > 0">
-  <div class="offer-card" *ngFor="let offer of offers" (click)="viewMatches(offer.id)">
-    <div class="offer-card-head">
-      <div class="offer-info">
-        <h3 class="offer-title">{{ offer.title }}</h3>
-        <div class="offer-meta">
-          <span class="meta-item" *ngIf="offer.location">
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+<!-- ───────────────────────── LOADING ───────────────────────── -->
+@if (loading) {
+  <div class="offers-grid">
+    @for (i of [1, 2, 3]; track i) {
+      <div class="offer-card offer-card--skeleton">
+        <div class="skel skel--title"></div>
+        <div class="skel skel--sub"></div>
+        <div class="skel skel--sub" style="width:55%"></div>
+      </div>
+    }
+  </div>
+}
+
+<!-- ───────────────────────── EMPTY ───────────────────────── -->
+@if (!loading && !error && offers.length === 0) {
+  <div class="empty-state">
+    <div class="empty-icon">💼</div>
+    <p class="empty-title">No job offers yet</p>
+    <p class="empty-sub">Create your first job offer and let AI match the best candidates.</p>
+    <button class="btn-primary" (click)="openNewForm()" type="button">Create First Offer</button>
+  </div>
+}
+
+<!-- ───────────────────────── OFFERS ───────────────────────── -->
+@if (!loading && offers.length > 0) {
+  <div class="offers-grid" [class.offers-list]="viewMode === 'list'">
+    @for (offer of offers; track offer.id) {
+      <div class="offer-card" [class.card--deleting]="deletingId === offer.id">
+        <div class="offer-head">
+          <div class="offer-info">
+            <h3 class="offer-title">{{ offer.title }}</h3>
+
+            <div class="offer-meta">
+              <span class="meta-item jo-badge--contract">{{ offer.contractType || 'CDI' }}</span>
+              <span class="meta-item jo-badge--workmode">{{ offer.workMode || 'Remote' }}</span>
+              
+              <span class="meta-item jo-context-path">
+                {{ offer.snapshot?.orgContext?.businessUnit || offer.snapshot?.orgContext?.department }}
+              </span>
+
+              <span class="meta-item">{{ formatDate(offer.createdAt) }}</span>
+            </div>
+          </div>
+
+          <div class="offer-actions">
+            <span
+              class="status-chip"
+              [class.status-chip--open]="offer.status === 'open'"
+              [class.status-chip--closed]="offer.status === 'closed'"
+              [class.status-chip--draft]="offer.status === 'draft'"
+            >
+              {{ offer.status }}
+            </span>
+
+            <button class="icon-btn" (click)="openEditForm(offer, $event)" title="Edit" type="button">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
+
+            <button class="icon-btn icon-btn--danger" (click)="requestDelete(offer.id, $event)" title="Delete" type="button">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <p class="offer-desc">{{ offer.description }}</p>
+
+        @if (offer.snapshot?.competencies?.length) {
+          <div class="skills-row">
+            @for (r of visibleSkills(offer.snapshot.competencies, offer.id); track $index) {
+              <span class="skill-chip skill-chip--snapshot">{{ r.name }} (Level {{ r.requiredLevel }})</span>
+            }
+
+            @if (offer.snapshot.competencies.length > 5 && !expandedSkills[offer.id]) {
+              <span class="skill-more cursor-pointer" (click)="toggleSkills(offer.id, $event)">+{{ offer.snapshot.competencies.length - 5 }} Target</span>
+            }
+          </div>
+        }
+
+        <div class="offer-footer">
+          <button class="btn-match" (click)="viewMatches(offer.id, $event)" type="button">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
             </svg>
-            {{ offer.location }}
-          </span>
-          <span class="meta-item" *ngIf="offer.minYears">
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            AI Match
+          </button>
+
+          <button class="btn-pipeline" (click)="viewPipeline(offer.id, $event)" type="button">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7" />
             </svg>
-            {{ offer.minYears }}+ yrs
-          </span>
-          <span class="meta-item">
-            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            Pipeline
+            @if (offer.pipelineCount) {
+              <span class="count-badge">{{ offer.pipelineCount }}</span>
+            }
+          </button>
+
+          <button class="btn-compare" (click)="viewComparison(offer.id, $event)" type="button">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
-            {{ formatDate(offer.createdAt) }}
-          </span>
+            Compare
+          </button>
         </div>
       </div>
-      <div class="offer-actions">
-        <span class="status-chip" [class.status-chip--open]="offer.status === 'open'" [class.status-chip--closed]="offer.status === 'closed'">
-          {{ offer.status }}
-        </span>
-        <button class="btn-icon" (click)="editOffer(offer, $event)" title="Edit offer" style="margin-right: -4px;">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/>
-          </svg>
-        </button>
-        <button class="btn-icon btn-action--danger" (click)="requestDelete(offer.id, $event)" title="Delete offer" style="background: none; color: var(--text-secondary); box-shadow: none; padding: 6px; border-radius: var(--radius-sm);">
-          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+    }
+  </div>
+}
+
+<!-- ───────────────────────── MODAL ───────────────────────── -->
+@if (showModal) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-panel" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="modal-header">
+        <div>
+          <p class="modal-eyebrow">{{ editingId ? 'Edit Campaign' : 'Publish' }} Recruitment Offer</p>
+          <h2 class="modal-title">{{ form.title || 'Untitled Campaign' }}</h2>
+        </div>
+
+        <button class="modal-close" (click)="closeModal()" type="button">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
-    </div>
 
-    <p class="offer-desc">{{ offer.description }}</p>
+      <!-- Step Tabs -->
+      <div class="step-tabs">
+        <button class="step-tab" [class.active]="formStep === 'basics'" type="button">
+          <span class="step-num">1</span> Selection
+        </button>
+        <span class="step-sep">›</span>
 
-    <div class="skills-row" *ngIf="offer.requiredSkills.length">
-      <span class="skill-chip" *ngFor="let s of offer.requiredSkills.slice(0, 6)">{{ s }}</span>
-      <span class="skill-more" *ngIf="offer.requiredSkills.length > 6">+{{ offer.requiredSkills.length - 6 }}</span>
-    </div>
+        <button class="step-tab" [class.active]="formStep === 'details'" type="button">
+          <span class="step-num">2</span> Details
+        </button>
+        <span class="step-sep">›</span>
 
-    <div class="offer-footer">
-      <span class="match-cta">
-        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
-        </svg>
-        Click to find matching candidates
-      </span>
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="arrow-icon">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-      </svg>
+        <button class="step-tab" [class.active]="formStep === 'review'" type="button">
+          <span class="step-num">3</span> Review
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="modal-body custom-scrollbar">
+        <!-- STEP 1: ROLE SELECTION -->
+        @if (formStep === 'basics') {
+          <div class="step-content">
+            <div class="section-intro">
+              <h3 class="section-title">Organizational Role</h3>
+              <p class="section-hint">Select the architectural role blueprint this campaign is based on.</p>
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">Target Job Role <span class="req">*</span></label>
+              <select class="field-select" [(ngModel)]="selectedRoleId" (change)="onRoleChange()" [disabled]="!!editingId">
+                <option value="">— Select a Role —</option>
+                @for (role of activeRoles; track role.id) {
+                  <option [value]="role.id">
+                    {{ role.path }} > {{ role.name }}
+                  </option>
+                }
+              </select>
+            </div>
+
+            <div class="form-field" *ngIf="availableRanks.length">
+              <label class="field-label">Seniority Rank <span class="req">*</span></label>
+              <select class="field-select" [(ngModel)]="form.jobRoleLevelId" (change)="onRankChange()" [disabled]="!!editingId">
+                <option value="">— Select Seniority Rank —</option>
+                @for (rnk of availableRanks; track rnk.id) {
+                  <option [value]="rnk.id">Rank {{ rnk.levelNumber }}: {{ rnk.title }}</option>
+                }
+              </select>
+            </div>
+
+            @if (loadingBlueprint) {
+              <div class="p-4 text-center">
+                <div class="spinner-sm"></div>
+                <span class="ms-2">Fetching Blueprint...</span>
+              </div>
+            }
+
+            @if (selectedRankBlueprint && !loadingBlueprint) {
+              <div class="blueprint-preview mt-3">
+                <div class="blueprint-meta">
+                  <span class="blueprint-badge">ARCHITECTURAL PREVIEW</span>
+                  <div class="blueprint-mission mt-2">
+                    <strong>Mission:</strong> {{ selectedRankBlueprint.mission || 'N/A' }}
+                  </div>
+                  <div class="blueprint-comps mt-2">
+                    <strong>Target Competencies:</strong>
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                      @for (r of selectedRankBlueprint.competencyRequirements; track r.id) {
+                        <span class="mini-comp-chip">
+                          {{ r.competence.name }} (Level {{ r.requiredLevel }})
+                        </span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <div class="form-field mt-4 border-top pt-4">
+              <label class="field-label">Campaign Title <span class="req">*</span></label>
+              <input class="field-input" [(ngModel)]="form.title" placeholder="e.g. Senior Backend Engineer - Paris Q4" maxlength="200" />
+            </div>
+
+            <div class="form-field">
+              <label class="field-label">Internal Context / Notes</label>
+              <textarea
+                class="field-textarea"
+                [(ngModel)]="form.description"
+                rows="4"
+                placeholder="Private context for recruiters and hiring managers..."
+              ></textarea>
+            </div>
+          </div>
+        }
+
+        <!-- STEP 2: DETAILS -->
+        @if (formStep === 'details') {
+          <div class="step-content">
+            <div class="section-intro">
+              <h3 class="section-title">Hiring Particulars</h3>
+              <p class="section-hint">Define the contractual and logistical terms for this specific posting.</p>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-field">
+                <label class="field-label">Contract Type</label>
+                <select class="field-select" [(ngModel)]="form.contractType">
+                  <option value="CDI">CDI (Permanent)</option>
+                  <option value="CDD">CDD (Fixed-Term)</option>
+                  <option value="CIVP">CIVP</option>
+                  <option value="Internship">Internship</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label class="field-label">Work Mode</label>
+                <select class="field-select" [(ngModel)]="form.workMode">
+                  <option value="Hybrid">Hybrid</option>
+                  <option value="Remote">Remote</option>
+                  <option value="On-site">On-site</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-field">
+                <label class="field-label">Salary Range Min</label>
+                <div class="input-with-addon d-flex">
+                  <input class="field-input" type="number" [(ngModel)]="form.salaryMin" />
+                  <select class="field-select addon-select" [(ngModel)]="form.currency" style="width: auto; height: 100%; border-left: 0;">
+                    <option value="TND">TND</option>
+                    <option value="EUR">EUR</option>
+                    <option value="USD">USD</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label class="field-label">Salary Range Max</label>
+                <div class="input-with-addon d-flex">
+                  <input class="field-input" type="number" [(ngModel)]="form.salaryMax" />
+                  <select class="field-select addon-select" [(ngModel)]="form.currency" style="width: auto; height: 100%; border-left: 0;">
+                    <option value="TND">TND</option>
+                    <option value="EUR">EUR</option>
+                    <option value="USD">USD</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-field">
+                <label class="field-label">Openings</label>
+                <input class="field-input" type="number" min="1" [(ngModel)]="form.openingsCount" />
+              </div>
+
+              <div class="form-field">
+                <label class="field-label">Hiring Manager</label>
+                <select class="field-select" [(ngModel)]="form.hiringManager">
+                  <option value="">— Select Manager —</option>
+                  <option value="00000000-0000-0000-0000-000000000001">System Admin</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-field">
+                <label class="field-label">Application Deadline</label>
+                <input class="field-input" type="date" [(ngModel)]="form.deadline" />
+              </div>
+
+              <div class="form-field">
+                <label class="field-label">Visibility</label>
+                <select class="field-select" [(ngModel)]="form.visibility">
+                  <option value="both">Public + Internal</option>
+                  <option value="internal">Internal Only</option>
+                  <option value="external">External Job Boards Only</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        }
+
+
+        <!-- STEP 4: REVIEW -->
+        @if (formStep === 'review') {
+          <div class="step-content">
+            <div class="review-warning">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+              <div>
+                <strong>Enterprise Data Lock</strong>
+                <p>Establishing an immutable snapshot. Future changes to the Job Architecture will not affect this campaign.</p>
+              </div>
+            </div>
+
+            <div class="snapshot-preview mt-4" *ngIf="selectedRankBlueprint">
+              <div class="preview-group">
+                <label>Target Role (Structure)</label>
+                <div class="preview-val">
+                  {{ selectedRankBlueprint.roleName }} - {{ selectedRankBlueprint.title }}
+                  <small class="ms-2 opacity-70" *ngIf="selectedRankBlueprint.buName">
+                    ({{ selectedRankBlueprint.buName }} &gt; {{ selectedRankBlueprint.departmentName }})
+                  </small>
+                </div>
+              </div>
+
+              <div class="preview-group">
+                <label>Snapshot Mission</label>
+                <div class="preview-text">{{ selectedRankBlueprint.mission || 'No mission statement defined.' }}</div>
+              </div>
+
+              <div class="preview-group">
+                <label>Snapshot Responsibilities</label>
+                <ul class="preview-list">
+                  @for (r of selectedRankBlueprint.responsibilities; track $index) {
+                    <li>{{ r }}</li>
+                  }
+                  @if (!selectedRankBlueprint.responsibilities?.length) {
+                    <li>No responsibilities snapshotted.</li>
+                  }
+                </ul>
+              </div>
+
+              <div class="preview-group">
+                <label>Snapshot Competency Matrix</label>
+                <div class="preview-comps">
+                  @for (r of selectedRankBlueprint.competencyRequirements; track r.id) {
+                    <div class="preview-comp-card">
+                      <span class="name">{{ r.competence.name }}</span>
+                      <span class="level">Level {{ r.requiredLevel }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <div class="footer-left">
+          @if (formStep !== 'basics') {
+            <button class="btn-ghost" (click)="goPrevStep()" type="button">← Back</button>
+          }
+        </div>
+
+        <div class="footer-right">
+          <button class="btn-outline" (click)="closeModal()" type="button">Cancel</button>
+
+          @if (formStep !== 'review') {
+            <button class="btn-outline" (click)="goNextStep()" type="button">Next Step →</button>
+          }
+
+          @if (formStep === 'review') {
+            <button class="btn-primary" (click)="submitForm()" [disabled]="saving" type="button">
+              @if (saving) {
+                <span class="btn-spinner"></span>
+              }
+              {{ saving ? 'Publishing…' : (editingId ? 'Save Changes' : 'Confirm & Publish Campaign') }}
+            </button>
+          }
+        </div>
+      </div>
     </div>
   </div>
-</div>
+}
 
-<!-- Delete confirmation modal -->
+<!-- ───────────────────────── DELETE MODAL ───────────────────────── -->
 <app-confirm-modal
   [open]="deleteModal"
   title="Delete Job Offer"
-  message="This will permanently remove the job offer and all associated data. This action cannot be undone."
+  message="This will permanently remove the job offer and all associated data. This cannot be undone."
   confirmText="Delete"
   cancelText="Keep it"
   [isDanger]="true"
   (confirmed)="confirmDelete()"
-  (cancelled)="cancelDelete()">
-</app-confirm-modal>
+  (cancelled)="cancelDelete()"
+></app-confirm-modal>

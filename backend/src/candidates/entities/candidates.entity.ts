@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import { CandidateCompetency } from './candidate-competency.entity';
 
 @Entity('candidates')
 export class Candidate {
@@ -47,9 +48,18 @@ export class Candidate {
   @Column({ type: 'varchar', nullable: true })
   created_by: string | null;
 
+  @Column({ name: 'competency_snapshot', type: 'jsonb', nullable: true })
+  competencySnapshot: any | null;
+
+  @Column({ name: 'snapshot_updated_at', type: 'timestamptz', nullable: true })
+  snapshotUpdatedAt: Date | null;
+
   @CreateDateColumn()
   created_at: Date;
 
+  @OneToMany(() => CandidateCompetency, (cc) => cc.candidate)
+  competencies: CandidateCompetency[];
+
   @UpdateDateColumn()
   updated_at: Date;
-}
+}

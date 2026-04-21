@@ -1,0 +1,299 @@
+<ng-container *ngIf="!loading && !error">
+  <div class="profile-container">
+    <!-- Back Navigation -->
+    <a routerLink="/employees" class="back-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="19" y1="12" x2="5" y2="12" />
+        <polyline points="12 19 5 12 12 5" />
+      </svg>
+      Back to Directory
+    </a>
+
+    <!-- Profile Header Card -->
+    <div class="profile-header card">
+      <div class="profile-main-info">
+        <div class="profile-avatar">{{ getInitials() }}</div>
+        <div class="profile-title-group">
+          <h1 class="emp-name" *ngIf="!isEditing">{{ employee!.firstName }} {{ employee!.lastName }}</h1>
+          <div class="edit-name-group" *ngIf="isEditing">
+            <input type="text" [(ngModel)]="editForm.firstName" class="edit-input" placeholder="First name">
+            <input type="text" [(ngModel)]="editForm.lastName" class="edit-input" placeholder="Last name">
+          </div>
+          <div class="emp-tags">
+            <span class="emp-id-chip">#{{ employee!.employeeId }}</span>
+            <span class="status-badge" [attr.data-status]="employee!.status" *ngIf="!isEditing">
+              {{ employee!.status | titlecase }}
+            </span>
+            <!-- FIX: all status options present in select -->
+            <select [(ngModel)]="editForm.status" class="edit-select" *ngIf="isEditing">
+              <option value="active">Active</option>
+              <option value="probation">Probation</option>
+              <option value="notice">Notice</option>
+              <option value="retired">Retired</option>
+              <option value="terminated">Terminated</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-stats">
+        <div class="stat-item">
+          <label>Career Rank</label>
+          <div class="stat-val rank-val">
+            <span class="rank-num">R{{ employee!.jobRoleLevel?.levelNumber }}</span>
+            <span class="rank-title">{{ employee!.jobRoleLevel?.title }}</span>
+          </div>
+        </div>
+        <div class="stat-item">
+          <label>Job Role</label>
+          <span class="stat-val">{{ employee!.jobRole?.name }}</span>
+        </div>
+        <div class="stat-item">
+          <label>Tenure</label>
+          <span class="stat-val">{{ getTenure() }}</span>
+        </div>
+        <div class="stat-item" *ngIf="deltas.length > 0">
+          <label>Readiness</label>
+          <div class="readiness-pill" [style.background]="readinessColor + '22'" [style.color]="readinessColor">
+            {{ readinessScore }}% — {{ readinessLabel }}
+          </div>
+        </div>
+      </div>
+
+      <div class="profile-actions" *ngIf="!isEditing">
+        <button class="emp-btn emp-btn--outline" (click)="toggleEdit()">Edit Profile</button>
+        <button class="emp-btn emp-btn--primary" (click)="startAssessment()">Start Assessment</button>
+      </div>
+
+      <div class="profile-actions" *ngIf="isEditing">
+        <button class="emp-btn emp-btn--outline" (click)="cancelEdit()" [disabled]="saving">Cancel</button>
+        <button class="emp-btn emp-btn--primary" (click)="saveProfile()" [disabled]="saving">
+          <span *ngIf="saving" class="spinner-inline"></span>
+          {{ saving ? 'Saving...' : 'Save Changes' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="profile-tabs">
+      <button class="tab-btn" [class.active]="activeTab === 'overview'" (click)="setTab('overview')">Overview</button>
+      <button class="tab-btn" [class.active]="activeTab === 'development'" (click)="setTab('development')">
+        Career Development
+        <span class="tab-badge" *ngIf="nextLevel">→ Rank {{ nextLevel.levelNumber }}</span>
+      </button>
+    </div>
+
+    <div class="profile-content">
+
+      <!-- ══ OVERVIEW TAB ══════════════════════════════════════════ -->
+      <div class="profile-grid" *ngIf="activeTab === 'overview'">
+
+        <!-- Left: Employment + Personal details -->
+        <div class="grid-left">
+          <section class="info-section card">
+            <h3>Employment Details</h3>
+            <div class="info-list">
+              <div class="info-item">
+                <span class="info-label">Reporting To</span>
+                <div class="manager-chip" *ngIf="employee!.manager">
+                  <span class="mgr-initials">{{ employee!.manager.firstName[0] }}</span>
+                  <span>{{ employee!.manager.firstName }} {{ employee!.manager.lastName }}</span>
+                </div>
+                <span class="no-val" *ngIf="!employee!.manager">No manager assigned</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Hire Date</span>
+                <span class="info-val">{{ employee!.hireDate | date:'longDate' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Business Unit</span>
+                <span class="info-val">{{ employee!.department?.businessUnit?.name || 'Central' }}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Department</span>
+                <span class="info-val">{{ employee!.department?.name || 'N/A' }}</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="info-section card">
+            <h3>Personal Information</h3>
+            <div class="info-list">
+              <div class="info-item">
+                <span class="info-label">Email</span>
+                <span class="info-val" *ngIf="!isEditing">{{ employee!.email }}</span>
+                <input type="email" [(ngModel)]="editForm.email" class="edit-input" *ngIf="isEditing"
+                  placeholder="Email">
+              </div>
+              <div class="info-item">
+                <span class="info-label">Phone</span>
+                <span class="info-val" *ngIf="!isEditing">{{ employee!.personalDetails?.phone || 'Not provided'
+                  }}</span>
+                <input type="text" [(ngModel)]="editForm.phone" class="edit-input" *ngIf="isEditing"
+                  placeholder="Phone number">
+              </div>
+              <div class="info-item">
+                <span class="info-label">Location</span>
+                <span class="info-val" *ngIf="!isEditing">{{ employee!.personalDetails?.location || 'Not provided'
+                  }}</span>
+                <input type="text" [(ngModel)]="editForm.location" class="edit-input" *ngIf="isEditing"
+                  placeholder="Location">
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Right: Competency Heatmap -->
+        <div class="grid-right">
+          <section class="heatmap-section card">
+            <div class="section-header">
+              <h3>Current Competency Status</h3>
+              <span class="target-label">
+                Rank {{ employee!.jobRoleLevel?.levelNumber }}: {{ employee!.jobRoleLevel?.title }}
+              </span>
+            </div>
+            <p class="section-desc">Analysis against requirements for current assigned rank.</p>
+
+            <div class="heatmap-table" *ngIf="deltas.length > 0">
+              <!-- FIX: header had 4 spans but grid has 5 columns — added missing Status header -->
+              <div class="heatmap-row-header">
+                <span>Competency</span>
+                <span>Target</span>
+                <span>Actual</span>
+                <span>Progress</span>
+                <span>Status</span>
+              </div>
+
+              <div class="heatmap-row" *ngFor="let delta of deltas" [class.unassessed]="!delta.lastEvaluatedAt">
+                <div class="comp-name">
+                  <span class="name">{{ delta.name }}</span>
+                  <div class="comp-meta">
+                    <span class="category" *ngIf="delta.category">{{ delta.category | uppercase }}</span>
+                    <span class="source-badge" *ngIf="delta.source">{{ delta.source | titlecase }}</span>
+                    <span class="unassessed-tag" *ngIf="!delta.lastEvaluatedAt">UNASSESSED</span>
+                  </div>
+                  <div class="last-evaluated" *ngIf="delta.lastEvaluatedAt">
+                    Last evaluated: {{ delta.lastEvaluatedAt | date:'shortDate' }}
+                  </div>
+                </div>
+
+                <div class="val-circle target">{{ delta.target }}</div>
+                <div class="val-circle actual">{{ delta.current }}</div>
+
+                <div class="delta-indicator" [attr.data-status]="delta.status">
+                  <div class="delta-bar">
+                    <div class="delta-fill" [style.width.%]="(delta.current / 5) * 100"></div>
+                    <div class="delta-marker" [style.left.%]="(delta.target / 5) * 100"></div>
+                  </div>
+                  <span class="delta-text">
+                    {{ delta.delta > 0 ? '+' + delta.delta : delta.delta }}
+                  </span>
+                </div>
+
+                <div class="status-icon">
+                  <svg *ngIf="delta.status === 'met' || delta.status === 'surpassed'" class="icon-success"
+                    viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <svg *ngIf="delta.status === 'gap-minor'" class="icon-warning" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2.5">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="12" />
+                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <svg *ngIf="delta.status === 'gap-major'" class="icon-danger" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="3">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Legend -->
+              <div class="heatmap-legend">
+                <div class="legend-item"><span class="swatch met"></span>Met / Surpassed</div>
+                <div class="legend-item"><span class="swatch minor"></span>Minor Gap (−1)</div>
+                <div class="legend-item"><span class="swatch major"></span>Major Gap (−2+)</div>
+              </div>
+            </div>
+
+            <div class="empty-heatmap" *ngIf="deltas.length === 0">
+              No competency requirements defined for this career rank.
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <!-- ══ DEVELOPMENT TAB ═══════════════════════════════════════ -->
+      <div class="development-content" *ngIf="activeTab === 'development'">
+        <section class="card dev-card">
+          <div class="section-header">
+            <h3>Career Development Plan</h3>
+            <span class="target-label dev-target" *ngIf="nextLevel">
+              Target: Rank {{ nextLevel.levelNumber }} — {{ nextLevel.title }}
+            </span>
+          </div>
+
+          <p class="section-desc" *ngIf="nextLevel">
+            Detailed gap analysis focusing on upcoming role requirements and promotion readiness.
+          </p>
+
+          <!-- No Next Level -->
+          <div class="no-next-level" *ngIf="!nextLevel && !devLoading">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+            </svg>
+            <h4>Maximum Level Reached</h4>
+            <p>This employee is already at the highest defined rank for their current job role.</p>
+            <button class="emp-btn emp-btn--outline">Explore Lateral Moves</button>
+          </div>
+
+          <!-- Loading -->
+          <div class="loading-container dev-loading" *ngIf="devLoading">
+            <div class="spinner-sm"></div>
+            <span>Compiling readiness data...</span>
+          </div>
+
+          <!-- Heatmap Results -->
+          <app-gap-analysis-heatmap *ngIf="targetReport && !devLoading" [report]="targetReport">
+          </app-gap-analysis-heatmap>
+
+          <div class="error-msg" *ngIf="devError && !devLoading">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            {{ devError }}
+            <button class="retry-link" (click)="nextLevel && loadTargetGap(employee!.id, nextLevel.id)">Retry</button>
+          </div>
+        </section>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Assessment Panel -->
+  <!-- FIX: use computed assessmentRequirements getter instead of inline cast -->
+  <app-assessment-panel *ngIf="showAssessmentPanel && employee" [targetId]="employee.id"
+    [requirements]="assessmentRequirements" (close)="showAssessmentPanel = false" (submitted)="onAssessmentSubmitted()">
+  </app-assessment-panel>
+</ng-container>
+
+<!-- Loading State -->
+<div class="loading-state" *ngIf="loading">
+  <div class="spinner-lg"></div>
+  <span>Loading profile...</span>
+</div>
+
+<!-- Error State -->
+<!-- FIX: retry button calls retryLoad() not ngOnInit() directly -->
+<div class="error-state" *ngIf="!loading && error">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="8" x2="12" y2="12" />
+    <line x1="12" y1="16" x2="12.01" y2="16" />
+  </svg>
+  <p>{{ error }}</p>
+  <button class="emp-btn emp-btn--primary" (click)="retryLoad()">Retry</button>
+</div>

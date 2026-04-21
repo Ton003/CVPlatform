@@ -1,7 +1,8 @@
-import { Component, ChangeDetectorRef } from '@angular/core';
+import { Component, ChangeDetectorRef, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule }                  from '@angular/common';
 import { FormsModule }                   from '@angular/forms';
 import { HttpClient }                    from '@angular/common/http';
+import { Router }                        from '@angular/router';
 import { finalize }                      from 'rxjs';
 import { AuthService }                   from '../../core/services/auth.service';
 import { ApiKeyService }                 from '../../core/services/api-key.service';
@@ -15,7 +16,7 @@ import { environment }                   from '../../../environments/environment
   templateUrl: './cv-upload.component.html',
   styleUrls:   ['./cv-upload.component.scss'],
 })
-export class CvUploadComponent {
+export class CvUploadComponent implements OnInit {
   selectedFile: File | null = null;
   isDragging    = false;
   isLoading     = false;
@@ -25,12 +26,15 @@ export class CvUploadComponent {
   mode:       'local' | 'groq' = 'local';
   gdprConsent = false;
 
-  tips = [
-    { title: 'Upload a PDF',           desc: 'Only PDF files are supported. Make sure the CV is text-readable (not a scanned image).' },
-    { title: 'Select extraction mode', desc: 'Local (Phi-3) runs offline on your CPU. AI Mode (Groq) is faster and more accurate.' },
-    { title: 'AI extracts data',       desc: 'Skills, experience, education, and contact details are extracted automatically.' },
-    { title: 'Candidate indexed',      desc: 'The candidate profile is stored and becomes immediately searchable via Candidate Search.' },
-  ];
+  // Job selection
+  @Input() preselectedJobId?: string;
+  @Output() uploadComplete = new EventEmitter<any>();
+
+  jobs: { id: string; title: string }[] = [];
+  selectedJobId = '';
+  jobsLoading   = false;
+
+
 
   constructor(
     private readonly http:        HttpClient,
@@ -38,7 +42,34 @@ export class CvUploadComponent {
     private readonly apiKey:      ApiKeyService,
     private readonly toast:       ToastService,
     private readonly cdr:         ChangeDetectorRef,
+    private readonly router:      Router,
   ) {}
+
+  ngOnInit(): void {
+    if (this.preselectedJobId) {
+      this.selectedJobId = this.preselectedJobId;
+    } else {
+      this.loadJobs();
+    }
+  }
+
+  loadJobs(): void {
+    this.jobsLoading = true;
+    this.http
+      .get<any[]>(`${environment.apiUrl}/job-offers`)
+      .pipe(finalize(() => { this.jobsLoading = false; this.cdr.detectChanges(); }))
+      .subscribe({
+        next: (jobs) => {
+          this.jobs = jobs
+            .filter(j => j.status === 'open')
+            .map(j => ({ id: j.id, title: j.title }));
+          this.cdr.detectChanges();
+        },
+        error: () => {
+          this.toast.error('Failed to load job offers.');
+        },
+      });
+  }
 
   toggleMode(m: 'local' | 'groq') { this.mode = m; this.result = null; this.error = ''; }
 
@@ -102,8 +133,30 @@ export class CvUploadComponent {
       next: (res) => {
         this.result       = res;
         this.selectedFile = null;
-        this.toast.success('CV uploaded and processed successfully.');
         this.cdr.detectChanges();
+
+        if (this.selectedJobId && res.candidateId) {
+          this.http.post(`${environment.apiUrl}/applications`, {
+            jobId:       this.selectedJobId,
+            candidateId: res.candidateId,
+            stage:       'applied',
+            source:      'cv_upload',
+          }).subscribe({
+            next: () => {
+              this.toast.success('CV uploaded and candidate added to pipeline.');
+              this.uploadComplete.emit(res);
+              if (!this.preselectedJobId) {
+                this.router.navigate(['/job-offers', this.selectedJobId, 'pipeline']);
+              }
+            },
+            error: () => {
+              this.toast.error('CV uploaded but failed to create application.');
+            },
+          });
+        } else {
+          this.toast.success('CV uploaded and processed successfully.');
+          this.uploadComplete.emit(res);
+        }
       },
       error: (err) => {
         if      (err.status === 401) this.error = 'Session expired. Please log in again.';

@@ -1,10 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { InjectDataSource }   from '@nestjs/typeorm';
 import { DataSource }         from 'typeorm';
 import { ExtractedFilters }   from './keyword-extractor.service';
 
-export interface RawCandidate {
-  candidateId:  string;
+export interface RawPerson {
+  candidateId:  string; // Primary identifier for search
+  personType:   'candidate' | 'employee';
   name:         string;
   email:        string | null;
   location:     string | null;
@@ -12,23 +13,38 @@ export interface RawCandidate {
   yearsExp:     number | null;
   skills:       string[];
   summary:      string | null;
-  embedding:    string | null;
+  similarity?:  number;
+  // Metadata for employees
+  buName?:      string;
+  departmentName?: string;
+  rankName?:    string;
 }
 
-export interface FullCandidate extends RawCandidate {
+export type RawCandidate = RawPerson;
+
+export interface FullCandidate extends RawPerson {
   education:  any[];
   experience: any[];
   languages:  any[];
 }
 
 @Injectable()
-export class CvSearchService {
+export class CvSearchService implements OnModuleInit {
   private readonly logger = new Logger(CvSearchService.name);
 
   constructor(
     @InjectDataSource()
     private readonly dataSource: DataSource,
   ) {}
+
+  async onModuleInit() {
+    try {
+      await this.dataSource.query('CREATE EXTENSION IF NOT EXISTS vector;');
+      this.logger.log('✅ pgvector extension is ready');
+    } catch (err) {
+      this.logger.warn('⚠️ Could not automatically create pgvector extension. Make sure it is installed and enabled on your database.');
+    }
+  }
 
   async findByFilters(filters: ExtractedFilters): Promise<RawCandidate[]> {
     const conditions: string[] = ['1=1'];
@@ -108,35 +124,77 @@ export class CvSearchService {
     return results.map((r: any) => this.mapRaw(r));
   }
 
-  async findByEmbedding(queryEmbedding: number[], limit = 30): Promise<RawCandidate[]> {
+  async findByEmbedding(queryEmbedding: number[], limit = 30, personType?: string): Promise<RawCandidate[]> {
     const vectorStr = `[${queryEmbedding.join(',')}]`;
 
+    let typeFilter = '';
+    if (personType && personType !== 'all') {
+      typeFilter = `WHERE personType = '${personType}'`;
+    }
+
     const query = `
-      SELECT
-        c.id::text                             AS "candidateId",
-        CONCAT(c.first_name, ' ', c.last_name) AS name,
-        c.email,
-        c.location,
-        c.current_title                        AS "currentTitle",
-        c.years_experience                     AS "yearsExp",
-        cpd.skills_technical                   AS skills,
-        cpd.llm_summary                        AS summary,
-        cpd.embedding,
-        1 - (cpd.embedding::vector <=> $1::vector) AS similarity
-      FROM candidates c
-      JOIN cvs cv             ON cv.candidate_id = c.id::text
-      JOIN cv_parsed_data cpd ON cpd.cv_id       = cv.id::text
-      WHERE cpd.embedding IS NOT NULL
-      ORDER BY cpd.embedding::vector <=> $1::vector
+      WITH unified_pool AS (
+        -- Candidates
+        SELECT 
+          c.id::text AS "candidateId",
+          'candidate' AS "personType",
+          CONCAT(c.first_name, ' ', c.last_name) AS name,
+          c.email,
+          c.location,
+          c.current_title AS "currentTitle",
+          c.years_experience AS "yearsExp",
+          cpd.skills_technical AS skills,
+          cpd.llm_summary AS summary,
+          cpd.embedding::vector AS embedding,
+          NULL::text AS "buName",
+          NULL::text AS "departmentName",
+          NULL::text AS "rankName"
+        FROM candidates c
+        JOIN cvs cv ON cv.candidate_id = c.id::text
+        JOIN cv_parsed_data cpd ON cpd.cv_id = cv.id::text
+        WHERE cpd.embedding IS NOT NULL
+
+        UNION ALL
+
+        -- Employees
+        SELECT 
+          e.id::text AS "candidateId",
+          'employee' AS "personType",
+          CONCAT(e.first_name, ' ', e.last_name) AS name,
+          e.email,
+          NULL AS location,
+          jr.name AS "currentTitle",
+          NULL::smallint AS "yearsExp",
+          '[]'::jsonb AS skills,
+          e.llm_summary AS summary,
+          e.embedding::vector AS embedding,
+          bu.name AS "buName",
+          dm.name AS "departmentName",
+          jrl.title AS "rankName"
+        FROM employees e
+        JOIN job_roles jr ON jr.id = e.job_role_id
+        JOIN job_role_levels jrl ON jrl.id = e.job_role_level_id
+        JOIN departments dm ON dm.id = jr.department_id
+        JOIN business_units bu ON bu.id = dm.business_unit_id
+        WHERE e.embedding IS NOT NULL
+      )
+      SELECT *, 1 - (embedding <=> $1::vector) AS similarity
+      FROM unified_pool
+      ${typeFilter}
+      ORDER BY embedding <=> $1::vector
       LIMIT $2
     `;
 
     const results = await this.dataSource.query(query, [vectorStr, limit]);
-    this.logger.log(`🔍 findByEmbedding: ${results.length} candidates`);
+    this.logger.log(`🔍 findByEmbedding: ${results.length} unified candidates`);
 
     return results.map((r: any) => ({
       ...this.mapRaw(r),
       similarity: parseFloat(r.similarity ?? 0),
+      personType: r.personType || 'candidate',
+      buName: r.buName,
+      departmentName: r.departmentName,
+      rankName: r.rankName
     }));
   }
 
@@ -178,9 +236,93 @@ export class CvSearchService {
     };
   }
 
-  private mapRaw(r: any): RawCandidate {
+  async findUnifiedMatch(queryEmbedding: number[], filters: any = {}, limit = 30): Promise<RawPerson[]> {
+    const vectorStr = `[${queryEmbedding.join(',')}]`;
+    const params: any[] = [vectorStr, limit];
+    let paramIndex = 3;
+
+    let metadataFilter = '1=1';
+    if (filters.buName) {
+      metadataFilter += ` AND bu.name ILIKE $${paramIndex++}`;
+      params.push(`%${filters.buName}%`);
+    }
+
+    const query = `
+      WITH unified_pool AS (
+        -- Candidates
+        SELECT 
+          c.id::text AS uuid,
+          'candidate'::text AS "personType",
+          CONCAT(c.first_name, ' ', c.last_name) AS name,
+          c.email,
+          c.location,
+          c.current_title AS "currentTitle",
+          c.years_experience AS "yearsExp",
+          cpd.skills_technical AS skills,
+          cpd.llm_summary AS summary,
+          cpd.embedding::vector AS embedding,
+          NULL::text AS "buName",
+          NULL::text AS "departmentName",
+          NULL::text AS "rankName"
+        FROM candidates c
+        JOIN cvs cv ON cv.candidate_id = c.id::text
+        JOIN cv_parsed_data cpd ON cpd.cv_id = cv.id::text
+        WHERE cpd.embedding IS NOT NULL
+
+        UNION ALL
+
+        -- Employees
+        SELECT 
+          e.id::text AS uuid,
+          'employee'::text AS "personType",
+          CONCAT(e.first_name, ' ', e.last_name) AS name,
+          e.email,
+          NULL AS location, -- Employees don't have location in entity yet
+          jr.name AS "currentTitle",
+          NULL::smallint AS "yearsExp", -- Employees use hireDate/experience differently
+          NULL::jsonb AS skills,
+          e.llm_summary AS summary,
+          e.embedding::vector AS embedding,
+          bu.name AS "buName",
+          dm.name AS "departmentName",
+          jrl.title AS "rankName"
+        FROM employees e
+        JOIN job_roles jr ON jr.id = e.job_role_id
+        JOIN job_role_levels jrl ON jrl.id = e.job_role_level_id
+        JOIN departments dm ON dm.id = jr.department_id
+        JOIN business_units bu ON bu.id = dm.business_unit_id
+        WHERE e.embedding IS NOT NULL AND ${metadataFilter}
+      )
+      SELECT *, 1 - (embedding <=> $1::vector) AS similarity
+      FROM unified_pool
+      ORDER BY embedding <=> $1::vector
+      LIMIT $2;
+    `;
+
+    const results = await this.dataSource.query(query, params);
+    return results.map((r: any) => ({
+      candidateId:  r.uuid,
+      uuid:         r.uuid,
+      personType:   r.personType,
+      name:         r.name,
+      email:        r.email,
+      location:     r.location,
+      currentTitle: r.currentTitle,
+      yearsExp:     r.yearsExp,
+      skills:       r.skills || [],
+      summary:      r.summary,
+      similarity:   parseFloat(r.similarity ?? 0),
+      buName:       r.buName,
+      departmentName: r.departmentName,
+      rankName:     r.rankName
+    }));
+  }
+
+  private mapRaw(r: any): any {
     return {
-      candidateId:  r.candidateId,
+      candidateId:  r.candidateId || r.uuid,
+      uuid:         r.candidateId || r.uuid,
+      personType:   r.personType || 'candidate',
       name:         r.name?.trim() || 'Unknown',
       email:        r.email        ?? null,
       location:     r.location     ?? null,
@@ -188,7 +330,7 @@ export class CvSearchService {
       yearsExp:     r.yearsExp     ?? null,
       skills:       Array.isArray(r.skills) ? r.skills : [],
       summary:      r.summary      ?? null,
-      embedding:    r.embedding    ?? null,
+      similarity:   r.similarity ? parseFloat(r.similarity) : undefined
     };
   }
 }

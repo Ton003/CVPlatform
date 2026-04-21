@@ -1,0 +1,196 @@
+<div class="comp-root">
+
+  <!-- ── Header ── -->
+  <header class="comp-header">
+    <div class="header-left">
+      <button class="back-btn" (click)="backToJob()">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+        Job Offers
+      </button>
+      <div class="header-divider"></div>
+      <div>
+        <p class="header-eyebrow">Candidate Comparison</p>
+        <h1 class="header-title">{{ offer?.title || '…' }}</h1>
+      </div>
+    </div>
+    <div class="header-right" *ngIf="offer">
+      <button class="btn-outline" (click)="viewPipeline()">
+        <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7"/>
+        </svg>
+        View Pipeline
+      </button>
+      <span class="meta-pill">{{ rows.length }} candidate{{ rows.length !== 1 ? 's' : '' }}</span>
+    </div>
+  </header>
+
+  <!-- ── Loading ── -->
+  <div *ngIf="loading" class="loading-state">
+    <div class="skel-cards">
+      <div class="skel-card" *ngFor="let i of [1,2,3,4]">
+        <div class="skel skel--av"></div>
+        <div class="skel-lines">
+          <div class="skel skel--w70"></div>
+          <div class="skel skel--w50"></div>
+        </div>
+        <div class="skel skel--gauge"></div>
+      </div>
+    </div>
+    <p class="loading-label">Calculating scores…</p>
+  </div>
+
+  <!-- ── Error ── -->
+  <div *ngIf="error && !loading" class="error-banner">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+    </svg>
+    {{ error }}
+    <button (click)="loadComparison()">Retry</button>
+  </div>
+
+  <!-- ── Empty ── -->
+  <div *ngIf="!loading && !error && rows.length === 0" class="empty-state">
+    <span class="empty-icon">👥</span>
+    <p class="empty-title">No candidates in pipeline</p>
+    <p class="empty-sub">Add applications to this job to start comparing candidates.</p>
+    <button class="btn-primary" (click)="viewPipeline()">Open Pipeline</button>
+  </div>
+
+  <!-- ── Content ── -->
+  <div *ngIf="!loading && !error && rows.length > 0">
+
+    <!-- ── Podium for top 3 ── -->
+    <!-- FIX: correct order is 2nd | 1st | 3rd so the center is always tallest -->
+    <div class="podium" *ngIf="rows.length >= 2">
+
+      <!-- 2nd place — left -->
+      <div class="podium-card podium-2" *ngIf="rows[1]" [routerLink]="['/applications', rows[1].applicationId]">
+        <div class="podium-rank">🥈</div>
+        <div class="podium-av">{{ getInitials(rows[1].name) }}</div>
+        <p class="podium-name">{{ rows[1].name }}</p>
+        <p class="podium-stage" [style.color]="getStageColor(rows[1].stage)">{{ rows[1].stage | titlecase }}</p>
+        <div class="podium-score" [style.color]="scoreColor(rows[1].totalScore)">
+          {{ rows[1].totalScore }}<span>/100</span>
+        </div>
+        <div class="podium-base podium-base--2"></div>
+      </div>
+
+      <!-- 1st place — center (always rendered, even when rows.length === 2) -->
+      <div class="podium-card podium-1" [routerLink]="['/applications', rows[0].applicationId]">
+        <div class="podium-rank">🥇</div>
+        <div class="podium-av podium-av--1">{{ getInitials(rows[0].name) }}</div>
+        <p class="podium-name">{{ rows[0].name }}</p>
+        <p class="podium-stage" [style.color]="getStageColor(rows[0].stage)">{{ rows[0].stage | titlecase }}</p>
+        <div class="podium-score podium-score--1" [style.color]="scoreColor(rows[0].totalScore)">
+          {{ rows[0].totalScore }}<span>/100</span>
+        </div>
+        <div class="podium-base podium-base--1"></div>
+      </div>
+
+      <!-- 3rd place — right (only when at least 3 candidates) -->
+      <div class="podium-card podium-3" *ngIf="rows[2]" [routerLink]="['/applications', rows[2].applicationId]">
+        <div class="podium-rank">🥉</div>
+        <div class="podium-av">{{ getInitials(rows[2].name) }}</div>
+        <p class="podium-name">{{ rows[2].name }}</p>
+        <p class="podium-stage" [style.color]="getStageColor(rows[2].stage)">{{ rows[2].stage | titlecase }}</p>
+        <div class="podium-score" [style.color]="scoreColor(rows[2].totalScore)">
+          {{ rows[2].totalScore }}<span>/100</span>
+        </div>
+        <div class="podium-base podium-base--3"></div>
+      </div>
+
+    </div>
+
+    <!-- ── Full Ranking Table ── -->
+    <div class="ranking-section">
+      <h2 class="ranking-title">Full Ranking</h2>
+      <div class="ranking-list">
+        <div
+          *ngFor="let r of rows; let i = index"
+          class="ranking-row"
+          [class.ranking-row--top]="i === 0"
+          [routerLink]="['/applications', r.applicationId]">
+
+          <!-- Rank -->
+          <div class="rank-col">
+            <span class="rank-num"  *ngIf="i > 2">#{{ i + 1 }}</span>
+            <span class="rank-emoji" *ngIf="i <= 2">{{ rankEmoji(i) }}</span>
+          </div>
+
+          <!-- Candidate -->
+          <div class="cand-col">
+            <div class="cand-av">{{ getInitials(r.name) }}</div>
+            <div class="cand-info">
+              <p class="cand-name">{{ r.name }}</p>
+              <span
+                class="cand-stage"
+                [style.background]="getStageBg(r.stage)"
+                [style.color]="getStageColor(r.stage)">
+                {{ r.stage | titlecase }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Score bar -->
+          <!-- FIX: use max(2px, score%) so a 0-score still shows a visible track nub -->
+          <div class="score-col">
+            <div class="score-bar-wrap">
+              <div
+                class="score-bar"
+                [style.width]="(r.totalScore > 0 ? r.totalScore : 0) + '%'"
+                [style.background]="scoreColor(r.totalScore)">
+              </div>
+            </div>
+            <span class="score-num" [style.color]="scoreColor(r.totalScore)">{{ r.totalScore }}</span>
+            <span class="score-warn" *ngIf="!r.isComplete" title="Evaluation incomplete">⚠️</span>
+          </div>
+
+          <!-- Breakdown pills -->
+          <div class="break-col">
+            <div class="break-item break-on" title="Technical: {{ r.breakdown.technical.score }}%">
+              <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              {{ r.breakdown.technical.score }}
+            </div>
+            <div
+              class="break-item"
+              [class.break-on]="r.breakdown.interview.available"
+              title="Interview{{ r.breakdown.interview.available ? ': ' + r.breakdown.interview.score : ' — not yet' }}">
+              <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
+              </svg>
+              {{ r.breakdown.interview.available ? r.breakdown.interview.score : '—' }}
+            </div>
+
+          </div>
+
+          <!-- Skills -->
+          <!-- FIX: removed broken text concatenation; use separate elements -->
+          <div class="skills-col">
+            <div class="skill-dots">
+              <span *ngFor="let s of r.matchedSkills.slice(0, 5)" class="dot dot--match" [title]="s"></span>
+              <span *ngFor="let s of r.missingSkills.slice(0, 3)"  class="dot dot--miss"  [title]="s"></span>
+            </div>
+            <span class="skill-summary">
+              {{ r.matchedSkills.length }}/{{ r.matchedSkills.length + r.missingSkills.length }} matched
+            </span>
+          </div>
+
+          <!-- Arrow -->
+          <div class="arrow-col">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+            </svg>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>

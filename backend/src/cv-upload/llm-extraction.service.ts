@@ -11,10 +11,11 @@ const TIMEOUT    = 180_000;
 // ── Output types ─────────────────────────────────────────────────────────────
 
 export interface ExperienceEntry {
-  title:      string;
-  company:    string | null;
-  start_date: string | null;
-  end_date:   string | null;
+  title:       string;
+  company:     string | null;
+  start_date:  string | null;
+  end_date:    string | null;
+  description: string | null;
 }
 
 export interface EducationEntry {
@@ -151,7 +152,7 @@ Rules:
 - skills_technical: ALL programming languages and tools mentioned anywhere in CV. Max 20 items. Short names only: "Python" not "Python programming language"
 - languages: from LANGUES section only. Use field name "name" not "language". Level mapping: maternelle/natif=native, C1/C2=fluent, B2=advanced, B1=intermediate, A1/A2=beginner
 - education: degree + institution short name + date range. Max 3 entries. Use field name "date" not "date_range"
-- experience: title max 4 words (job title only, never description sentences) + company (null if freelance) + start_date + end_date as written in CV
+- experience: title max 4 words + company (null if freelance) + start_date + end_date + description (sentences describing the role)
 - CRITICAL: use EXACTLY these field names — no variations, no comments inside JSON
 - null for missing fields, [] for missing arrays`;
   }
@@ -350,10 +351,11 @@ Rules:
     return val
       .filter(e => e && e.title && !e.project)
       .map(e => ({
-        title:      e.title.trim(),
-        company:    this.str(e.company),
-        start_date: this.str(e.start_date),
-        end_date:   this.str(e.end_date),
+        title:       e.title.trim(),
+        company:     this.str(e.company),
+        start_date:  this.str(e.start_date),
+        end_date:    this.str(e.end_date),
+        description: this.str(e.description ?? e.summary ?? e.responsibilities),
       }));
   }
 

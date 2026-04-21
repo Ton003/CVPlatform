@@ -1,6 +1,10 @@
-import { IsString, IsNotEmpty, IsOptional, IsArray, IsInt, IsIn, MaxLength, Min } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsInt, IsIn, MaxLength, Min } from 'class-validator';
 
 export class CreateJobOfferDto {
+  @IsString()
+  @IsNotEmpty()
+  jobRoleLevelId: string;
+
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
@@ -10,22 +14,17 @@ export class CreateJobOfferDto {
   @IsNotEmpty()
   description: string;
 
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  location?: string;
+  @IsOptional() @IsString() contractType?: string;
+  @IsOptional() @IsString() workMode?: string;
+  @IsOptional() @Min(0) salaryMin?: number;
+  @IsOptional() @Min(0) salaryMax?: number;
+  @IsOptional() @IsString() currency?: string;
+  @IsOptional() @IsInt() @Min(1) openingsCount?: number;
+  @IsOptional() @IsString() hiringManager?: string;
+  @IsOptional() @IsString() deadline?: string;
+  @IsOptional() @IsString() visibility?: string;
 
   @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  requiredSkills?: string[];
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  minYears?: number;
-
-  @IsOptional()
-  @IsIn(['open', 'closed'])
+  @IsIn(['open', 'closed', 'draft'])
   status?: string;
 }

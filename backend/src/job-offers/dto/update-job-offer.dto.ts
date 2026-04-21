@@ -1,29 +1,17 @@
-import { IsString, IsOptional, IsArray, IsInt, Min, IsIn } from 'class-validator';
+import { IsString, IsOptional, IsInt, IsIn, MaxLength, Min } from 'class-validator';
 
 export class UpdateJobOfferDto {
-  @IsOptional()
-  @IsString()
-  title?: string;
-
-  @IsOptional()
-  @IsString()
-  description?: string;
-
-  @IsOptional()
-  @IsString()
-  location?: string;
-
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  requiredSkills?: string[];
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  minYears?: number;
-
-  @IsOptional()
-  @IsIn(['open', 'closed', 'draft'])
-  status?: 'open' | 'closed' | 'draft';
+  @IsOptional() @IsString() jobRoleLevelId?: string;
+  @IsOptional() @IsString() @MaxLength(200) title?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() contractType?: string;
+  @IsOptional() @IsString() workMode?: string;
+  @IsOptional() @Min(0) salaryMin?: number;
+  @IsOptional() @Min(0) salaryMax?: number;
+  @IsOptional() @IsString() currency?: string;
+  @IsOptional() @IsInt() @Min(1) openingsCount?: number;
+  @IsOptional() @IsString() hiringManager?: string;
+  @IsOptional() @IsString() deadline?: string;
+  @IsOptional() @IsString() visibility?: string;
+  @IsOptional() @IsIn(['open', 'closed', 'draft']) status?: string;
 }

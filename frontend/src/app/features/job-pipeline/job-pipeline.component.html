@@ -1,0 +1,280 @@
+<div class="pipeline-view">
+  <!-- ── Header ── -->
+  <div class="pipeline-header">
+    <div class="header-main">
+      <button class="back-btn" (click)="goBack()" aria-label="Back to Job Offers">
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+        </svg>
+      </button>
+      <div class="header-info">
+        <h1>{{ job?.title || 'Job Pipeline' }}</h1>
+        <div class="header-tags">
+          <span class="status-tag" [attr.data-status]="job?.status">{{ job?.status | titlecase }}</span>
+          <span class="meta-tag">{{ job?.location || 'Remote' }}</span>
+          <span class="meta-tag">{{ job?.department || 'Engineering' }}</span>
+          <span class="count-tag">{{ totalCandidates }} Candidates</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-actions">
+
+      <button class="btn-primary" (click)="openAddCandidateModal()">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+        </svg>
+        Add Candidate
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Board ── -->
+  <div class="pipeline-board">
+    <div class="loading-overlay" *ngIf="loading">
+      <div class="spinner"></div>
+    </div>
+
+    <ng-container *ngIf="!loading">
+      <div 
+        class="pipeline-column" 
+        *ngFor="let col of columns; trackBy: trackByCol"
+        [class.drag-over]="col.dragOver"
+        (dragover)="onDragOver($event, col)"
+        (dragleave)="onDragLeave(col)"
+        (drop)="onDrop($event, col)"
+      >
+        <div class="column-header" [style.border-top-color]="col.color">
+          <div class="header-left">
+            <span class="column-icon">{{ col.icon }}</span>
+            <span class="column-label">{{ col.label }}</span>
+          </div>
+          <span class="column-count">{{ col.cards.length }}</span>
+        </div>
+
+        <div class="column-cards">
+          <div 
+            class="candidate-card" 
+            *ngFor="let card of col.cards; trackBy: trackByCard"
+            [class.is-dragging]="draggingCard?.applicationId === card.applicationId"
+            [class.is-updating]="updatingCardId === card.applicationId"
+            draggable="true"
+            (dragstart)="onDragStart($event, card, col.id)"
+            (dragend)="onDragEnd()"
+            (click)="openApplication(card.applicationId)"
+          >
+            <div class="card-header">
+              <span class="candidate-name">{{ card.candidateName }}</span>
+              <div 
+                *ngIf="card.compositeScore !== null"
+                class="candidate-score" 
+                [ngClass]="getScoreClass(card.compositeScore)"
+                [title]="'Match Score: ' + card.compositeScore + '%'"
+              >
+                {{ card.compositeScore }}%
+              </div>
+            </div>
+
+            <p class="candidate-title">{{ card.currentTitle || 'No title' }}</p>
+
+            <div class="candidate-skills" *ngIf="card.skills && card.skills.length > 0">
+              <span class="skill-tag" *ngFor="let s of card.skills">{{ s }}</span>
+              <span class="skill-more" *ngIf="card.skills.length > 3">+{{ card.skills.length - 3 }}</span>
+            </div>
+
+            <div class="card-footer">
+              <span class="card-days">
+                <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                {{ card.daysInStage }}d
+              </span>
+              <span class="card-source" *ngIf="card.source">{{ formatSource(card.source) }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- ── Side Panel ── -->
+  <div class="side-panel-overlay" *ngIf="selectedApplicationId" (click)="closeSidePanel()"></div>
+  <div class="side-panel" *ngIf="selectedApplicationId" (click)="$event.stopPropagation()">
+
+    <div class="side-panel-loading" *ngIf="sidePanelLoading">
+      <div class="mini-spinner"></div>
+      Loading…
+    </div>
+
+    <ng-container *ngIf="!sidePanelLoading && selectedApplicationDetails">
+      <div class="sp-header">
+        <div class="sp-avatar">{{ getInitials(selectedApplicationDetails.candidateName || '') }}</div>
+        <div class="sp-info">
+          <p class="sp-name">{{ selectedApplicationDetails.candidateName }}</p>
+          <p class="sp-role">{{ selectedApplicationDetails.currentTitle || 'Candidate' }}</p>
+        </div>
+        <button class="sp-close" (click)="closeSidePanel()" aria-label="Close">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="sp-body">
+        <div class="sp-field">
+          <label class="sp-label">Stage</label>
+          <select class="sp-select" [value]="selectedApplicationDetails.stage" (change)="updateStageFromPanel($event)">
+            <option *ngFor="let col of columns" [value]="col.id">{{ col.label }}</option>
+          </select>
+        </div>
+
+        <div class="sp-meta">
+          <span *ngIf="selectedApplicationDetails.email">📧 {{ selectedApplicationDetails.email }}</span>
+          <span>⏱ {{ selectedApplicationDetails.daysInStage }}d in stage</span>
+        </div>
+
+        <div class="sp-section" *ngIf="selectedNotes.length > 0">
+          <p class="sp-section-title">Recent Notes</p>
+          <ng-container *ngFor="let n of selectedNotes; let i = index">
+            <div class="sp-note" *ngIf="i < 3">
+              <p class="sp-note-body">{{ n.note }}</p>
+              <span class="sp-note-date">{{ n.createdAt | date:'MMM d' }}</span>
+            </div>
+          </ng-container>
+        </div>
+
+        <div class="sp-section" *ngIf="selectedInterviews.length > 0">
+          <p class="sp-section-title">Interviews ({{ selectedInterviews.length }})</p>
+          <div class="sp-interview" *ngFor="let iv of selectedInterviews">
+            <span class="sp-iv-type">{{ iv.type }}</span>
+            <span class="sp-iv-status" [attr.data-status]="iv.status">{{ iv.status | titlecase }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sp-footer">
+        <button 
+          class="btn-promote sp-btn-full mb-1" 
+          *ngIf="selectedApplicationDetails.stage === 'offer'"
+          (click)="openPromoteModal()"
+        >
+          Promote to Employee ✨
+        </button>
+
+        <div class="sp-footer-grid">
+          <button class="btn-primary" (click)="goToFullProfile()">
+            Full Profile ↗
+          </button>
+          <button class="sp-delete-btn" (click)="deleteApplication()" title="Remove from pipeline">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+            Remove
+          </button>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- ── Add Candidate Modal ── -->
+  <div class="modal-overlay" *ngIf="showAddCandidateModal" (click)="closeAddCandidateModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Add Candidate</h2>
+        <button class="close-btn" (click)="closeAddCandidateModal()" aria-label="Close">×</button>
+      </div>
+
+      <div class="modal-tabs">
+        <button [class.active]="activeModalTab === 'search'" (click)="activeModalTab = 'search'">
+          🔍 Search Existing
+        </button>
+        <button [class.active]="activeModalTab === 'upload'" (click)="activeModalTab = 'upload'">
+          📄 Upload CV
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <ng-container *ngIf="activeModalTab === 'search'">
+          <div class="search-box">
+            <input
+              type="text"
+              class="search-input"
+              [(ngModel)]="searchQuery"
+              (keyup.enter)="searchCandidates()"
+              placeholder="Search by name, email or title..."
+            >
+            <button class="btn-primary" (click)="searchCandidates()" [disabled]="isSearching">
+              {{ isSearching ? 'Searching...' : 'Search' }}
+            </button>
+          </div>
+
+          <div class="search-results" *ngIf="searchResults.length > 0">
+            <div class="result-item" *ngFor="let c of searchResults">
+              <div class="result-info">
+                <p class="result-name">{{ c.first_name }} {{ c.last_name }}</p>
+                <p class="result-meta">{{ c.email }} • {{ c.current_title || 'No title' }}</p>
+              </div>
+              <button class="btn-primary result-add-btn" (click)="addExistingCandidate(c.candidateId || c.id)">
+                Add
+              </button>
+            </div>
+          </div>
+
+          <div class="search-empty" *ngIf="searchResults.length === 0 && searchQuery && !isSearching">
+            No candidates found for "{{ searchQuery }}"
+          </div>
+        </ng-container>
+
+        <ng-container *ngIf="activeModalTab === 'upload'">
+          <app-cv-upload [preselectedJobId]="jobId" (uploadComplete)="onCvUploaded($event)"></app-cv-upload>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Promote Modal ── -->
+  <div class="modal-overlay" *ngIf="showPromoteModal" (click)="closePromoteModal()">
+    <div class="modal-content modal-promote" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Promote to Employee</h2>
+        <button class="close-btn" (click)="closePromoteModal()">×</button>
+      </div>
+      
+      <div class="modal-body">
+        <p class="promote-intro">
+          You are about to promote <strong>{{ selectedApplicationDetails?.candidateName }}</strong> to an active employee. 
+          Please provide the hiring details below.
+        </p>
+
+        <div class="form-group sp-field">
+          <label class="sp-label">Employee ID <span class="required">*</span></label>
+          <input type="text" class="sp-select" [(ngModel)]="promotePayload.employeeId" placeholder="e.g. EMP-2026-001">
+        </div>
+
+        <div class="form-group sp-field">
+          <label class="sp-label">Hire Date <span class="required">*</span></label>
+          <input type="date" class="sp-select" [(ngModel)]="promotePayload.hireDate">
+        </div>
+
+        <div class="form-group sp-field">
+          <label class="sp-label">Reporting Manager</label>
+          <select class="sp-select" [(ngModel)]="promotePayload.managerId">
+            <option value="">-- No direct manager --</option>
+            <option *ngFor="let m of managers" [value]="m.id">
+              {{ m.first_name }} {{ m.last_name }} ({{ m.role | uppercase }})
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closePromoteModal()">Cancel</button>
+        <button class="btn-promote" [disabled]="promoting" (click)="confirmPromotion()">
+          <span *ngIf="!promoting">Confirm Promotion ✨</span>
+          <span *ngIf="promoting">Promoting...</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

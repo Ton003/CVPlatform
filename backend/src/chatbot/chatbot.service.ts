@@ -104,7 +104,7 @@ export class ChatbotService {
     }
 
     const groqFilters = intentResult.filters;
-    const recallFilters: ExtractedFilters = groqFilters ? {
+    const recallFilters: ExtractedFilters & { personType?: string } = groqFilters ? {
       skills:      this.mergeSkills(tier1Filters.skills, groqFilters.skills),
       minYears:    groqFilters.minYears    ?? tier1Filters.minYears,
       location:    groqFilters.location    ?? tier1Filters.location,
@@ -113,7 +113,8 @@ export class ChatbotService {
       institution: tier1Filters.institution,
       language:    groqFilters.language    ?? tier1Filters.language,
       limit:       30,
-    } : { ...tier1Filters, limit: 30 };
+      personType:  dto.personType,
+    } : { ...tier1Filters, limit: 30, personType: dto.personType };
 
     this.logger.log(`📋 Recall skills:[${recallFilters.skills.join(', ')}]`);
 
@@ -267,7 +268,8 @@ export class ChatbotService {
   // ════════════════════════════════════════════════════════════
 
   private async runLocalPipeline(dto: RecommendDto, t0: number): Promise<RecommendationResultDto> {
-    const tier1Filters   = this.keywordExtractor.extract(dto.message);
+    const tier1Filters   = this.keywordExtractor.extract(dto.message) as any;
+    tier1Filters.personType = dto.personType;
     const queryEmbedding = await this.pdfExtractor.embedText(dto.message);
     const recalled       = await this.recallCandidates(tier1Filters, queryEmbedding);
     let scored           = this.localScoreCandidates(recalled, tier1Filters, queryEmbedding);
@@ -372,7 +374,7 @@ export class ChatbotService {
     }
 
     if (embedding.length > 0) {
-      const sem   = await this.cvSearch.findByEmbedding(embedding, 30);
+      const sem   = await this.cvSearch.findByEmbedding(embedding, 30, (filters as any).personType);
       const ids   = new Set(candidates.map(c => c.candidateId));
       const added = sem.filter((c: RawCandidate) => !ids.has(c.candidateId));
       candidates.push(...added);

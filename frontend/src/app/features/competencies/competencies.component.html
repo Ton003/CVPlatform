@@ -1,0 +1,473 @@
+<div class="cm-root">
+
+  <!-- ══ Page Header ══════════════════════════════════════════════ -->
+  <div class="cm-header">
+    <div class="cm-header__left">
+      <div class="cm-header__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77 5.82 21l1.18-6.88L2 9.27l6.91-1.01L12 2z"/>
+        </svg>
+      </div>
+      <div>
+        <h1 class="cm-header__title">Competence Library</h1>
+        <p class="cm-header__sub">Manage structured competencies across all HR categories</p>
+      </div>
+    </div>
+    <div class="cm-header__stats" *ngIf="!loadingFamilies">
+      <div class="cm-stat">
+        <span class="cm-stat__num">{{ totalFamilies }}</span>
+        <span class="cm-stat__lbl">Families</span>
+      </div>
+      <div class="cm-stat">
+        <span class="cm-stat__num">{{ totalCompetences }}</span>
+        <span class="cm-stat__lbl">Total {{ activeMeta.label }} Competencies</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ Category Tabs ════════════════════════════════════════════ -->
+  <div class="cm-tabs">
+    <button
+      *ngFor="let cat of categories; trackBy: trackByValue"
+      class="cm-tab"
+      [class.cm-tab--active]="activeCategory === cat.value"
+      [style.--tab-color]="cat.color"
+      (click)="selectCategory(cat.value)"
+    >
+      <span class="cm-tab__icon" [innerHTML]="cat.icon"></span>
+      <span class="cm-tab__label">{{ cat.label }}</span>
+    </button>
+  </div>
+
+  <!-- ══ Main Layout ═══════════════════════════════════════════════ -->
+  <div class="cm-layout">
+
+    <!-- ── Family Panel ────────────────────────────────────────── -->
+    <aside class="cm-panel cm-panel--families">
+      <div class="cm-panel__head">
+        <h2 class="cm-panel__title">Families</h2>
+        <button class="btn-icon btn-icon--primary" title="Add family" (click)="openAddFamilyForm()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Search -->
+      <div class="cm-search">
+        <svg class="cm-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input
+          type="text"
+          class="cm-search__input"
+          placeholder="Search families…"
+          [(ngModel)]="familySearch"
+          autocomplete="off"
+        />
+        <button *ngIf="familySearch" class="cm-search__clear" (click)="familySearch = ''">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Loading skeleton -->
+      <div *ngIf="loadingFamilies" class="cm-skeleton-list">
+        <div class="cm-skel cm-skel--family" *ngFor="let i of [1,2,3,4,5]"></div>
+      </div>
+
+      <!-- Empty state -->
+      <div *ngIf="!loadingFamilies && filteredFamilies.length === 0" class="cm-empty cm-empty--sm">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+        </svg>
+        <span>{{ familySearch ? 'No matches' : 'No families yet' }}</span>
+      </div>
+
+      <!-- Family list -->
+      <ul *ngIf="!loadingFamilies" class="cm-family-list">
+        <li
+          *ngFor="let f of filteredFamilies; trackBy: trackById"
+          class="cm-family-item"
+          [class.cm-family-item--active]="selectedFamily?.id === f.id"
+          [class.cm-family-item--deleting]="deletingFamilyId === f.id"
+          [style.--cat-color]="activeMeta.color"
+          (click)="selectFamily(f)"
+        >
+          <span class="cm-family-item__dot"></span>
+          <span class="cm-family-item__name">{{ f.name }}</span>
+          <span class="cm-badge" *ngIf="f.competenceCount !== undefined && selectedFamily?.id !== f.id">
+            {{ f.competenceCount }}
+          </span>
+          <div class="cm-family-item__actions">
+            <button class="btn-ghost btn-ghost--sm" title="Edit" (click)="openEditFamilyForm(f, $event)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+            <button class="btn-ghost btn-ghost--sm btn-ghost--danger" title="Delete"
+                    (click)="requestDeleteFamily(f, $event)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                <path d="M10 11v6"/><path d="M14 11v6"/>
+                <path d="M9 6V4h6v2"/>
+              </svg>
+            </button>
+          </div>
+        </li>
+      </ul>
+    </aside>
+
+    <!-- ── Competence Panel ─────────────────────────────────────── -->
+    <main class="cm-panel cm-panel--competences">
+
+      <!-- No family selected -->
+      <div *ngIf="!selectedFamily && !loadingFamilies" class="cm-empty cm-empty--lg">
+        <!-- Inline SVG illustration — no broken image dependency -->
+        <div class="cm-empty__illustration">
+          <svg viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background card -->
+            <rect x="18" y="32" width="88" height="76" rx="12"
+                  fill="var(--accent-dim)" stroke="var(--accent-soft)"
+                  stroke-width="1.5" stroke-dasharray="6 3"/>
+            <!-- Lines suggesting content -->
+            <rect x="32" y="50" width="36" height="6" rx="3" fill="var(--accent-soft)" opacity=".5"/>
+            <rect x="32" y="63" width="56" height="4" rx="2" fill="var(--border-default)"/>
+            <rect x="32" y="73" width="46" height="4" rx="2" fill="var(--border-default)"/>
+            <rect x="32" y="83" width="52" height="4" rx="2" fill="var(--border-default)"/>
+            <!-- Floating add badge -->
+            <circle cx="98" cy="42" r="18" fill="var(--bg-surface)"
+                    stroke="var(--border-default)" stroke-width="1"/>
+            <circle cx="98" cy="42" r="18" fill="var(--accent-dim)"
+                    stroke="var(--accent)" stroke-width="1.5"/>
+            <line x1="91" y1="42" x2="105" y2="42" stroke="var(--accent)"
+                  stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="98" y1="35" x2="98" y2="49" stroke="var(--accent)"
+                  stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <h3>Select a Family</h3>
+        <p>Choose a competence family from the left panel to view and manage its competences.</p>
+      </div>
+
+      <!-- Family selected -->
+      <ng-container *ngIf="selectedFamily">
+        <div class="cm-panel__head">
+          <div class="cm-panel__head-left">
+            <h2 class="cm-panel__title">{{ selectedFamily.name }}</h2>
+            <span
+              class="cm-badge"
+              [style.background]="activeMeta.color + '18'"
+              [style.color]="activeMeta.color"
+            >
+              {{ competences.length }} competences
+            </span>
+          </div>
+          <button class="btn-primary" (click)="openAddCompetenceForm()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                 stroke-linecap="round" stroke-linejoin="round" width="13" height="13">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Quick Add
+          </button>
+        </div>
+
+        <!-- Loading -->
+        <div *ngIf="loadingCompetences" class="cm-skeleton-list">
+          <div class="cm-skel cm-skel--competence" *ngFor="let i of [1,2,3]"></div>
+        </div>
+
+        <!-- Empty state -->
+        <div *ngIf="!loadingCompetences && competences.length === 0" class="cm-empty cm-empty--md">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+          <span>No competences yet — add the first one above.</span>
+        </div>
+
+        <!-- Accordion list -->
+        <div *ngIf="!loadingCompetences" class="cm-accordion">
+          <div
+            *ngFor="let c of competences; trackBy: trackById"
+            class="cm-card"
+            [class.cm-card--open]="isExpanded(c.id)"
+            [class.cm-card--deleting]="deletingCompetenceId === c.id"
+            [style.--card-color]="activeMeta.color"
+          >
+            <!-- Card header -->
+            <div class="cm-card__header" (click)="toggleExpand(c.id)">
+              <div class="cm-card__header-left">
+                <div class="cm-card__chevron">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </div>
+                <div class="cm-card__info">
+                  <h3 class="cm-card__name">{{ c.name }}</h3>
+                  <p class="cm-card__desc" *ngIf="c.description">{{ c.description }}</p>
+                </div>
+              </div>
+              <div class="cm-card__actions" (click)="$event.stopPropagation()">
+                <span
+                  class="cm-levels-pill"
+                  [style.color]="activeMeta.color"
+                  [style.background]="activeMeta.color + '15'"
+                >
+                  {{ c.levels.length }}/5 levels
+                </span>
+                <button class="btn-ghost btn-ghost--sm" title="Edit levels"
+                        (click)="openLevelsEditor(c, $event)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                  </svg>
+                </button>
+                <button class="btn-ghost btn-ghost--sm" title="Edit name"
+                        (click)="openEditCompetenceForm(c, $event)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+                <button class="btn-ghost btn-ghost--sm btn-ghost--danger" title="Delete"
+                        (click)="requestDeleteCompetence(c, $event)">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                       stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/>
+                    <path d="M10 11v6"/><path d="M14 11v6"/>
+                    <path d="M9 6V4h6v2"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Expanded levels -->
+            <div class="cm-card__body" *ngIf="isExpanded(c.id)">
+              <div *ngIf="!c.levels || c.levels.length === 0" class="cm-no-levels">
+                No levels defined yet. Click the pencil icon to add descriptions.
+              </div>
+              <div class="cm-levels" *ngIf="c.levels && c.levels.length > 0">
+                <div
+                  *ngFor="let l of c.levels; trackBy: trackByIndex"
+                  class="cm-level"
+                  [style.--level-color]="getLevelColor(l.level)"
+                >
+                  <div class="cm-level__badge">
+                    <span class="cm-level__num">{{ l.level }}</span>
+                    <span class="cm-level__label">{{ levelLabels[l.level - 1] }}</span>
+                  </div>
+                  <p class="cm-level__desc">
+                    {{ l.description || 'No description yet.' }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </ng-container>
+    </main>
+  </div>
+
+</div>
+
+<!-- ══ Family Form Modal ═══════════════════════════════════════════ -->
+<div class="cm-overlay" *ngIf="showFamilyForm" (click)="closeFamilyForm()">
+  <div class="cm-modal" (click)="$event.stopPropagation()">
+    <div class="cm-modal__header">
+      <h3>{{ editingFamily ? 'Edit Family' : 'Add Family' }}</h3>
+      <button class="btn-icon" (click)="closeFamilyForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <form [formGroup]="familyForm" (ngSubmit)="submitFamilyForm()" class="cm-modal__body">
+      <div class="cm-field">
+        <label class="cm-label">Family Name</label>
+        <input
+          type="text"
+          class="cm-input"
+          placeholder="e.g. Programming Languages"
+          formControlName="name"
+          autocomplete="off"
+        />
+        <span class="cm-field__error"
+              *ngIf="familyForm.get('name')?.invalid && familyForm.get('name')?.touched">
+          Name is required (max 200 chars).
+        </span>
+      </div>
+      <div class="cm-field">
+        <label class="cm-label">Category</label>
+        <div class="cm-chip-group">
+          <label
+            *ngFor="let cat of categories; trackBy: trackByValue"
+            class="cm-chip"
+            [class.cm-chip--active]="familyForm.get('category')?.value === cat.value"
+            [style.--chip-color]="cat.color"
+            [style.background]="familyForm.get('category')?.value === cat.value
+              ? cat.color + '14' : ''"
+          >
+            <input type="radio" formControlName="category" [value]="cat.value" />
+            {{ cat.label }}
+          </label>
+        </div>
+      </div>
+      <div class="cm-modal__footer">
+        <button type="button" class="btn-ghost" (click)="closeFamilyForm()">Cancel</button>
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="familyForm.invalid || savingFamily"
+        >
+          <span *ngIf="savingFamily" class="spinner"></span>
+          {{ editingFamily ? 'Save Changes' : 'Create Family' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══ Competence Form Modal ════════════════════════════════════════ -->
+<div class="cm-overlay" *ngIf="showCompetenceForm" (click)="closeCompetenceForm()">
+  <div class="cm-modal" (click)="$event.stopPropagation()">
+    <div class="cm-modal__header">
+      <h3>{{ editingCompetence ? 'Edit Competence' : 'Add Competence' }}</h3>
+      <button class="btn-icon" (click)="closeCompetenceForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <form [formGroup]="competenceForm" (ngSubmit)="submitCompetenceForm()" class="cm-modal__body">
+      <div class="cm-field">
+        <label class="cm-label">Competence Name</label>
+        <input
+          type="text"
+          class="cm-input"
+          placeholder="e.g. Conflict Resolution"
+          formControlName="name"
+          autocomplete="off"
+        />
+        <span class="cm-field__error"
+              *ngIf="competenceForm.get('name')?.invalid && competenceForm.get('name')?.touched">
+          Name is required.
+        </span>
+      </div>
+      <div class="cm-field">
+        <label class="cm-label">
+          Description <span class="cm-label--opt">(optional)</span>
+        </label>
+        <textarea
+          class="cm-input cm-input--textarea"
+          placeholder="Brief overview of this competence…"
+          formControlName="description"
+          rows="3"
+        ></textarea>
+      </div>
+      <div class="cm-modal__footer">
+        <button type="button" class="btn-ghost" (click)="closeCompetenceForm()">Cancel</button>
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="competenceForm.invalid || savingCompetence"
+        >
+          <span *ngIf="savingCompetence" class="spinner"></span>
+          {{ editingCompetence ? 'Save Changes' : 'Create Competence' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══ Levels Editor Modal ══════════════════════════════════════════ -->
+<div class="cm-overlay" *ngIf="editingLevelsFor" (click)="closeLevelsEditor()">
+  <div class="cm-modal cm-modal--wide" (click)="$event.stopPropagation()">
+    <div class="cm-modal__header">
+      <div>
+        <h3>Edit Proficiency Levels</h3>
+        <p class="cm-modal__sub">{{ editingLevelsFor.name }}</p>
+      </div>
+      <button class="btn-icon" (click)="closeLevelsEditor()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+             stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <form [formGroup]="levelsForm" (ngSubmit)="submitLevels()" class="cm-modal__body">
+      <div class="cm-levels-editor" formArrayName="levels">
+        <div
+          *ngFor="let ctrl of levelsArray.controls; let i = index"
+          class="cm-level-row"
+          [formGroupName]="i"
+          [style.--level-color]="getLevelColor(i + 1)"
+        >
+          <div class="cm-level-row__badge">
+            <span class="cm-level-row__num">{{ i + 1 }}</span>
+            <span class="cm-level-row__label">{{ levelLabels[i] }}</span>
+          </div>
+          <textarea
+            class="cm-input cm-input--textarea cm-input--level"
+            [placeholder]="'Describe level ' + (i + 1) + ' – ' + levelLabels[i] + '…'"
+            formControlName="description"
+            rows="2"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="cm-modal__footer">
+        <button type="button" class="btn-ghost" (click)="closeLevelsEditor()">Cancel</button>
+        <button
+          type="submit"
+          class="btn-primary"
+          [disabled]="levelsForm.invalid || savingLevels"
+        >
+          <span *ngIf="savingLevels" class="spinner"></span>
+          Save All Levels
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ══ Confirm Delete Modals ════════════════════════════════════════ -->
+<app-confirm-modal
+  [open]="deleteFamilyModal"
+  title="Delete Family"
+  message="This will delete the family and ALL its competences. This action cannot be undone."
+  confirmText="Delete"
+  cancelText="Cancel"
+  [isDanger]="true"
+  (confirmed)="confirmDeleteFamily()"
+  (cancelled)="cancelDeleteFamily()"
+/>
+
+<app-confirm-modal
+  [open]="deleteCompetenceModal"
+  title="Delete Competence"
+  message="This will permanently delete the competency and all its rank descriptions."
+  confirmText="Delete"
+  cancelText="Cancel"
+  [isDanger]="true"
+  (confirmed)="confirmDeleteCompetence()"
+  (cancelled)="cancelDeleteCompetence()"
+/>

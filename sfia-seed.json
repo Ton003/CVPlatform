@@ -1,0 +1,654 @@
+{
+  "families": [
+    {
+      "name": "Agile Delivery",
+      "category": "TECHNICAL",
+      "competences": [
+        {
+          "name": "Business Situation Analysis",
+          "description": "Analysing business situations to identify problems, opportunities and feasibility of solutions.",
+          "levels": [
+            { "level": 1, "description": "Assists in gathering information about business situations under supervision." },
+            { "level": 2, "description": "Collects and documents information about current business situations with guidance." },
+            { "level": 3, "description": "Investigates and documents business situations, identifies options and contributes to recommendations." },
+            { "level": 4, "description": "Analyses business situations to identify problems and opportunities; formulates and evaluates options and produces recommendations." },
+            { "level": 5, "description": "Leads complex business situation analysis across multiple domains; develops and drives adoption of analysis approaches and best practices." }
+          ]
+        },
+        {
+          "name": "Organisational Facilitation",
+          "description": "Planning and leading group activities to achieve productive outcomes and consensus.",
+          "levels": [
+            { "level": 1, "description": "Participates in facilitated sessions and supports logistics under direction." },
+            { "level": 2, "description": "Facilitates small team discussions with a clear agenda and defined outcomes." },
+            { "level": 3, "description": "Facilitates workshops and meetings across teams, manages group dynamics and drives outcomes." },
+            { "level": 4, "description": "Plans and leads complex facilitation sessions across organisational boundaries with senior stakeholders." },
+            { "level": 5, "description": "Leads organisational facilitation strategy; mentors facilitators and embeds facilitation as an organisational capability." }
+          ]
+        },
+        {
+          "name": "Stakeholder Relationship Management",
+          "description": "Influencing attitudes and decisions of business and technology stakeholders.",
+          "levels": [
+            { "level": 1, "description": "Communicates with immediate stakeholders in a clear and professional manner." },
+            { "level": 2, "description": "Identifies stakeholders and supports relationship management activities under guidance." },
+            { "level": 3, "description": "Builds and maintains relationships with key stakeholders; manages expectations and resolves routine conflicts." },
+            { "level": 4, "description": "Manages complex stakeholder relationships across organisational boundaries; negotiates and influences decisions." },
+            { "level": 5, "description": "Develops and leads stakeholder engagement strategy at senior and executive levels across the organisation." }
+          ]
+        },
+        {
+          "name": "Innovation",
+          "description": "Applying creative thinking to generate new ideas, methods and solutions.",
+          "levels": [
+            { "level": 1, "description": "Contributes ideas and suggestions in team discussions." },
+            { "level": 2, "description": "Proposes new approaches to solve defined problems within own area." },
+            { "level": 3, "description": "Generates and evaluates innovative solutions; pilots new ideas and captures learnings." },
+            { "level": 4, "description": "Leads innovation initiatives; creates an environment that encourages creativity and experimentation." },
+            { "level": 5, "description": "Sets innovation strategy; builds organisational innovation capability and drives transformative change." }
+          ]
+        },
+        {
+          "name": "Organisational Capability Development",
+          "description": "Providing leadership, guidance and management to enable the organisation to develop its capabilities.",
+          "levels": [
+            { "level": 1, "description": "Participates in capability development activities such as training and knowledge sharing." },
+            { "level": 2, "description": "Contributes to team capability by sharing knowledge and supporting colleagues." },
+            { "level": 3, "description": "Identifies capability gaps and recommends targeted development activities." },
+            { "level": 4, "description": "Designs and implements capability development programmes for teams or functions." },
+            { "level": 5, "description": "Leads organisational capability development strategy; builds long-term talent pipelines and institutional knowledge." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Architecture",
+      "category": "TECHNICAL",
+      "competences": [
+        {
+          "name": "Enterprise & Business Architecture",
+          "description": "Creating, iterating and maintaining the enterprise architecture and ensuring alignment with business strategy.",
+          "levels": [
+            { "level": 1, "description": "Understands basic architecture concepts and assists in documentation tasks." },
+            { "level": 2, "description": "Produces architecture documentation and models under guidance." },
+            { "level": 3, "description": "Contributes to architecture designs, identifies gaps and documents current and target states." },
+            { "level": 4, "description": "Designs and maintains enterprise architecture views; ensures alignment with strategy and standards." },
+            { "level": 5, "description": "Leads enterprise architecture practice; owns the architectural vision and governs strategic alignment across the organisation." }
+          ]
+        },
+        {
+          "name": "Solution Architecture",
+          "description": "Providing guidance on the design and implementation of technology solutions.",
+          "levels": [
+            { "level": 1, "description": "Assists in documenting solution designs and existing systems under supervision." },
+            { "level": 2, "description": "Produces low-level solution documentation and contributes to design reviews." },
+            { "level": 3, "description": "Designs solutions for moderately complex systems; validates against non-functional requirements." },
+            { "level": 4, "description": "Leads solution design across complex programmes; ensures architectural integrity and technical coherence." },
+            { "level": 5, "description": "Defines solution architecture standards and patterns; governs technical decisions across multiple programmes." }
+          ]
+        },
+        {
+          "name": "Systems Design",
+          "description": "Designing systems and components to meet specified requirements.",
+          "levels": [
+            { "level": 1, "description": "Understands basic design principles and assists in producing design artefacts." },
+            { "level": 2, "description": "Produces detailed designs for simple components with guidance." },
+            { "level": 3, "description": "Designs systems components to meet functional and non-functional requirements." },
+            { "level": 4, "description": "Leads design activities for complex systems; ensures scalability, security and maintainability." },
+            { "level": 5, "description": "Defines system design standards and approaches; oversees design quality across large-scale programmes." }
+          ]
+        },
+        {
+          "name": "Data Modelling & Design",
+          "description": "Defining, designing and maintaining data models and data structures.",
+          "levels": [
+            { "level": 1, "description": "Understands basic data modelling concepts and assists in creating simple models." },
+            { "level": 2, "description": "Creates data models for simple domains under guidance; documents data entities and relationships." },
+            { "level": 3, "description": "Develops and validates data models for moderately complex domains; applies normalisation principles." },
+            { "level": 4, "description": "Leads data modelling activities; designs enterprise-wide data structures aligned to business needs." },
+            { "level": 5, "description": "Defines data architecture standards; governs data models across the organisation and leads master data strategy." }
+          ]
+        },
+        {
+          "name": "Strategic Planning",
+          "description": "Creating and maintaining technology strategy and roadmaps aligned to business goals.",
+          "levels": [
+            { "level": 1, "description": "Gathers and organises information to support strategic planning activities." },
+            { "level": 2, "description": "Contributes analysis and insight to support technology strategy development." },
+            { "level": 3, "description": "Develops technology roadmaps for specific domains; aligns plans to business priorities." },
+            { "level": 4, "description": "Leads technology strategy development; produces multi-year plans and gains senior buy-in." },
+            { "level": 5, "description": "Owns organisational technology strategy; drives alignment across business units and sets long-term direction." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Software Engineering",
+      "category": "TECHNICAL",
+      "competences": [
+        {
+          "name": "Programming & Software Development",
+          "description": "Developing, testing and maintaining software applications using appropriate languages and frameworks.",
+          "levels": [
+            { "level": 1, "description": "Writes simple code with guidance, following established patterns and standards." },
+            { "level": 2, "description": "Develops straightforward software components with limited supervision; fixes basic defects." },
+            { "level": 3, "description": "Develops complex features independently; conducts code reviews and applies best practices." },
+            { "level": 4, "description": "Leads development of major system components; defines coding standards and mentors junior developers." },
+            { "level": 5, "description": "Drives engineering excellence across teams; evaluates and adopts emerging languages and frameworks." }
+          ]
+        },
+        {
+          "name": "Software Design",
+          "description": "Designing software structures, components and interfaces to meet requirements.",
+          "levels": [
+            { "level": 1, "description": "Assists in documenting software designs using established templates." },
+            { "level": 2, "description": "Produces detailed low-level designs for simple components under guidance." },
+            { "level": 3, "description": "Designs and documents software modules; applies design patterns and evaluates trade-offs." },
+            { "level": 4, "description": "Leads software design for complex systems; ensures consistency, reusability and maintainability." },
+            { "level": 5, "description": "Defines software design principles and standards; influences architectural decisions across the organisation." }
+          ]
+        },
+        {
+          "name": "Testing",
+          "description": "Designing, executing and reporting tests to ensure software quality and reliability.",
+          "levels": [
+            { "level": 1, "description": "Executes predefined test cases and records results under supervision." },
+            { "level": 2, "description": "Designs and executes test cases for simple features; identifies and logs defects." },
+            { "level": 3, "description": "Plans and executes testing for complex features; analyses defects and recommends improvements." },
+            { "level": 4, "description": "Defines testing strategy for programmes; introduces automation and ensures test coverage." },
+            { "level": 5, "description": "Leads quality engineering practice; sets testing standards and drives shift-left quality culture." }
+          ]
+        },
+        {
+          "name": "Configuration Management",
+          "description": "Planning, implementing and managing configuration and version control of software and infrastructure.",
+          "levels": [
+            { "level": 1, "description": "Uses version control tools under supervision to commit and retrieve code." },
+            { "level": 2, "description": "Manages branches and merges in version control; follows configuration management procedures." },
+            { "level": 3, "description": "Implements configuration management plans; automates build and release processes." },
+            { "level": 4, "description": "Defines configuration management strategy; manages tooling and processes across programmes." },
+            { "level": 5, "description": "Governs configuration management across the organisation; drives automation and compliance." }
+          ]
+        },
+        {
+          "name": "Systems Integration & Build",
+          "description": "Planning, implementing and controlling activities to integrate system components.",
+          "levels": [
+            { "level": 1, "description": "Assists in integration tasks under supervision, following defined procedures." },
+            { "level": 2, "description": "Integrates simple components; troubleshoots basic integration issues." },
+            { "level": 3, "description": "Plans and executes integration of moderately complex systems; identifies and resolves integration defects." },
+            { "level": 4, "description": "Leads integration planning for complex systems; defines integration standards and test approaches." },
+            { "level": 5, "description": "Governs integration architecture and practices; ensures seamless interoperability across enterprise systems." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Data & Analytics",
+      "category": "TECHNICAL",
+      "competences": [
+        {
+          "name": "Data Engineering",
+          "description": "Designing, building and maintaining data pipelines, stores and infrastructure.",
+          "levels": [
+            { "level": 1, "description": "Assists with data pipeline tasks under supervision using established tools." },
+            { "level": 2, "description": "Builds and maintains simple data pipelines; troubleshoots data quality issues." },
+            { "level": 3, "description": "Designs and implements robust data pipelines; optimises for performance and reliability." },
+            { "level": 4, "description": "Leads data engineering for complex platforms; defines standards for data ingestion and transformation." },
+            { "level": 5, "description": "Architects enterprise data engineering capabilities; drives data platform strategy and adoption." }
+          ]
+        },
+        {
+          "name": "Data Science",
+          "description": "Applying statistical and machine learning methods to extract insights from data.",
+          "levels": [
+            { "level": 1, "description": "Assists with data preparation and exploratory analysis under supervision." },
+            { "level": 2, "description": "Applies standard statistical and ML techniques to defined business problems." },
+            { "level": 3, "description": "Develops, validates and deploys models; communicates findings to non-technical stakeholders." },
+            { "level": 4, "description": "Leads data science initiatives; designs experimentation frameworks and ensures model governance." },
+            { "level": 5, "description": "Sets data science strategy; establishes centres of excellence and drives organisation-wide data literacy." }
+          ]
+        },
+        {
+          "name": "Data Management",
+          "description": "Developing and implementing plans, policies and practices that control, protect and optimise data assets.",
+          "levels": [
+            { "level": 1, "description": "Follows data management procedures and assists in maintaining data registers." },
+            { "level": 2, "description": "Maintains data catalogues and supports data quality monitoring activities." },
+            { "level": 3, "description": "Implements data management policies; monitors data quality and resolves data issues." },
+            { "level": 4, "description": "Designs and leads data governance frameworks; ensures regulatory compliance and data stewardship." },
+            { "level": 5, "description": "Defines enterprise data management strategy; owns data governance policies and drives data maturity." }
+          ]
+        },
+        {
+          "name": "Machine Learning",
+          "description": "Designing, developing and deploying machine learning models and systems.",
+          "levels": [
+            { "level": 1, "description": "Understands basic ML concepts; assists in data preparation and model evaluation tasks." },
+            { "level": 2, "description": "Trains and evaluates standard ML models using established frameworks." },
+            { "level": 3, "description": "Designs and deploys ML models; tunes hyperparameters and monitors model performance in production." },
+            { "level": 4, "description": "Leads ML projects end-to-end; implements MLOps practices and ensures model reliability at scale." },
+            { "level": 5, "description": "Defines ML strategy and architecture; establishes model governance and drives responsible AI practices." }
+          ]
+        },
+        {
+          "name": "Data Visualisation",
+          "description": "Designing and producing visual representations of data to communicate insights.",
+          "levels": [
+            { "level": 1, "description": "Creates basic charts and reports using standard tools under supervision." },
+            { "level": 2, "description": "Develops dashboards and visualisations for routine reporting needs." },
+            { "level": 3, "description": "Designs interactive visualisations tailored to audience needs; ensures accuracy and clarity." },
+            { "level": 4, "description": "Leads data visualisation strategy; defines standards and ensures visualisations drive actionable decisions." },
+            { "level": 5, "description": "Sets enterprise data storytelling standards; embeds visual analytics culture across the organisation." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "DevOps",
+      "category": "TECHNICAL",
+      "competences": [
+        {
+          "name": "Release & Deployment",
+          "description": "Managing the process of packaging, building and deploying releases to environments.",
+          "levels": [
+            { "level": 1, "description": "Supports release activities under supervision; follows deployment checklists." },
+            { "level": 2, "description": "Executes release and deployment procedures; identifies and escalates deployment issues." },
+            { "level": 3, "description": "Plans and coordinates releases; implements CI/CD pipelines and rollback procedures." },
+            { "level": 4, "description": "Defines release management strategy; drives automation and zero-downtime deployment practices." },
+            { "level": 5, "description": "Governs release engineering practice; sets standards for continuous delivery at enterprise scale." }
+          ]
+        },
+        {
+          "name": "Systems & Software Life Cycle Engineering",
+          "description": "Establishing and deploying processes that support effective development and maintenance of systems.",
+          "levels": [
+            { "level": 1, "description": "Follows defined life cycle processes and assists in process documentation." },
+            { "level": 2, "description": "Applies life cycle processes to assigned tasks; flags process gaps to senior team members." },
+            { "level": 3, "description": "Implements life cycle processes for projects; contributes to process improvement initiatives." },
+            { "level": 4, "description": "Defines and improves life cycle processes across programmes; aligns practices with standards." },
+            { "level": 5, "description": "Owns life cycle engineering strategy; drives organisational adoption of engineering excellence practices." }
+          ]
+        },
+        {
+          "name": "IT Infrastructure",
+          "description": "Deploying, configuring, maintaining and supporting IT infrastructure components.",
+          "levels": [
+            { "level": 1, "description": "Performs routine infrastructure tasks under close supervision." },
+            { "level": 2, "description": "Maintains and troubleshoots infrastructure components; follows established runbooks." },
+            { "level": 3, "description": "Configures and optimises infrastructure; implements monitoring and alerting." },
+            { "level": 4, "description": "Designs and manages infrastructure platforms; introduces infrastructure-as-code practices." },
+            { "level": 5, "description": "Defines infrastructure architecture strategy; drives cloud adoption and automation at scale." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Information & Cyber Security",
+      "category": "TECHNICAL",
+      "competences": [
+        {
+          "name": "Information Security",
+          "description": "Selecting, designing, justifying and implementing security controls to manage risks.",
+          "levels": [
+            { "level": 1, "description": "Follows security procedures and reports security incidents under supervision." },
+            { "level": 2, "description": "Applies security controls in daily work; identifies and escalates security risks." },
+            { "level": 3, "description": "Implements security controls; conducts risk assessments and supports audits." },
+            { "level": 4, "description": "Leads security design for systems and programmes; defines security architecture and standards." },
+            { "level": 5, "description": "Owns information security strategy; drives security culture and governs enterprise risk posture." }
+          ]
+        },
+        {
+          "name": "Security Operations",
+          "description": "Monitoring, detecting and responding to security events and incidents.",
+          "levels": [
+            { "level": 1, "description": "Monitors security alerts using established tools; escalates incidents following defined procedures." },
+            { "level": 2, "description": "Triages and responds to routine security incidents; maintains security monitoring systems." },
+            { "level": 3, "description": "Investigates complex security incidents; performs threat hunting and improves detection rules." },
+            { "level": 4, "description": "Leads security operations centre activities; defines detection and response playbooks." },
+            { "level": 5, "description": "Defines security operations strategy; integrates threat intelligence and drives security automation." }
+          ]
+        },
+        {
+          "name": "Risk Management",
+          "description": "Planning and implementing organisation-wide processes and procedures for the management of risk.",
+          "levels": [
+            { "level": 1, "description": "Assists in risk identification and documentation activities under supervision." },
+            { "level": 2, "description": "Identifies and documents risks for assigned areas; supports risk treatment activities." },
+            { "level": 3, "description": "Conducts risk assessments; maintains risk registers and monitors mitigation actions." },
+            { "level": 4, "description": "Leads risk management programmes; defines risk appetite and governance frameworks." },
+            { "level": 5, "description": "Owns enterprise risk management strategy; integrates risk into strategic decision-making." }
+          ]
+        },
+        {
+          "name": "Information Assurance",
+          "description": "Protecting against and managing risks related to the use, storage, and transmission of data and information systems.",
+          "levels": [
+            { "level": 1, "description": "Follows information assurance policies and assists in compliance checks." },
+            { "level": 2, "description": "Implements information assurance controls; supports compliance assessments and audits." },
+            { "level": 3, "description": "Assesses information assurance risks; develops and implements remediation plans." },
+            { "level": 4, "description": "Leads information assurance programmes; ensures regulatory and policy compliance across systems." },
+            { "level": 5, "description": "Defines information assurance strategy; owns compliance frameworks and drives a security-first culture." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Project & Programme Delivery",
+      "category": "MANAGERIAL",
+      "competences": [
+        {
+          "name": "Project Management",
+          "description": "Delivering defined project outputs on time, to budget and to agreed quality standards.",
+          "levels": [
+            { "level": 1, "description": "Supports project activities and maintains project documentation under supervision." },
+            { "level": 2, "description": "Manages small tasks or workstreams; tracks progress and escalates issues." },
+            { "level": 3, "description": "Manages projects of moderate complexity; plans, monitors and controls scope, time and cost." },
+            { "level": 4, "description": "Leads complex projects; manages risks, stakeholders and cross-functional dependencies." },
+            { "level": 5, "description": "Sponsors or governs major programmes; defines delivery standards and builds project management capability." }
+          ]
+        },
+        {
+          "name": "Programme Management",
+          "description": "Identifying, planning and coordinating a set of related projects towards a strategic objective.",
+          "levels": [
+            { "level": 1, "description": "Supports programme administration and reporting activities." },
+            { "level": 2, "description": "Coordinates activities across small workstreams; maintains programme documentation." },
+            { "level": 3, "description": "Manages interdependencies across projects; consolidates programme reporting and manages risks." },
+            { "level": 4, "description": "Leads strategic programmes; manages benefits, governance and senior stakeholder engagement." },
+            { "level": 5, "description": "Defines programme management standards; governs transformational change programmes at enterprise scale." }
+          ]
+        },
+        {
+          "name": "Benefits Management",
+          "description": "Identifying, planning, managing and realising benefits from projects and programmes.",
+          "levels": [
+            { "level": 1, "description": "Assists in documenting expected benefits for projects under supervision." },
+            { "level": 2, "description": "Maintains benefits registers; supports baseline measurement activities." },
+            { "level": 3, "description": "Tracks and reports benefit realisation; identifies risks to benefit delivery." },
+            { "level": 4, "description": "Leads benefits management for programmes; designs measurement frameworks and drives realisation." },
+            { "level": 5, "description": "Defines enterprise benefits management strategy; embeds a culture of outcome-focused delivery." }
+          ]
+        },
+        {
+          "name": "Resource Management",
+          "description": "Planning, deploying and monitoring the use of human resources to meet organisational needs.",
+          "levels": [
+            { "level": 1, "description": "Maintains resource trackers and supports scheduling activities under supervision." },
+            { "level": 2, "description": "Coordinates resource allocation for small teams; flags resource conflicts." },
+            { "level": 3, "description": "Plans and manages resource demand and supply for projects; negotiates resource availability." },
+            { "level": 4, "description": "Leads resource management across programmes; optimises utilisation and builds capacity plans." },
+            { "level": 5, "description": "Defines workforce strategy; integrates resource management with financial planning and talent development." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "People & Organisational Development",
+      "category": "MANAGERIAL",
+      "competences": [
+        {
+          "name": "Performance Management",
+          "description": "Driving high performance through goal-setting, feedback, coaching and development conversations.",
+          "levels": [
+            { "level": 1, "description": "Receives and applies feedback constructively; sets personal development goals." },
+            { "level": 2, "description": "Supports team members with feedback and monitors individual progress." },
+            { "level": 3, "description": "Sets clear performance goals for direct reports; conducts regular reviews and addresses underperformance." },
+            { "level": 4, "description": "Leads performance management culture across a function; aligns individual goals to organisational strategy." },
+            { "level": 5, "description": "Defines performance management frameworks; drives a high-performance culture across the organisation." }
+          ]
+        },
+        {
+          "name": "Professional Development",
+          "description": "Facilitating the professional growth of individuals through learning and career guidance.",
+          "levels": [
+            { "level": 1, "description": "Identifies own learning needs and participates in development activities." },
+            { "level": 2, "description": "Supports colleagues in identifying learning opportunities; shares knowledge proactively." },
+            { "level": 3, "description": "Creates development plans for team members; connects individuals with learning resources and opportunities." },
+            { "level": 4, "description": "Leads professional development programmes for a function; builds career pathways and mentoring networks." },
+            { "level": 5, "description": "Defines talent and professional development strategy; builds learning culture and succession pipelines." }
+          ]
+        },
+        {
+          "name": "Learning & Development Management",
+          "description": "Managing and delivering activities to develop skills, knowledge and competencies across the organisation.",
+          "levels": [
+            { "level": 1, "description": "Assists in coordinating learning events and maintaining training records." },
+            { "level": 2, "description": "Delivers training sessions and supports learning programme administration." },
+            { "level": 3, "description": "Designs and delivers learning programmes; evaluates effectiveness and iterates content." },
+            { "level": 4, "description": "Leads L&D strategy for a function; manages learning platforms and measures ROI." },
+            { "level": 5, "description": "Defines enterprise-wide L&D strategy; builds learning ecosystems and embeds continuous development culture." }
+          ]
+        },
+        {
+          "name": "Competency Assessment",
+          "description": "Assessing and evaluating the competencies of individuals against defined frameworks.",
+          "levels": [
+            { "level": 1, "description": "Participates in competency assessments and provides self-assessment input." },
+            { "level": 2, "description": "Assists in conducting competency assessments using defined tools and criteria." },
+            { "level": 3, "description": "Conducts competency assessments independently; produces development recommendations." },
+            { "level": 4, "description": "Leads competency assessment programmes; calibrates assessors and ensures consistency." },
+            { "level": 5, "description": "Defines competency frameworks and assessment methodology; governs capability benchmarking across the organisation." }
+          ]
+        },
+        {
+          "name": "Workforce Planning",
+          "description": "Estimating the demand for people and skills and planning to meet that demand.",
+          "levels": [
+            { "level": 1, "description": "Gathers data to support workforce planning analysis under supervision." },
+            { "level": 2, "description": "Maintains workforce data and produces routine headcount and skills reports." },
+            { "level": 3, "description": "Analyses workforce supply and demand; develops short-term workforce plans." },
+            { "level": 4, "description": "Leads strategic workforce planning; integrates with financial and business planning cycles." },
+            { "level": 5, "description": "Defines enterprise workforce strategy; models long-term capability needs and drives talent acquisition strategy." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Service Management",
+      "category": "MANAGERIAL",
+      "competences": [
+        {
+          "name": "Incident Management",
+          "description": "Coordinating responses to service incidents to restore normal operation as quickly as possible.",
+          "levels": [
+            { "level": 1, "description": "Logs incidents and follows defined procedures to escalate issues." },
+            { "level": 2, "description": "Investigates and resolves routine incidents; communicates status to affected users." },
+            { "level": 3, "description": "Manages complex incidents; coordinates resolution across teams and produces incident reports." },
+            { "level": 4, "description": "Leads incident management capability; defines processes, tooling and SLAs for incident response." },
+            { "level": 5, "description": "Owns major incident management strategy; drives continual service improvement and resilience planning." }
+          ]
+        },
+        {
+          "name": "Problem Management",
+          "description": "Minimising the impact of incidents by identifying root causes and implementing permanent fixes.",
+          "levels": [
+            { "level": 1, "description": "Assists in documenting problem records and known errors." },
+            { "level": 2, "description": "Investigates routine problems; contributes to root cause analysis activities." },
+            { "level": 3, "description": "Leads root cause analysis for complex problems; drives permanent fixes and proactive problem prevention." },
+            { "level": 4, "description": "Defines problem management processes; uses trend analysis to eliminate recurring incidents." },
+            { "level": 5, "description": "Sets problem management strategy; embeds proactive problem prevention culture across IT operations." }
+          ]
+        },
+        {
+          "name": "Service Level Management",
+          "description": "Negotiating, agreeing and monitoring service level agreements and ensuring services meet targets.",
+          "levels": [
+            { "level": 1, "description": "Collects and records service performance data under supervision." },
+            { "level": 2, "description": "Monitors service levels against agreed targets; produces performance reports." },
+            { "level": 3, "description": "Negotiates and manages SLAs with internal teams; identifies and addresses performance gaps." },
+            { "level": 4, "description": "Defines SLA frameworks; manages vendor relationships and drives continuous service improvement." },
+            { "level": 5, "description": "Sets service management strategy; governs SLA governance across all services and suppliers." }
+          ]
+        },
+        {
+          "name": "Supplier Management",
+          "description": "Aligning supplier performance to the needs of the business and maintaining productive supplier relationships.",
+          "levels": [
+            { "level": 1, "description": "Assists in maintaining supplier records and tracking purchase orders." },
+            { "level": 2, "description": "Monitors supplier deliverables and escalates performance issues." },
+            { "level": 3, "description": "Manages supplier relationships; conducts performance reviews and manages contract compliance." },
+            { "level": 4, "description": "Leads strategic supplier management; negotiates contracts and drives supplier development." },
+            { "level": 5, "description": "Defines supplier management strategy; manages key strategic partnerships and optimises supply chain." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Business Analysis",
+      "category": "BEHAVIORAL",
+      "competences": [
+        {
+          "name": "Requirements Definition & Management",
+          "description": "Defining, managing and communicating business and technical requirements throughout the project lifecycle.",
+          "levels": [
+            { "level": 1, "description": "Assists in documenting requirements using templates under supervision." },
+            { "level": 2, "description": "Elicits and documents straightforward requirements; supports requirements review sessions." },
+            { "level": 3, "description": "Leads requirements workshops; manages requirements through the project lifecycle and handles changes." },
+            { "level": 4, "description": "Defines requirements management standards; resolves conflicting requirements across complex programmes." },
+            { "level": 5, "description": "Governs requirements practices across the organisation; drives adoption of model-based approaches." }
+          ]
+        },
+        {
+          "name": "Business Process Improvement",
+          "description": "Evaluating and redesigning business processes to improve efficiency, quality and outcomes.",
+          "levels": [
+            { "level": 1, "description": "Documents existing processes using defined templates under supervision." },
+            { "level": 2, "description": "Analyses and maps current state processes; identifies waste and inefficiencies." },
+            { "level": 3, "description": "Designs improved processes; facilitates workshops and validates improvements with stakeholders." },
+            { "level": 4, "description": "Leads process transformation initiatives; applies Lean or Six Sigma methods and manages change." },
+            { "level": 5, "description": "Defines business process management strategy; drives enterprise-wide process excellence culture." }
+          ]
+        },
+        {
+          "name": "Feasibility Assessment",
+          "description": "Evaluating the viability and risks of proposed solutions and investment options.",
+          "levels": [
+            { "level": 1, "description": "Gathers and organises data to support feasibility studies under supervision." },
+            { "level": 2, "description": "Contributes to feasibility assessments by producing analysis on defined dimensions." },
+            { "level": 3, "description": "Conducts feasibility assessments for options; produces structured business cases with recommendations." },
+            { "level": 4, "description": "Leads complex feasibility studies; applies investment appraisal techniques and presents to senior stakeholders." },
+            { "level": 5, "description": "Defines feasibility assessment standards; governs business case quality across the organisation." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Change & Transformation",
+      "category": "BEHAVIORAL",
+      "competences": [
+        {
+          "name": "Organisational Change Management",
+          "description": "Planning and leading people-focused change to achieve and sustain business outcomes.",
+          "levels": [
+            { "level": 1, "description": "Participates in change activities and supports communication tasks under supervision." },
+            { "level": 2, "description": "Delivers change communications and training; supports impact assessments." },
+            { "level": 3, "description": "Develops change management plans; conducts stakeholder analysis and manages resistance." },
+            { "level": 4, "description": "Leads change management for complex transformations; integrates change with programme delivery." },
+            { "level": 5, "description": "Defines organisational change capability; builds change maturity and champions transformation culture." }
+          ]
+        },
+        {
+          "name": "Knowledge Management",
+          "description": "Systematically managing the creation, sharing, retention and application of knowledge.",
+          "levels": [
+            { "level": 1, "description": "Follows knowledge management procedures; contributes to wikis and knowledge bases." },
+            { "level": 2, "description": "Creates and maintains knowledge articles; ensures content accuracy and relevance." },
+            { "level": 3, "description": "Designs and implements knowledge management processes; promotes knowledge sharing across teams." },
+            { "level": 4, "description": "Leads knowledge management strategy for a function; implements tools and measures knowledge effectiveness." },
+            { "level": 5, "description": "Defines enterprise knowledge management strategy; builds learning organisation capabilities." }
+          ]
+        },
+        {
+          "name": "Consultancy",
+          "description": "Providing advice and recommendations to address client needs with authority and credibility.",
+          "levels": [
+            { "level": 1, "description": "Supports consultancy engagements by gathering information and preparing materials." },
+            { "level": 2, "description": "Contributes analysis and recommendations to defined consultancy assignments." },
+            { "level": 3, "description": "Manages consultancy assignments independently; builds client relationships and delivers actionable recommendations." },
+            { "level": 4, "description": "Leads complex consultancy engagements; develops trusted advisor relationships at senior levels." },
+            { "level": 5, "description": "Defines consultancy practice standards; grows the consultancy capability and drives business development." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User Experience & Research",
+      "category": "BEHAVIORAL",
+      "competences": [
+        {
+          "name": "User Experience Analysis",
+          "description": "Analysing user needs and contexts to inform design decisions.",
+          "levels": [
+            { "level": 1, "description": "Assists in user research activities such as note-taking and participant recruitment." },
+            { "level": 2, "description": "Conducts basic user interviews and usability tests; synthesises findings." },
+            { "level": 3, "description": "Plans and leads user research; produces personas, journey maps and actionable insights." },
+            { "level": 4, "description": "Defines user research strategy; builds research programmes and integrates insights into design processes." },
+            { "level": 5, "description": "Leads UX research practice; drives evidence-based design culture across the organisation." }
+          ]
+        },
+        {
+          "name": "User Experience Design",
+          "description": "Designing products and services that provide meaningful, accessible and satisfying experiences.",
+          "levels": [
+            { "level": 1, "description": "Produces wireframes and prototypes under supervision using established tools." },
+            { "level": 2, "description": "Designs user interfaces for simple features; applies design system components." },
+            { "level": 3, "description": "Designs end-to-end user experiences for complex products; iterates based on user research and testing." },
+            { "level": 4, "description": "Leads UX design for products or platforms; defines design principles and mentors junior designers." },
+            { "level": 5, "description": "Defines UX design strategy; builds and governs design systems and sets experience standards." }
+          ]
+        },
+        {
+          "name": "Product Management",
+          "description": "Managing the development of products and services to meet user needs and business goals.",
+          "levels": [
+            { "level": 1, "description": "Supports product team with backlog management and sprint planning activities." },
+            { "level": 2, "description": "Maintains product backlog; writes user stories and acceptance criteria with guidance." },
+            { "level": 3, "description": "Owns product backlog; prioritises features based on user feedback and business value." },
+            { "level": 4, "description": "Leads product strategy; manages product roadmap and aligns stakeholders around vision." },
+            { "level": 5, "description": "Defines portfolio-level product strategy; drives product-led growth and builds product management capability." }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Leadership & Communication",
+      "category": "BEHAVIORAL",
+      "competences": [
+        {
+          "name": "Employee Experience",
+          "description": "Creating and promoting a positive, engaging and productive work environment.",
+          "levels": [
+            { "level": 1, "description": "Contributes to a positive team environment and supports colleagues." },
+            { "level": 2, "description": "Actively promotes inclusive behaviours; surfaces team concerns to managers." },
+            { "level": 3, "description": "Implements initiatives to improve team wellbeing and engagement; monitors sentiment." },
+            { "level": 4, "description": "Designs employee experience programmes; leads culture and engagement improvements." },
+            { "level": 5, "description": "Defines employee experience strategy; embeds values-driven culture across the organisation." }
+          ]
+        },
+        {
+          "name": "Measurement",
+          "description": "Developing and implementing consistent approaches to measurement and metrics.",
+          "levels": [
+            { "level": 1, "description": "Collects and records data for defined metrics under supervision." },
+            { "level": 2, "description": "Maintains dashboards and produces routine metrics reports." },
+            { "level": 3, "description": "Designs measurement frameworks for teams; selects KPIs aligned to objectives." },
+            { "level": 4, "description": "Leads measurement strategy for a programme or function; drives data-driven decision making." },
+            { "level": 5, "description": "Defines enterprise measurement and analytics strategy; embeds evidence-based management practices." }
+          ]
+        },
+        {
+          "name": "Methods & Tools",
+          "description": "Ensuring that effective methods and tools are adopted and applied across projects and teams.",
+          "levels": [
+            { "level": 1, "description": "Uses defined methods and tools as directed; follows established procedures." },
+            { "level": 2, "description": "Applies methods and tools proficiently; provides guidance to peers on standard usage." },
+            { "level": 3, "description": "Evaluates and recommends methods and tools; supports adoption and training." },
+            { "level": 4, "description": "Defines methods and tooling standards for a function; governs adoption and measures effectiveness." },
+            { "level": 5, "description": "Sets enterprise methods and tooling strategy; drives continuous improvement in engineering and delivery practices." }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -5,13 +5,18 @@ import { JobOffer }           from './job-offer.entity';
 import { JobOffersController } from './job-offer.controller';
 import { JobOffersService }   from './job-offer.service';
 import { ChatbotModule }      from '../chatbot/chatbot.module';
+import { ApplicationsModule } from '../applications/applications.module';
+
+
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([JobOffer]),
-    ChatbotModule,   // gives us ChatbotService for RAG matching
+    ChatbotModule,
+    ApplicationsModule,
   ],
   controllers: [JobOffersController],
   providers:   [JobOffersService],
+  exports:     [JobOffersService],
 })
 export class JobOffersModule {}

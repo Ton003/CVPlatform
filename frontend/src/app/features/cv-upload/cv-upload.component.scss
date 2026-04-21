@@ -39,14 +39,11 @@
 
 /* ══ Upload Layout ════════════════════════════════════════════════ */
 .upload-layout {
-  display: grid;
-  grid-template-columns: 1fr 320px;
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
-  align-items: start;
-
-  @media (max-width:900px) {
-    grid-template-columns: 1fr;
-  }
+  max-width: 800px;
+  margin: 0 auto;
 }
 
 /* ══ Upload Card ══════════════════════════════════════════════════ */
@@ -484,66 +481,65 @@
   display: inline-block;
 }
 
-/* Tips Panel */
-.tips-panel {
-  background: var(--bg-elevated);
+
+/* ══ Job Selector ═════════════════════════════════════════════════ */
+.job-selector {
+  background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
-  position: sticky;
-  top: 2rem;
-}
-
-.tips-title {
-  font-family: var(--font-display);
-  font-size: .8rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--text-muted);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.25rem;
   margin-bottom: 1.25rem;
-}
-
-.tip-item {
-  display: flex;
-  gap: .875rem;
-  margin-bottom: 1.1rem;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.tip-num {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: var(--accent-dim);
-  border: 1px solid rgba(37, 99, 235, .25);
-  color: var(--accent);
-  font-size: .72rem;
-  font-weight: 700;
-  font-family: var(--font-display);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.tip-body {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 8px;
 }
 
-.tip-head {
-  font-size: .82rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.tip-desc {
-  font-size: .75rem;
+.field-hint {
+  font-weight: 400;
   color: var(--text-muted);
-  line-height: 1.5;
+  font-size: .72rem;
+  margin-left: 4px;
+}
+
+.job-select-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.job-select-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.field-select {
+  width: 100%;
+  padding: .6rem .875rem .6rem 2rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: .85rem;
+  font-family: var(--font-body);
+  cursor: pointer;
+  appearance: none;
+  outline: none;
+  transition: border-color .15s;
+
+  &:focus { border-color: var(--accent); }
+  &:disabled { opacity: .5; cursor: default; }
+
+  option { background: var(--bg-elevated); }
+}
+
+.job-selector-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .76rem;
+  color: var(--success);
+
+  strong { font-weight: 600; }
 }

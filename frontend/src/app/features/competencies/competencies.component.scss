@@ -1,0 +1,1060 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   Competence Management — Component Styles
+   Uses global CSS variables from styles.scss (light theme)
+   ────────────────────────────────────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+$transition: 200ms cubic-bezier(.4, 0, .2, 1);
+
+// ── Root ──────────────────────────────────────────────────────────────────
+
+.cm-root {
+  font-family: 'Inter', system-ui, sans-serif;
+  padding: 28px 32px 48px;
+  min-height: 100vh;
+  color: var(--text-primary);
+
+  *, *::before, *::after { box-sizing: border-box; }
+}
+
+// ── Header ────────────────────────────────────────────────────────────────
+
+.cm-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+  gap: 16px;
+
+  &__left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  &__icon {
+    width: 46px;
+    height: 46px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--accent) 0%, #4338ca 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 8px 20px -4px var(--accent-glow);
+
+    svg {
+      width: 22px;
+      height: 22px;
+      stroke: #fff;
+      fill: none;
+    }
+  }
+
+  &__title {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -.3px;
+    margin: 0 0 2px;
+    color: var(--text-primary);
+  }
+
+  &__sub {
+    margin: 0;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+}
+
+.cm-header__stats {
+  display: flex;
+  gap: 28px;
+}
+
+.cm-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+
+  &__num {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  &__lbl {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .6px;
+    white-space: nowrap;
+  }
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────
+
+.cm-tabs {
+  display: inline-flex;
+  gap: 4px;
+  margin-bottom: 20px;
+  background: var(--bg-surface);
+  padding: 5px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-subtle);
+  box-shadow: var(--shadow-sm);
+}
+
+.cm-tab {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 20px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border-radius: var(--radius-full);
+  transition: color $transition, background $transition, box-shadow $transition;
+
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+
+    svg {
+      width: 15px;
+      height: 15px;
+      stroke: currentColor;
+      fill: none;
+    }
+  }
+
+  &:hover:not(.cm-tab--active) {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+  }
+
+  &--active {
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent) 0%, #4338ca 100%);
+    box-shadow: 0 4px 12px var(--accent-glow);
+  }
+}
+
+// ── Layout ────────────────────────────────────────────────────────────────
+
+.cm-layout {
+  display: grid;
+  grid-template-columns: 268px 1fr;
+  gap: 18px;
+  align-items: stretch;
+}
+
+// ── Panel shared ──────────────────────────────────────────────────────────
+
+.cm-panel {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow-sm);
+  min-height: 480px;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+
+    &-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+  }
+
+  &__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0;
+  }
+}
+
+// ── Search ────────────────────────────────────────────────────────────────
+
+.cm-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+
+  &__icon {
+    position: absolute;
+    left: 10px;
+    width: 14px;
+    height: 14px;
+    color: var(--text-muted);
+    stroke: var(--text-muted);
+    fill: none;
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+
+  &__input {
+    width: 100%;
+    background: var(--bg-raised);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 8px 30px 8px 32px;
+    color: var(--text-primary);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color $transition, box-shadow $transition;
+
+    &::placeholder { color: var(--text-muted); }
+
+    &:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+  }
+
+  &__clear {
+    position: absolute;
+    right: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 2px;
+    display: flex;
+    align-items: center;
+    border-radius: 3px;
+    transition: color $transition;
+
+    svg { width: 11px; height: 11px; stroke: currentColor; fill: none; }
+
+    &:hover { color: var(--text-primary); }
+  }
+}
+
+// ── Badge ─────────────────────────────────────────────────────────────────
+
+.cm-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--bg-raised);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.cm-levels-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 9px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+  background: var(--bg-raised);
+  color: var(--text-muted);
+}
+
+// ── Breadcrumb ────────────────────────────────────────────────────────────
+
+.cm-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+
+  &__separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      width: 11px;
+      height: 11px;
+      stroke: currentColor;
+      fill: none;
+    }
+  }
+
+  &__active {
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+}
+
+// ── Family list ───────────────────────────────────────────────────────────
+
+.cm-family-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  overflow-y: auto;
+  max-height: calc(100vh - 280px);
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: 2px;
+  }
+}
+
+.cm-family-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background $transition;
+  border: 1px solid transparent;
+  position: relative;
+
+  &__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--border-strong);
+    flex-shrink: 0;
+    transition: background $transition;
+  }
+
+  &__name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 450;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color $transition;
+  }
+
+  &__actions {
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity $transition;
+  }
+
+  &:hover {
+    background: var(--bg-hover);
+
+    .cm-family-item__actions { opacity: 1; }
+    .cm-family-item__name    { color: var(--text-primary); }
+  }
+
+  &--active {
+    background: linear-gradient(90deg, var(--accent-dim) 0%, rgba(79, 70, 229, 0.04) 100%) !important;
+    border-color: rgba(79, 70, 229, .15);
+
+    .cm-family-item__dot     { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+    .cm-family-item__name    { color: var(--accent); font-weight: 600; }
+    .cm-family-item__actions { opacity: 1; }
+  }
+
+  &--deleting {
+    opacity: .4;
+    pointer-events: none;
+  }
+}
+
+// ── Accordion cards ───────────────────────────────────────────────────────
+
+.cm-accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  max-height: calc(100vh - 280px);
+  padding-right: 2px;
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: 2px;
+  }
+}
+
+.cm-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  overflow: hidden;
+  transition: border-color $transition, box-shadow $transition;
+
+  &:hover {
+    border-color: var(--border-default);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &--open {
+    border-color: var(--accent-soft) !important;
+    box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--accent-dim) !important;
+  }
+
+  &--deleting {
+    opacity: .4;
+    pointer-events: none;
+  }
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 15px;
+    cursor: pointer;
+    gap: 12px;
+    background: var(--bg-surface);
+
+    &-left {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  &__chevron {
+    width: 18px;
+    height: 18px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform $transition, color $transition;
+
+    svg {
+      width: 13px;
+      height: 13px;
+      stroke: currentColor;
+      fill: none;
+    }
+  }
+
+  &--open &__chevron {
+    transform: rotate(180deg);
+    color: var(--accent);
+  }
+
+  &__info { flex: 1; min-width: 0; }
+
+  &__name {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin: 0 0 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__desc {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+
+  &__body {
+    border-top: 1px solid var(--border-subtle);
+    padding: 15px;
+    background: var(--bg-body);
+    animation: slideDown .18s ease-out;
+  }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+// ── Levels display ────────────────────────────────────────────────────────
+
+.cm-levels {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cm-level {
+  display: flex;
+  gap: 13px;
+  // Use stretch so desc and badge share the same row height,
+  // but we manually align the num circle via padding-top on badge
+  align-items: flex-start;
+
+  &__badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 3px;
+    // Expanded width for "INTERMEDIATE"
+    width: 68px;
+    min-width: 68px;
+    // No padding-top — num circle sits flush at top, label hangs below
+    padding-top: 0;
+  }
+
+  &__num {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--level-color);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  &__label {
+    font-size: 9px;
+    color: var(--level-color);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    text-align: center;
+    white-space: nowrap;
+    line-height: 1.2;
+  }
+
+  &__desc {
+    flex: 1;
+    font-size: 12.5px;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    // Align desc top edge with top of the num circle (half of 28px = 14px, minus padding)
+    margin-top: 0;
+    padding: 7px 12px;
+    background: var(--bg-surface);
+    // border shorthand first, then border-left override — order matters
+    border: 1px solid var(--border-subtle);
+    border-left: 3px solid var(--level-color);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    // Vertically center within the circle height
+    min-height: 42px;
+    display: flex;
+    align-items: center;
+    transition: transform $transition, box-shadow $transition;
+
+    &:hover {
+      transform: translateX(4px);
+      box-shadow: var(--shadow-sm);
+    }
+  }
+}
+
+.cm-no-levels {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 20px 0;
+}
+
+// ── Levels editor ─────────────────────────────────────────────────────────
+
+.cm-levels-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cm-level-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+
+  &__badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-width: 68px;
+    padding-top: 6px;
+    flex-shrink: 0;
+  }
+
+  &__num {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--level-color);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  &__label {
+    font-size: 9.5px;
+    color: var(--level-color);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .4px;
+    text-align: center;
+    white-space: nowrap;
+  }
+}
+
+// ── Empty states ──────────────────────────────────────────────────────────
+
+.cm-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-muted);
+  text-align: center;
+
+  &--sm { padding: 16px 0; font-size: 13px; }
+  &--md { padding: 32px 16px; font-size: 13.5px; }
+
+  &--lg {
+    padding: 64px 24px;
+    font-size: 14px;
+    flex: 1;
+    justify-content: center;
+
+    h3 {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 8px 0 0;
+    }
+
+    p {
+      margin: 8px 0 0;
+      max-width: 320px;
+      line-height: 1.6;
+      color: var(--text-secondary);
+    }
+  }
+
+  // small icon svgs (used in --sm and --md states)
+  > svg {
+    width: 28px;
+    height: 28px;
+    opacity: .35;
+    stroke: var(--text-muted);
+    fill: none;
+  }
+}
+
+// Inline SVG illustration for the large empty state (replaces broken img)
+.cm-empty__illustration {
+  width: 140px;
+  height: 140px;
+  margin-bottom: 4px;
+
+  svg {
+    width: 140px;
+    height: 140px;
+    opacity: 1;
+  }
+}
+
+// ── Skeleton ──────────────────────────────────────────────────────────────
+
+@keyframes shimmer {
+  from { background-position: -200% 0; }
+  to   { background-position:  200% 0; }
+}
+
+.cm-skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cm-skel {
+  background: linear-gradient(
+    90deg,
+    var(--bg-raised) 25%,
+    var(--bg-hover)  50%,
+    var(--bg-raised) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: var(--radius-sm);
+
+  &--family     { height: 38px; border-radius: var(--radius-md); }
+  &--competence { height: 56px; border-radius: var(--radius-md); }
+}
+
+// ── Buttons ───────────────────────────────────────────────────────────────
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 15px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background $transition, box-shadow $transition, transform $transition;
+  box-shadow: 0 2px 8px var(--accent-glow);
+  white-space: nowrap;
+
+  &:hover:not(:disabled)  { background: #4338ca; box-shadow: 0 4px 14px var(--accent-glow); }
+  &:active:not(:disabled) { transform: translateY(1px); }
+  &:disabled              { opacity: .5; cursor: not-allowed; }
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 12px;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color $transition, border-color $transition, background $transition;
+
+  &:hover {
+    color: var(--text-primary);
+    border-color: var(--border-default);
+    background: var(--bg-hover);
+  }
+
+  &--sm {
+    padding: 5px 7px;
+
+    svg {
+      width: 13px;
+      height: 13px;
+      stroke: currentColor;
+      fill: none;
+    }
+  }
+
+  &--danger:hover {
+    color: var(--danger);
+    border-color: color-mix(in srgb, var(--danger) 25%, transparent);
+    background: var(--danger-dim);
+  }
+}
+
+.btn-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color $transition, border-color $transition, background $transition;
+
+  svg {
+    width: 13px;
+    height: 13px;
+    stroke: currentColor;
+    fill: none;
+  }
+
+  &:hover {
+    color: var(--text-primary);
+    border-color: var(--border-default);
+    background: var(--bg-hover);
+  }
+
+  &--primary {
+    background: var(--accent-dim) !important;
+    border-color: rgba(79, 70, 229, .22) !important;
+    color: var(--accent) !important;
+
+    &:hover { background: rgba(79, 70, 229, .18) !important; }
+  }
+}
+
+// ── Form inputs ───────────────────────────────────────────────────────────
+
+.cm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cm-label {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  letter-spacing: .2px;
+
+  &--opt { color: var(--text-muted); font-weight: 400; }
+}
+
+.cm-input {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text-primary);
+  font-size: 13.5px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color $transition, box-shadow $transition;
+  width: 100%;
+
+  &::placeholder { color: var(--text-muted); }
+
+  &:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+
+  &--textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+  &--level    { min-height: 58px; }
+}
+
+.cm-field__error {
+  font-size: 11.5px;
+  color: var(--danger);
+  margin-top: -2px;
+}
+
+// ── Chip group (category radio) ───────────────────────────────────────────
+
+.cm-chip-group {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cm-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color $transition, color $transition, background $transition;
+
+  input[type='radio'] { display: none; }
+
+  &:hover { border-color: var(--border-default); color: var(--text-primary); }
+
+  &--active {
+    border-color: var(--chip-color);
+    color: var(--chip-color);
+  }
+}
+
+// ── Modal overlay ─────────────────────────────────────────────────────────
+
+.cm-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-overlay);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn .15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.cm-modal {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.25);
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  animation: slideUp .2s cubic-bezier(.34, 1.56, .64, 1);
+
+  &--wide { max-width: 680px; }
+
+  &__header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    padding: 20px 22px 16px;
+    border-bottom: 1px solid var(--border-subtle);
+    gap: 12px;
+
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0;
+      color: var(--text-primary);
+    }
+  }
+
+  &__sub {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 2px 0 0;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 22px;
+    max-height: 72vh;
+    overflow-y: auto;
+
+    &::-webkit-scrollbar { width: 4px; }
+    &::-webkit-scrollbar-thumb {
+      background: var(--border-default);
+      border-radius: 2px;
+    }
+  }
+
+  &__footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: 4px;
+  }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+// ── Spinner ───────────────────────────────────────────────────────────────
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, .3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+// ── Responsive ────────────────────────────────────────────────────────────
+
+@media (max-width: 768px) {
+  .cm-root   { padding: 16px; }
+  .cm-layout { grid-template-columns: 1fr; align-items: unset; }
+  .cm-panel--families { max-height: 260px; min-height: unset; }
+  .cm-header { flex-direction: column; align-items: flex-start; }
+  .cm-tabs   { overflow-x: auto; &::-webkit-scrollbar { display: none; } }
+}
+/* ── PASTE THESE OVERRIDES at the bottom of competencies.component.scss ── */
+
+/* 
+  ROOT FIX: The accordion and family list must NOT clip the expanded card body.
+  Replace the max-height on .cm-accordion so the whole panel scrolls,
+  not just the accordion container.
+*/
+
+.cm-panel--competences {
+  overflow-y: auto;          /* panel itself scrolls */
+  max-height: calc(100vh - 220px);
+}
+
+.cm-accordion {
+  overflow-y: visible !important;  /* don't clip expanded cards */
+  max-height: none !important;     /* remove the fixed cap */
+  overflow: visible;
+}
+
+/* 
+  The card body (expanded levels) should grow freely — 
+  no overflow hidden, no clipping.
+*/
+.cm-card__body {
+  overflow: visible !important;
+  max-height: none !important;
+}
+
+/* 
+  Levels list inside the expanded card also grows freely
+*/
+.cm-levels {
+  overflow: visible;
+  max-height: none;
+}
+
+/*
+  Family list still scrolls independently on the left panel
+*/
+.cm-family-list {
+  max-height: calc(100vh - 340px);
+  overflow-y: auto;
+}
+
+/* 
+  Ensure the layout panels themselves don't clip content 
+*/
+.cm-panel--families {
+  overflow: hidden;   /* families panel manages its own scroll via cm-family-list */
+}

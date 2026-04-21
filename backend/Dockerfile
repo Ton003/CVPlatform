@@ -29,4 +29,5 @@ COPY --from=builder /app/dist ./dist
 
 EXPOSE 3000
 
-CMD ["node", "dist/main"]
+# Fixed command: use start:prod or direct node call
+CMD ["npm", "run", "start:prod"]

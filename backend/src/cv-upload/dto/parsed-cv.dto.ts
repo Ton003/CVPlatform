@@ -9,7 +9,10 @@ export class ExperienceEntryDto {
   company:    string | null;
   start_date: string | null;
   end_date:   string | null;
+  description: string | null;
+  inferredTags?: any[]; // optional, added during processing
 }
+
 
 export class LanguageEntryDto {
   name:  string;

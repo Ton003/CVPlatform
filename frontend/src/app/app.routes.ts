@@ -61,9 +61,45 @@ export const routes: Routes = [
           import('./features/job-offers/job-offers.component').then(m => m.JobOffersComponent),
       },
       {
+        path: 'competencies',
+        loadComponent: () =>
+          import('./features/competencies/competencies.component').then(m => m.CompetenciesComponent),
+      },
+      {
+        path: 'job-architecture',
+        loadComponent: () =>
+          import('./features/job-architecture/job-architecture').then(m => m.JobArchitecture),
+      },
+      {
         path: 'job-offers/:id/matches',
         loadComponent: () =>
           import('./features/job-offers/job-offer-matches.component').then(m => m.JobOfferMatchesComponent),
+      },
+      {
+        path: 'job-offers/:id/compare',
+        loadComponent: () =>
+          import('./features/job-offers/job-offer-comparison.component').then(m => m.JobOfferComparisonComponent),
+      },
+      {
+        path: 'job-offers/:id/pipeline',
+        loadComponent: () =>
+          import('./features/job-pipeline/job-pipeline.component').then(m => m.JobPipelineComponent),
+      },
+      {
+        path: 'applications/:id',
+        loadComponent: () =>
+          import('./features/application-detail/application-detail.component').then(m => m.ApplicationDetailComponent),
+      },
+      {
+        path: 'employees',
+        loadComponent: () =>
+          import('./features/employees/employee-list/employee-list.component').then(m => m.EmployeeListComponent),
+      },
+
+      {
+        path: 'employees/:id',
+        loadComponent: () =>
+          import('./features/employees/employee-profile/employee-profile.component').then(m => m.EmployeeProfileComponent),
       },
     ],
   },

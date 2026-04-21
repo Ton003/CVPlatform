@@ -1,7 +1,6 @@
 import { Injectable, Logger }       from '@nestjs/common';
 import { PdfExtractorService }      from './pdf-extractor.service';
 import { GroqCvParserService }      from './groq-cv-parser.service';
-import { SkillNormalizerService }   from './skill-normalizer.service';
 import { CvStorageService }         from './cv-storage.service';
 import { RegexExtractorService }    from './regex-extractor.service';
 import { ParsedCvDto }              from './dto/parsed-cv.dto';
@@ -22,11 +21,9 @@ export class CvUploadService {
 
   constructor(
     private readonly pdfExtractor:    PdfExtractorService,
-    private readonly groqCvParser:    GroqCvParserService,   // ← new single-call service
-    private readonly skillNormalizer: SkillNormalizerService,
+    private readonly groqCvParser:    GroqCvParserService,
     private readonly cvStorage:       CvStorageService,
     private readonly regexExtractor:  RegexExtractorService,
-    // Local LLM services kept but only used in local mode
     private readonly llmExtraction:   LlmExtractionService,
     private readonly llmParser:       LlmParserService,
   ) {}
@@ -88,12 +85,23 @@ export class CvUploadService {
     const linkedin_url = regexData.linkedin_url ?? null;
 
     // ── Step 4: Skill Normalization ───────────────────────────────────────
-    this.logger.log('🔧 STEP 4 — Skill Normalization...');
-    const skills_technical = this.skillNormalizer.normalize(groqResult.skills_technical);
+    this.logger.log('🔧 STEP 4 — Skill Normalization (Skipped)...');
+    const skills_technical = groqResult.skills_technical;
     this.logger.log(`   Before: ${groqResult.skills_technical.length} → After: ${skills_technical.length}`);
 
-    // ── Step 5: Assemble ParsedCvDto ──────────────────────────────────────
-    this.logger.log('📦 STEP 5 — Assembling result...');
+    // ── Step 5: SFIA Inference for Career Entries ────────────────────────
+    this.logger.log('🧠 STEP 5 — SFIA Inference for Career Entries...');
+    for (const entry of groqResult.experience) {
+      if (entry.description) {
+        entry['inferredTags'] = await this.groqCvParser.inferProficiencyLevels(
+          entry.description, 
+          { apiKey: options.apiKey! }
+        );
+      }
+    }
+
+    // ── Step 6: Assemble ParsedCvDto ──────────────────────────────────────
+    this.logger.log('📦 STEP 6 — Assembling result...');
     const result: ParsedCvDto = {
       first_name:              groqResult.first_name,
       last_name:               groqResult.last_name,
@@ -106,11 +114,12 @@ export class CvUploadService {
       skills_soft:             groqResult.skills_soft,
       languages:               groqResult.languages,
       education:               groqResult.education,
-      experience:              groqResult.experience,
+      experience:              groqResult.experience as any[],
       years_experience:        groqResult.years_experience,
       total_experience_months: groqResult.total_experience_months,
       llm_summary:             groqResult.llm_summary,
     };
+
 
     this.logger.log('════════════════════════════════════════');
     this.logger.log('   GROQ PIPELINE COMPLETE');
@@ -154,8 +163,8 @@ export class CvUploadService {
     this.logger.log(`   Skills  : ${extracted.skills_technical.length} found`);
 
     // ── Step 3: Skill Normalization ───────────────────────────────────────
-    this.logger.log('🔧 STEP 3 — Skill Normalization...');
-    const skills_technical = this.skillNormalizer.normalize(extracted.skills_technical);
+    this.logger.log('🔧 STEP 3 — Skill Normalization (Skipped)...');
+    const skills_technical = extracted.skills_technical;
 
     // ── Step 4: LLM Summary + Soft Skills ────────────────────────────────
     this.logger.log('✍️  STEP 4 — Local LLM Summary...');

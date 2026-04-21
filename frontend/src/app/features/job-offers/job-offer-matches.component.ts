@@ -23,7 +23,6 @@ interface CandidateMatch {
   matchedSkills: string[];
   strength:      string | null;
   gap:           string | null;
-  fit:           string | null;
   relevantSkills: string[];
 }
 
@@ -34,6 +33,15 @@ interface MatchResponse {
   candidates:       CandidateMatch[];
   aiRecommendation: string | null;
   mode:             string;
+}
+
+import { InternalMobilityService, UnifiedScoreResult } from '../employees/services/internal-mobility.service';
+
+interface InternalCandidateMatch extends UnifiedScoreResult {
+  uuid: string;
+  firstName: string;
+  lastName: string;
+  currentRank?: string;
 }
 
 @Component({
@@ -47,13 +55,19 @@ export class JobOfferMatchesComponent implements OnInit {
 
   offer:      JobOffer | null = null;
   candidates: CandidateMatch[] = [];
+  internalCandidates: InternalCandidateMatch[] = [];
   aiMessage   = '';
   total       = 0;
+  successionCandidates: any[] = []; 
+  loadingSuccessors = false; 
+  hasSearched = false;
 
   loading     = false;
+  loadingInternal = false;
   error       = '';
 
   mode        = 'groq';
+  activeTab   = 'external'; // 'external' or 'internal'
 
   private offerId = '';
 
@@ -65,11 +79,30 @@ export class JobOfferMatchesComponent implements OnInit {
     private readonly apiKey: ApiKeyService,
     private readonly toast:  ToastService,
     private readonly cdr:    ChangeDetectorRef,
+    private readonly internalMobility: InternalMobilityService
   ) {}
 
   ngOnInit(): void {
     this.offerId = this.route.snapshot.paramMap.get('id') ?? '';
     this.runMatch();
+  }
+
+  setTab(tab: 'external' | 'internal'): void {
+    this.activeTab = tab;
+    if (tab === 'internal' && this.internalCandidates.length === 0) {
+      this.loadInternalMatches();
+    }
+  }
+
+  loadInternalMatches(): void {
+    if (!this.offerId) return;
+    this.loadingInternal = true;
+    this.internalMobility.getOfferMatches(this.offerId).pipe(
+      finalize(() => { this.loadingInternal = false; this.cdr.detectChanges(); })
+    ).subscribe({
+      next: res => { this.internalCandidates = res; },
+      error: () => this.toast.error('Failed to load internal candidates.')
+    });
   }
 
   runMatch(): void {
@@ -86,10 +119,14 @@ export class JobOfferMatchesComponent implements OnInit {
 
     const key    = this.apiKey.get();
     const params = new URLSearchParams({ mode: this.mode });
-    if (this.mode === 'groq' && key) params.set('apiKey', key);
+    let headers: any = {};
+    if (this.mode === 'groq' && key) {
+        headers['x-api-key'] = key;
+    }
 
     this.http.get<MatchResponse>(
-      `${environment.apiUrl}/job-offers/${this.offerId}/matches?${params}`
+      `${environment.apiUrl}/job-offers/${this.offerId}/matches?${params}`,
+      { headers }
     ).pipe(
       finalize(() => { this.loading = false; this.cdr.detectChanges(); }),
     ).subscribe({
@@ -98,6 +135,9 @@ export class JobOfferMatchesComponent implements OnInit {
         this.candidates = res.candidates;
         this.aiMessage  = res.aiRecommendation ?? res.message;
         this.total      = res.total;
+        this.hasSearched = true;
+        this.loadSuccessors(); // Trigger succession check
+        if (this.activeTab === 'internal') this.loadInternalMatches();
       },
       error: () => {
         this.error = 'Failed to fetch matches. Check your API key in sidebar settings and try again.';
@@ -106,8 +146,27 @@ export class JobOfferMatchesComponent implements OnInit {
     });
   }
 
+  loadSuccessors(): void {
+    if (!this.offer?.jobRoleId) return;
+    this.loadingSuccessors = true;
+    this.http.get<any[]>(`${environment.apiUrl}/job-architecture/job-roles/${this.offer.jobRoleId}/succession-candidates`)
+      .pipe(finalize(() => { this.loadingSuccessors = false; this.cdr.detectChanges(); }))
+      .subscribe({
+        next: (res) => {
+          this.successionCandidates = res || [];
+        },
+        error: () => {
+          this.toast.error('Failed to load succession candidates.');
+        }
+      });
+  }
+
   goToProfile(candidateId: string): void {
     this.router.navigate(['/candidates', candidateId], { queryParams: { from: 'job-offers' } });
+  }
+
+  goToEmployee(id: string): void {
+    this.router.navigate(['/employees', id]);
   }
 
   scoreColor(score: number): string {
