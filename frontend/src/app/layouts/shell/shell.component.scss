@@ -6,16 +6,14 @@
   display: flex;
   height: 100vh;
   overflow: hidden;
-  background: var(--bg-main);
-  background: radial-gradient(circle at 0% 0%, hsla(var(--p-h), 70%, 60%, 0.05) 0%, transparent 40%),
-              radial-gradient(circle at 100% 100%, hsla(var(--s-h), 60%, 50%, 0.05) 0%, transparent 40%);
+  background: transparent;
 }
 
 .main {
-  flex: 1;
   margin-left: var(--sidebar-width);
+  width: calc(100vw - var(--sidebar-width));
   height: 100vh;
-  overflow-y: auto;
+  overflow: hidden;
   position: relative;
   padding: 40px 60px;
   animation: fadeUp .5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -24,10 +22,8 @@
 @keyframes fadeUp {
   from {
     opacity: 0;
-    transform: translateY(12px);
   }
   to {
     opacity: 1;
-    transform: none;
   }
 }

@@ -12,7 +12,7 @@
     </svg>
   </div>
   <p class="state-title">{{ error }}</p>
-  <a [routerLink]="backRoute" class="btn-back-center">← {{ backLabel }}</a>
+  <a href="javascript:void(0)" (click)="goBack()" class="btn-back-center">← {{ backLabel }}</a>
 </div>
 
 <!-- Profile -->
@@ -21,7 +21,7 @@
   <!-- Topbar -->
   <div class="topbar">
     <nav class="breadcrumbs">
-      <a class="crumb crumb--link" [routerLink]="backRoute">{{ backLabel }}</a>
+      <a class="crumb crumb--link" href="javascript:void(0)" (click)="goBack()">{{ backLabel }}</a>
       <svg class="crumb-sep" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"
         stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
@@ -30,12 +30,6 @@
     </nav>
 
     <div class="topbar-actions">
-      <button class="btn-action" (click)="openAddToJobModal()">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
-        </svg>
-        Add to Job
-      </button>
       <button class="btn-action" (click)="exportPdf()" [disabled]="exportingPdf">
         <svg *ngIf="!exportingPdf" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"
           stroke-width="2">
@@ -291,49 +285,55 @@
             <span class="score-sub">/ 100</span>
           </div>
         </div>
-        <div class="score-meta">
-          <p class="score-label-text">{{ scoreData.label }}</p>
-          <!-- Breakdown -->
+        <div class="score-hero-info">
+          <span class="score-label-badge" [style.background]="scoreGradient(scoreData.compositeScore)">{{ scoreLabel(scoreData.compositeScore) }}</span>
+          <p class="score-hero-title">{{ scoreData.label }}</p>
           <div class="score-breakdown">
-            <div class="breakdown-row" *ngIf="scoreData.breakdown.technical.available">
-              <span class="breakdown-key">Technical</span>
-              <div class="breakdown-bar-wrap">
-                <div class="breakdown-bar" [style.width.%]="scoreData.breakdown.technical.score"
-                  [style.background]="scoreColor(scoreData.breakdown.technical.score)"></div>
+            <div class="score-row" *ngIf="scoreData.breakdown.technical.available">
+              <div class="score-row-info">
+                <span class="score-row-label">Technical Skills</span>
               </div>
-              <span class="breakdown-val">{{ scoreData.breakdown.technical.score }}</span>
+              <div class="score-row-bar-wrap">
+                <div class="score-row-bar" [style.width.%]="scoreData.breakdown.technical.score" [style.background]="scoreColor(scoreData.breakdown.technical.score)"></div>
+              </div>
+              <span class="score-row-pct" [style.color]="scoreColor(scoreData.breakdown.technical.score)">{{ scoreData.breakdown.technical.score }}%</span>
+              <span class="score-row-weight">×{{ scoreData.breakdown.technical.weight }}%</span>
             </div>
-            <div class="breakdown-row" *ngIf="scoreData.breakdown.manager.available">
-              <span class="breakdown-key">Manager</span>
-              <div class="breakdown-bar-wrap">
-                <div class="breakdown-bar" [style.width.%]="scoreData.breakdown.manager.score ?? 0"
-                  [style.background]="scoreColor(scoreData.breakdown.manager.score ?? 0)"></div>
+            <div class="score-row" *ngIf="scoreData.breakdown.manager.available">
+              <div class="score-row-info">
+                <span class="score-row-label">Interviews</span>
               </div>
-              <span class="breakdown-val">{{ scoreData.breakdown.manager.score ?? '—' }}</span>
+              <div class="score-row-bar-wrap">
+                <div class="score-row-bar" [style.width.%]="scoreData.breakdown.manager.score ?? 0" [style.background]="scoreColor(scoreData.breakdown.manager.score ?? 0)"></div>
+              </div>
+              <span class="score-row-pct" [style.color]="scoreColor(scoreData.breakdown.manager.score ?? 0)">{{ scoreData.breakdown.manager.score ?? '—' }}</span>
+              <span class="score-row-weight">×{{ scoreData.breakdown.manager.weight }}%</span>
+            </div>
+            <div class="score-row" *ngIf="!scoreData.breakdown.manager.available">
+               <span class="score-row-na">Interviews pending</span>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Role suggestions -->
-      <div *ngIf="scoreData.roleSuggestions?.length" class="card">
+      <div *ngIf="scoreData.roleSuggestions.length" class="card">
         <div class="card-head">
           <span class="card-title">Role Matches</span>
           <span class="card-count">{{ scoreData.roleSuggestions.length }}</span>
         </div>
         <div class="role-suggestions">
-          <div *ngFor="let rs of scoreData.roleSuggestions" class="role-suggestion-row">
-            <div class="role-suggestion-info">
-              <span class="role-suggestion-name">{{ rs.role }}</span>
-              <div class="role-matched-skills">
-                <span *ngFor="let sk of rs.matchedSkills.slice(0,4)" class="skill-chip skill-chip--sm"
-                  data-color="indigo">{{ sk }}</span>
-                <span *ngIf="rs.matchedSkills.length > 4" class="skill-chip skill-chip--sm" data-color="indigo">+{{
-                  rs.matchedSkills.length - 4 }}</span>
-              </div>
+          <div *ngFor="let rs of scoreData.roleSuggestions" class="role-card" [attr.data-color]="roleMatchColor(rs.score)">
+            <div class="role-card-head">
+              <span class="role-name">{{ rs.role }}</span>
+              <span class="role-score" [style.color]="roleMatchColor(rs.score) === 'green' ? 'var(--success)' : (roleMatchColor(rs.score) === 'indigo' ? 'var(--accent)' : 'var(--warning)')">{{ rs.score }}%</span>
             </div>
-            <div class="role-suggestion-score-wrap">
-              <span class="role-score-badge" [attr.data-color]="roleMatchColor(rs.score)">{{ rs.score }}%</span>
+            <div class="role-bar-wrap">
+              <div class="role-bar" [style.width.%]="rs.score" [style.background]="roleMatchColor(rs.score) === 'green' ? 'var(--success)' : (roleMatchColor(rs.score) === 'indigo' ? 'var(--accent)' : 'var(--warning)')"></div>
+            </div>
+            <div class="role-skills">
+              <span *ngFor="let sk of rs.matchedSkills.slice(0,4)" class="role-skill-chip">{{ sk }}</span>
+              <span *ngIf="rs.matchedSkills.length > 4" class="role-skill-more">+{{ rs.matchedSkills.length - 4 }}</span>
             </div>
           </div>
         </div>
@@ -343,17 +343,31 @@
 
   <!-- ── TAB: GAP ANALYSIS ─────────────────────────────────── -->
   <div *ngIf="activeTab === 'gap'" class="tab-content">
-    <div class="card">
+    <div class="card gap-controls-card">
       <div class="card-head"><span class="card-title">Compare Against Role</span></div>
-      <div class="form-row" style="padding: 0 0 1rem;">
-        <label class="form-label">Select a job role to compare</label>
-        <select class="note-textarea" style="min-height:auto;padding:.6rem 1rem;" [(ngModel)]="selectedCompareRoleId"
-          (ngModelChange)="onCompareRoleChange()">
-          <option value="">— Pick a role —</option>
-          <optgroup *ngFor="let role of roles" [label]="role.path || role.name">
-            <option [value]="role.id">{{ role.name }}</option>
-          </optgroup>
-        </select>
+      <div class="gap-selectors-grid">
+        <div class="gap-selector-item">
+          <label class="form-label">Job Role</label>
+          <select class="note-textarea selector-compact" [(ngModel)]="selectedCompareRoleId"
+            (ngModelChange)="onCompareRoleChange()">
+            <option value="">— Pick a role —</option>
+            <optgroup *ngFor="let role of roles" [label]="role.path">
+              <option [value]="role.id">{{ role.name }}</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="gap-selector-item" *ngIf="selectedCompareRoleId">
+          <label class="form-label">Level / Seniority</label>
+          <select class="note-textarea selector-compact" [(ngModel)]="selectedCompareLevelId"
+            (ngModelChange)="onCompareLevelChange()">
+            <option value="">— Pick a level —</option>
+            <ng-container *ngFor="let role of roles">
+              <ng-container *ngIf="role.id === selectedCompareRoleId">
+                <option *ngFor="let level of role.levels" [value]="level.id">{{ level.title }}</option>
+              </ng-container>
+            </ng-container>
+          </select>
+        </div>
       </div>
     </div>
 
@@ -386,15 +400,28 @@
       <div class="gap-table">
         <div class="gap-table-header">
           <span>Competency</span>
-          <span>Required</span>
-          <span>Candidate</span>
-          <span>Status</span>
+          <span class="text-center">Required</span>
+          <span class="text-center">Candidate</span>
+          <span class="text-center">Status</span>
         </div>
         <div *ngFor="let row of comparisonData" class="gap-table-row" [attr.data-status]="row.status">
-          <span class="gap-comp-name">{{ row.name }}</span>
-          <span class="gap-level">{{ row.requiredLevel }}</span>
-          <span class="gap-level">{{ row.candidateLevel || '—' }}</span>
-          <span class="gap-status" [attr.data-status]="row.status">{{ gapStatusLabel(row.status) }}</span>
+          <div class="gap-comp-info">
+            <span class="gap-comp-name">{{ row.name }}</span>
+          </div>
+          
+          <div class="gap-level-dots">
+            <span *ngFor="let dot of getLevelDots(5)" class="gap-dot" 
+                  [class.gap-dot--filled]="dot <= row.requiredLevel"></span>
+          </div>
+          
+          <div class="gap-level-dots">
+            <span *ngFor="let dot of getLevelDots(5)" class="gap-dot gap-dot--candidate" 
+                  [class.gap-dot--filled]="dot <= row.candidateLevel"></span>
+          </div>
+
+          <div class="gap-status-wrap">
+            <span class="gap-status" [attr.data-status]="row.status">{{ gapStatusLabel(row.status) }}</span>
+          </div>
         </div>
       </div>
     </div>

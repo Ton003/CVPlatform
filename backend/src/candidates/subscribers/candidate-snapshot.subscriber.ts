@@ -18,12 +18,14 @@ export class ScoreSnapshotSubscriber implements EntitySubscriberInterface<Applic
   listenTo() { return ApplicationCompetencyScore; }
   async afterInsert(event: InsertEvent<ApplicationCompetencyScore>) {
     const app = await event.manager.findOne(Application, { where: { id: event.entity.applicationId } });
-    if (app) await this.snapshotService.rebuildSnapshot(app.candidateId, app.id);
+    if (app) setImmediate(() => this.snapshotService.rebuildSnapshot(app.candidateId, app.id).catch(console.error));
   }
   async afterUpdate(event: UpdateEvent<ApplicationCompetencyScore>) {
-    if (!event.entity) return;
-    const app = await event.manager.findOne(Application, { where: { id: event.entity.applicationId } });
-    if (app) await this.snapshotService.rebuildSnapshot(app.candidateId, app.id);
+    if (!event.entity && !event.databaseEntity) return;
+    const applicationId = event.entity?.applicationId ?? event.databaseEntity?.applicationId;
+    if (!applicationId) return;
+    const app = await event.manager.findOne(Application, { where: { id: applicationId } });
+    if (app) setImmediate(() => this.snapshotService.rebuildSnapshot(app.candidateId, app.id).catch(console.error));
   }
 }
 
@@ -34,10 +36,11 @@ export class CareerEntrySnapshotSubscriber implements EntitySubscriberInterface<
   }
   listenTo() { return CandidateCareerEntry; }
   async afterInsert(event: InsertEvent<CandidateCareerEntry>) {
-    await this.snapshotService.rebuildSnapshot(event.entity.candidateId);
+    setImmediate(() => this.snapshotService.rebuildSnapshot(event.entity.candidateId).catch(console.error));
   }
   async afterUpdate(event: UpdateEvent<CandidateCareerEntry>) {
-    if (event.entity) await this.snapshotService.rebuildSnapshot(event.entity.candidateId);
+    const candidateId = event.entity?.candidateId ?? event.databaseEntity?.candidateId;
+    if (candidateId) setImmediate(() => this.snapshotService.rebuildSnapshot(candidateId).catch(console.error));
   }
 }
 
@@ -48,9 +51,13 @@ export class ApplicationSnapshotSubscriber implements EntitySubscriberInterface<
   }
   listenTo() { return Application; }
   async afterInsert(event: InsertEvent<Application>) {
-    await this.snapshotService.rebuildSnapshot(event.entity.candidateId, event.entity.id);
+    setImmediate(() => this.snapshotService.rebuildSnapshot(event.entity.candidateId, event.entity.id).catch(console.error));
   }
   async afterUpdate(event: UpdateEvent<Application>) {
-    if (event.entity) await this.snapshotService.rebuildSnapshot(event.entity.candidateId, event.entity.id);
+    const candidateId = event.entity?.candidateId ?? event.databaseEntity?.candidateId;
+    const id = event.entity?.id ?? event.databaseEntity?.id;
+    if (candidateId && id) {
+      setImmediate(() => this.snapshotService.rebuildSnapshot(candidateId, id as string).catch(console.error));
+    }
   }
 }

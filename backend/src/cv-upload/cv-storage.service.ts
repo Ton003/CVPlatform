@@ -77,6 +77,7 @@ export class CvStorageService {
       || `noemail_${fileHash.substring(0, 12)}@cv.internal`;
 
     let candidate = await this.candidateRepo.findOne({ where: { email } });
+    let isUpdate = false;
 
     if (!candidate) {
       this.logger.log(`👤 Creating new candidate — ${parsed.first_name} ${parsed.last_name}`);
@@ -96,22 +97,21 @@ export class CvStorageService {
       });
       await this.candidateRepo.save(candidate);
     } else {
-      this.logger.log(`👤 Existing candidate found — enriching record`);
-      let updated = false;
+      // ✅ FIX 6: Candidate deduplication — always update record with latest
+      // CV parse results so re-uploads keep the profile current.
+      this.logger.log(`👤 Existing candidate found (${email}) — updating with latest CV data`);
+      isUpdate = true;
 
-      if (!candidate.phone         && parsed.phone)         { candidate.phone         = parsed.phone;         updated = true; }
-      if (!candidate.linkedin_url  && parsed.linkedin_url)  { candidate.linkedin_url  = parsed.linkedin_url;  updated = true; }
-      if (!candidate.current_title && parsed.current_title) { candidate.current_title = parsed.current_title; updated = true; }
-      if (!candidate.location      && parsed.location)      { candidate.location      = parsed.location;      updated = true; }
-      if (!candidate.years_experience && parsed.years_experience) {
-        candidate.years_experience = this.toSmallInt(parsed.years_experience);
-        updated = true;
-      }
+      candidate.first_name       = parsed.first_name    ?? candidate.first_name;
+      candidate.last_name        = parsed.last_name     ?? candidate.last_name;
+      candidate.phone            = parsed.phone         ?? candidate.phone;
+      candidate.linkedin_url     = parsed.linkedin_url  ?? candidate.linkedin_url;
+      candidate.current_title    = parsed.current_title ?? candidate.current_title;
+      candidate.location         = parsed.location      ?? candidate.location;
+      candidate.years_experience = this.toSmallInt(parsed.years_experience) ?? candidate.years_experience;
 
-      if (updated) {
-        await this.candidateRepo.save(candidate);
-        this.logger.log(`✅ Candidate record enriched`);
-      }
+      await this.candidateRepo.save(candidate);
+      this.logger.log(`✅ Candidate record updated`);
     }
 
     // ── Step 4: Save PDF to Local Disk ────────────────────────────────────
@@ -206,8 +206,10 @@ export class CvStorageService {
 
     // ── Step 9: Return clean response ─────────────────────────────────────
 
+    // ✅ FIX 6: Return action flag so API consumers know if this was a create or update
     return {
-      message:     'CV uploaded and parsed successfully',
+      message:     isUpdate ? 'CV re-parsed and candidate record updated' : 'CV uploaded and parsed successfully',
+      action:      isUpdate ? 'updated' : 'created',
       duplicate:   false,
       candidateId: candidate.id,
       cvId:        cv.id,

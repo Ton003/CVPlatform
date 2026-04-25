@@ -137,17 +137,17 @@
             <div class="card-head"><span class="card-label">Experience</span></div>
             <div class="timeline">
               <div *ngFor="let exp of app.experience; let last = last" class="timeline-item">
-                <div class="tl-dot" [class.tl-dot--last]="last"></div>
-                <div *ngIf="!last" class="tl-line"></div>
-                <div class="tl-card">
-                  <div class="tl-head">
+                <div class="timeline-dot" [class.timeline-dot--last]="last"></div>
+                <div *ngIf="!last" class="timeline-line"></div>
+                <div class="timeline-card">
+                  <div class="tcard-head">
                     <div>
-                      <p class="tl-title">{{ exp.title || 'Position' }}</p>
-                      <p class="tl-company">{{ exp.company }}</p>
+                      <p class="tcard-title">{{ exp.title || 'Position' }}</p>
+                      <p class="tcard-company">{{ exp.company }}</p>
                     </div>
-                    <span class="tl-date">{{ formatDuration(exp.startDate ?? exp.start_date, exp.endDate ?? exp.end_date) }}</span>
+                    <span class="tcard-date">{{ formatDuration(exp.startDate ?? exp.start_date, exp.endDate ?? exp.end_date) }}</span>
                   </div>
-                  <p *ngIf="exp.description" class="tl-desc">{{ exp.description }}</p>
+                  <p *ngIf="exp.description" class="tcard-desc">{{ exp.description }}</p>
                 </div>
               </div>
             </div>
@@ -184,29 +184,7 @@
             <div class="aside-row"><span class="aside-key">Applied</span><span class="aside-val">{{ formatDate(app.createdAt) }}</span></div>
             <div class="aside-row"><span class="aside-key">Job</span><span class="aside-val">{{ app.jobTitle }}</span></div>
           </div>
-          <!-- HR Checklist -->
-          <div class="aside-card tasks-card">
-            <h4 class="aside-title">HR Checklist</h4>
-            <div class="task-input-row">
-              <input type="text" [(ngModel)]="newTaskTitle" placeholder="Add task…" (keyup.enter)="addTask()" class="task-input"/>
-              <button class="task-add-btn" (click)="addTask()">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-              </button>
-            </div>
-            <div class="task-list">
-              <div *ngFor="let t of tasks" class="task-item" [class.task-done]="t.completed">
-                <label class="task-check">
-                  <input type="checkbox" [checked]="t.completed" (change)="toggleTask(t)"/>
-                  <span class="checkmark"></span>
-                </label>
-                <span class="task-label">{{ t.title }}</span>
-                <button class="task-del" (click)="deleteTask(t.id)" title="Remove">
-                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                </button>
-              </div>
-              <p *ngIf="tasks.length === 0" class="task-empty">No tasks yet</p>
-            </div>
-          </div>
+
           <!-- Languages -->
           <div class="aside-card" *ngIf="app.languages?.length">
             <h4 class="aside-title">Languages</h4>
@@ -307,6 +285,11 @@
     <div *ngIf="activeTab === 'evaluation'" class="tab-content">
       <div *ngIf="evaluationLoading" class="loading-row">
         <div class="spinner-sm"></div><span>Loading requirements…</span>
+      </div>
+
+      <div *ngIf="!evaluationLoading && jobCompetencies.length === 0" class="empty-state">
+        <span class="empty-icon">📊</span>
+        <p>No evaluation criteria has been defined for this job yet.</p>
       </div>
 
       <div *ngIf="!loading && jobCompetencies.length > 0">

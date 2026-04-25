@@ -23,6 +23,10 @@ export interface Employee {
   businessUnit?: any;
 }
 
+export interface PromotionResult extends Employee {
+  competencySource: 'manual' | 'ai_estimate';
+}
+
 @Injectable({ providedIn: 'root' })
 export class EmployeeService {
   private readonly baseUrl = `${environment.apiUrl}/employees`;
@@ -37,8 +41,8 @@ export class EmployeeService {
     return this.http.get<Employee>(`${this.baseUrl}/${id}`);
   }
 
-  promoteCandidate(payload: { applicationId: string; employeeId: string; hireDate: string; managerId?: string }): Observable<Employee> {
-    return this.http.post<Employee>(`${this.baseUrl}/promote`, payload);
+  promoteCandidate(payload: { applicationId: string; employeeId: string; hireDate: string; managerId?: string }): Observable<PromotionResult> {
+    return this.http.post<PromotionResult>(`${this.baseUrl}/promote`, payload);
   }
 
   getManagers(): Observable<any[]> {

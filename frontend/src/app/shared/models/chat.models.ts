@@ -51,7 +51,7 @@ export interface ChatMessage {
 }
 
 export interface ConversationMessage {
-  role:    'user' | 'assistant';
+  role:    'user' | 'assistant' | 'system';
   content: string;
 }
 

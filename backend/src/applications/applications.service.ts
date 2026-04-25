@@ -11,6 +11,7 @@ import { ApplicationCompetencyScore }         from './application-competency-sco
 import { ApplicationAssessment, AssessmentStatus } from './entities/application-assessment.entity';
 import { ApplicationAssessmentItem }          from './entities/application-assessment-item.entity';
 import { AssessmentItemUpdateDto, AssessmentUpdateDto, AssessmentSummary } from '../shared/dto/assessment.dto';
+import { CandidateSnapshotService } from '../candidates/candidate-snapshot.service';
 
 
 
@@ -50,6 +51,8 @@ export class ApplicationsService {
 
     @InjectDataSource()
     private readonly dataSource: DataSource,
+
+    private readonly snapshotService: CandidateSnapshotService,
   ) {}
 
   private ensureArray(val: any): string[] {
@@ -418,12 +421,15 @@ export class ApplicationsService {
     if (ratedCount > 0) {
       let totalPct = 0;
       for (const req of compRows) {
-        // Unrated items contribute 0; penalises incomplete evaluations fairly
         if (req.evaluatedLevel !== null && req.evaluatedLevel !== undefined) {
           totalPct += Math.min(req.evaluatedLevel / req.requiredLevel, 1.0) * 100;
         }
       }
-      competencyScore = Math.round(totalPct / totalRequirements);
+      // ✅ FIX: divide by ratedCount, not totalRequirements.
+      // This ensures partial assessments are scored fairly over only the
+      // competencies that have been evaluated. The assessmentComplete flag
+      // tells consumers whether the evaluation is fully finished.
+      competencyScore = Math.round(totalPct / ratedCount);
       isComplete = ratedCount === totalRequirements;
     }
 
@@ -487,6 +493,7 @@ export class ApplicationsService {
 
     const result = {
       totalScore: finalScore,
+      assessmentComplete: isComplete,   // ✅ FIX: explicit boolean flag for consumers
       isComplete,
       ratedCount,
       totalRequirements,
@@ -574,6 +581,11 @@ export class ApplicationsService {
       description: `Rated a competency at level ${level}`,
       metadata: { competencyId: compId, evaluatedLevel: level },
     }));
+
+    // Explicitly rebuild candidate snapshot to ensure global profile is in sync
+    if (app) {
+      setImmediate(() => this.snapshotService.rebuildSnapshot(app.candidateId, app.id).catch(console.error));
+    }
   }
 
   async getCompetencyScores(appId: string) {
@@ -605,6 +617,14 @@ export class ApplicationsService {
     });
     const saved = await this.dataSource.getRepository(ApplicationAssessment).save(draft);
     return this.enrichAssessment(saved);
+  }
+
+  async listAssessments(applicationId: string) {
+    const assessments = await this.dataSource.getRepository(ApplicationAssessment).find({
+      where: { applicationId },
+      order: { createdAt: 'DESC' }
+    });
+    return assessments.map(a => this.enrichAssessment(a));
   }
 
   async getAssessment(id: string) {
@@ -693,6 +713,9 @@ export class ApplicationsService {
       await manager.save(assessment);
 
       await this.getScore(assessment.applicationId);
+
+      // Explicitly rebuild candidate snapshot
+      setImmediate(() => this.snapshotService.rebuildSnapshot(assessment.application.candidateId, assessment.applicationId).catch(console.error));
 
       return this.enrichAssessment(assessment);
     });

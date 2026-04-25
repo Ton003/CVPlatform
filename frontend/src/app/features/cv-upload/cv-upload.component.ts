@@ -3,7 +3,7 @@ import { CommonModule }                  from '@angular/common';
 import { FormsModule }                   from '@angular/forms';
 import { HttpClient }                    from '@angular/common/http';
 import { Router }                        from '@angular/router';
-import { finalize }                      from 'rxjs';
+import { finalize, switchMap, catchError, map, of } from 'rxjs';
 import { AuthService }                   from '../../core/services/auth.service';
 import { ApiKeyService }                 from '../../core/services/api-key.service';
 import { ToastService }                  from '../../core/services/toast.service';
@@ -128,34 +128,39 @@ export class CvUploadComponent implements OnInit {
     if (this.mode === 'groq') formData.append('apiKey', this.apiKey.get());
 
     this.http.post<any>(`${environment.apiUrl}/cv-upload`, formData).pipe(
-      finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
-    ).subscribe({
-      next: (res) => {
+      switchMap((res) => {
         this.result       = res;
         this.selectedFile = null;
         this.cdr.detectChanges();
 
         if (this.selectedJobId && res.candidateId) {
-          this.http.post(`${environment.apiUrl}/applications`, {
+          return this.http.post(`${environment.apiUrl}/applications`, {
             jobId:       this.selectedJobId,
             candidateId: res.candidateId,
             stage:       'applied',
             source:      'cv_upload',
-          }).subscribe({
-            next: () => {
-              this.toast.success('CV uploaded and candidate added to pipeline.');
-              this.uploadComplete.emit(res);
-              if (!this.preselectedJobId) {
-                this.router.navigate(['/job-offers', this.selectedJobId, 'pipeline']);
-              }
-            },
-            error: () => {
-              this.toast.error('CV uploaded but failed to create application.');
-            },
-          });
+          }).pipe(
+            map(() => ({ type: 'with_job', res })),
+            catchError(() => of({ type: 'job_failed', res }))
+          );
+        }
+        return of({ type: 'no_job', res });
+      }),
+      finalize(() => { this.isLoading = false; this.cdr.detectChanges(); })
+    ).subscribe({
+      next: (outcome) => {
+        if (outcome.type === 'with_job') {
+          this.toast.success('CV uploaded and candidate added to pipeline.');
+          this.uploadComplete.emit(outcome.res);
+          if (!this.preselectedJobId) {
+            this.router.navigate(['/job-offers', this.selectedJobId, 'pipeline']);
+          }
+        } else if (outcome.type === 'job_failed') {
+          this.toast.error('CV uploaded but failed to create application.');
+          this.uploadComplete.emit(outcome.res);
         } else {
           this.toast.success('CV uploaded and processed successfully.');
-          this.uploadComplete.emit(res);
+          this.uploadComplete.emit(outcome.res);
         }
       },
       error: (err) => {

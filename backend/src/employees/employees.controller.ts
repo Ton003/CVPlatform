@@ -11,6 +11,7 @@ export class EmployeesController {
     @Query('buId') buId?: string,
     @Query('departmentId') departmentId?: string,
     @Query('roleId') roleId?: string,
+    @Query('search') search?: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '10',
   ) {
@@ -18,6 +19,7 @@ export class EmployeesController {
       buId,
       departmentId,
       roleId,
+      search,
       page: parseInt(page, 10),
       limit: parseInt(limit, 10),
     });

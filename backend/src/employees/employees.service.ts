@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, Brackets } from 'typeorm';
 import { Employee, EmployeeStatus } from './entities/employee.entity';
 import { EmployeeCompetency, CompetencySource } from './entities/employee-competency.entity';
 import { Application } from '../applications/application.entity';
@@ -22,7 +22,7 @@ export class EmployeesService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async list(filters: { buId?: string; departmentId?: string; roleId?: string; page: number; limit: number }) {
+  async list(filters: { buId?: string; departmentId?: string; roleId?: string; search?: string; page: number; limit: number }) {
     const qb = this.employeeRepo.createQueryBuilder('e')
       .leftJoinAndSelect('e.jobRole', 'role')
       .leftJoinAndSelect('e.jobRoleLevel', 'level')
@@ -33,6 +33,14 @@ export class EmployeesService {
     if (filters.buId) qb.andWhere('bu.id = :buId', { buId: filters.buId });
     if (filters.departmentId) qb.andWhere('department.id = :deptId', { deptId: filters.departmentId });
     if (filters.roleId) qb.andWhere('role.id = :roleId', { roleId: filters.roleId });
+    if (filters.search) {
+      qb.andWhere(new Brackets(sqb => {
+        sqb.where('e.firstName ILIKE :search', { search: `%${filters.search}%` })
+           .orWhere('e.lastName ILIKE :search', { search: `%${filters.search}%` })
+           .orWhere('e.email ILIKE :search', { search: `%${filters.search}%` })
+           .orWhere('e.employeeId ILIKE :search', { search: `%${filters.search}%` });
+      }));
+    }
 
     const [data, total] = await qb
       .skip((filters.page - 1) * filters.limit)
@@ -119,6 +127,7 @@ export class EmployeesService {
         [jobOffer.jobRoleLevelId]
       );
 
+      let usedManualScores = false;
       const employeeCompetencies: EmployeeCompetency[] = [];
 
       for (const req of jobRequirements) {
@@ -131,6 +140,7 @@ export class EmployeesService {
         if (manual) {
           level = manual.evaluatedLevel;
           source = CompetencySource.MANUAL;
+          usedManualScores = true;
         } else if (snapshot[compId]) {
           level = snapshot[compId].level;
           source = CompetencySource.ASSESSMENT_IMPORT;
@@ -153,7 +163,13 @@ export class EmployeesService {
       await queryRunner.manager.save(candidate);
 
       await queryRunner.commitTransaction();
-      return savedEmployee;
+
+      // ✅ FIX 4: Return competencySource so consumers know whether scores came
+      // from human evaluations or AI-parsed CV estimates.
+      return {
+        ...savedEmployee,
+        competencySource: usedManualScores ? 'manual' : 'ai_estimate',
+      };
     } catch (err) {
       await queryRunner.rollbackTransaction();
       throw err;

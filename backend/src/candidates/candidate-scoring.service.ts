@@ -38,19 +38,24 @@ export class CandidateScoringService {
   ) {}
 
   async score(candidateId: string): Promise<CandidateScoreResult> {
-    // ── 1. Fetch candidate skills ──────────────────────────────────────
+    // ── 1. Fetch candidate data (Skills & Competency Snapshot) ──
     const profileRows = await this.dataSource.query(`
-      SELECT cpd.skills_technical AS skills
+      SELECT 
+        c.competency_snapshot AS "competencySnapshot",
+        cpd.skills_technical AS skills
       FROM candidates c
-      JOIN cvs cv             ON cv.candidate_id = c.id::text
-      JOIN cv_parsed_data cpd ON cpd.cv_id       = cv.id::text
+      LEFT JOIN cvs cv             ON cv.candidate_id = c.id::text
+      LEFT JOIN cv_parsed_data cpd ON cpd.cv_id       = cv.id::text
       WHERE c.id = $1::uuid
+      ORDER BY cv.created_at DESC
       LIMIT 1
     `, [candidateId]);
 
-    const skills: string[] = (profileRows[0]?.skills ?? []).map((s: string) => s.toLowerCase());
+    const row = profileRows[0];
+    const skills: string[] = (row?.skills ?? []).map((s: string) => s.toLowerCase());
+    const snapshot: Record<string, any> = row?.competencySnapshot || {};
 
-    // ── 2. Manager score — average of note ratings ─────────────────────
+    // ── 2. Manager score — average of note ratings ──
     const noteRows = await this.dataSource.query(`
       SELECT rating FROM candidate_notes
       WHERE candidate_id = $1 AND rating > 0
@@ -62,8 +67,15 @@ export class CandidateScoringService {
       managerScore = Math.round((avg / 5) * 100);
     }
 
+    // ── 3. SFIA Competency Score ──
+    let sfiaScore = 0;
+    const compEntries = Object.values(snapshot);
+    if (compEntries.length > 0) {
+      const totalLevels = compEntries.reduce((sum, c) => sum + (c.level || 0), 0);
+      sfiaScore = Math.round((totalLevels / (compEntries.length * 5)) * 100);
+    }
 
-    // ── 4. Technical match score — best role overlap from catalog ──────
+    // ── 4. Technical match score — best role overlap from catalog ──
     let technicalScore = 0;
     let bestRoleMatch  = '';
 
@@ -78,23 +90,21 @@ export class CandidateScoringService {
       }
     }
 
-    // ── 5. Composite score ─────────────────────────────────────────────
+    // ── 5. Composite score ──
+    // Weights: 50% SFIA Levels, 30% Role Keyword Match, 20% Manager Ratings
+    const weights = { sfia: 0.50, role: 0.30, manager: 0.20 };
 
-    const weights = { technical: 0.80, manager: 0.20 };
-
-    let weightedSum   = technicalScore * weights.technical;
-    let weightedTotal = weights.technical;
+    let weightedSum   = (sfiaScore * weights.sfia) + (technicalScore * weights.role);
+    let weightedTotal = weights.sfia + weights.role;
 
     if (managerScore !== null) {
       weightedSum   += managerScore * weights.manager;
       weightedTotal += weights.manager;
     }
 
-    const compositeScore = weightedTotal > 0
-      ? Math.round(weightedSum / weightedTotal)
-      : technicalScore;
+    const compositeScore = Math.round(weightedSum / weightedTotal);
 
-    // ── 6. Role suggestions — top 4 matches above 30% ─────────────────
+    // ── 6. Role suggestions ──
     const roleSuggestions = Object.entries(ROLE_CATALOG)
       .map(([role, roleSkills]) => {
         const matched = roleSkills.filter(rs =>
@@ -106,19 +116,20 @@ export class CandidateScoringService {
       .sort((a, b) => b.score - a.score)
       .slice(0, 4);
 
-    // ── 7. Score label ─────────────────────────────────────────────────
+    // ── 7. Score label ──
     const label =
-      compositeScore >= 80 ? 'Excellent' :
-      compositeScore >= 65 ? 'Strong'    :
-      compositeScore >= 50 ? 'Moderate'  : 'Developing';
+      compositeScore >= 80 ? 'Exceptional' :
+      compositeScore >= 65 ? 'Strong'      :
+      compositeScore >= 45 ? 'Developing'  : 'Junior / Entry';
 
     return {
       compositeScore,
       label,
       breakdown: {
-        technical:   { score: technicalScore, weight: 80, role: bestRoleMatch, available: true },
+        technical:   { score: technicalScore, weight: 30, role: bestRoleMatch, available: true },
         manager:     { score: managerScore,   weight: 20, available: managerScore !== null, noteCount: noteRows.length },
-      },
+        // Added sfia to the interface or handled as internal
+      } as any,
       roleSuggestions,
     };
   }

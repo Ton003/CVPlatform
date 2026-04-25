@@ -9,6 +9,7 @@ import { ApplicationsService }    from './applications.service';
 import { AuthModule }        from '../auth/auth.module';
 import { ApplicationAssessment }      from './entities/application-assessment.entity';
 import { ApplicationAssessmentItem }  from './entities/application-assessment-item.entity';
+import { CandidatesModule } from '../candidates/candidates.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ApplicationAssessmentItem }  from './entities/application-assessment-it
       ApplicationAssessmentItem,
     ]),
     AuthModule,
+    CandidatesModule,
   ],
   controllers: [ApplicationsController],
   providers:   [ApplicationsService],

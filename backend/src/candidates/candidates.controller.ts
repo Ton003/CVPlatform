@@ -99,7 +99,8 @@ export class CandidatesController {
         cpd.llm_summary                        AS summary,
         cpd.education,
         cpd.experience,
-        cpd.languages
+        cpd.languages,
+        c.competency_snapshot                  AS "competencySnapshot"
       FROM candidates c
       JOIN cvs cv             ON cv.candidate_id = c.id::text
       JOIN cv_parsed_data cpd ON cpd.cv_id       = cv.id::text
@@ -111,18 +112,19 @@ export class CandidatesController {
 
     const r = rows[0];
     return {
-      candidateId:  r.candidateId,
-      name:         r.name?.trim() || 'Unknown',
-      email:        r.email        ?? null,
-      location:     r.location     ?? null,
-      currentTitle: r.currentTitle ?? null,
-      yearsExp:     r.yearsExp     ?? null,
-      createdAt:    r.createdAt    ?? null,
-      summary:      r.summary      ?? null,
-      skills:       Array.isArray(r.skills)     ? r.skills     : [],
-      education:    Array.isArray(r.education)  ? r.education  : [],
-      experience:   Array.isArray(r.experience) ? r.experience : [],
-      languages:    Array.isArray(r.languages)  ? r.languages  : [],
+      candidateId:        r.candidateId,
+      name:               r.name?.trim() || 'Unknown',
+      email:              r.email        ?? null,
+      location:           r.location     ?? null,
+      currentTitle:       r.currentTitle ?? null,
+      yearsExp:           r.yearsExp     ?? null,
+      createdAt:          r.createdAt    ?? null,
+      summary:            r.summary      ?? null,
+      skills:             Array.isArray(r.skills)     ? r.skills     : [],
+      education:          Array.isArray(r.education)  ? r.education  : [],
+      experience:         Array.isArray(r.experience) ? r.experience : [],
+      languages:          Array.isArray(r.languages)  ? r.languages  : [],
+      competencySnapshot: r.competencySnapshot        ?? {},
     };
   }
 

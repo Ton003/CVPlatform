@@ -34,7 +34,11 @@ export class CandidateSnapshotService {
 
     // 1. Get all manual scores across all applications
     const manualScores = await this.dataSource.query(`
-      SELECT acs.competence_id, acs.evaluated_level, acs.updated_at, acs.application_id
+      SELECT 
+        acs.competence_id AS "competenceId", 
+        acs.evaluated_level AS "evaluatedLevel", 
+        acs.updated_at AS "updatedAt", 
+        acs.application_id AS "applicationId"
       FROM application_competency_scores acs
       JOIN applications a ON a.id = acs.application_id
       WHERE a.candidate_id = $1
@@ -69,16 +73,18 @@ export class CandidateSnapshotService {
     });
 
     // Process manual scores (higher priority, overwrites AI)
+    // Since manualScores is ordered by updatedAt DESC, the first occurrence for each compId is the latest.
     manualScores.forEach((score: any) => {
-      const compId = score.competence_id;
-      const level = score.evaluated_level;
+      const compId = score.competenceId;
+      const level = score.evaluatedLevel;
       
-      // If manual score exists, it always takes precedence or keeps the highest level if multiple exists
-      if (!snapshot[compId] || snapshot[compId].source === 'AI' || level > snapshot[compId].level) {
+      // If manual score exists, it takes precedence over AI.
+      // We only set it if it hasn't been set yet (to keep the LATEST one)
+      if (!snapshot[compId] || snapshot[compId].source === 'AI') {
         snapshot[compId] = {
           level,
-          source_application_id: score.application_id,
-          rated_at: score.updated_at,
+          source_application_id: score.applicationId,
+          rated_at: score.updatedAt,
           source: 'MANUAL'
         };
       }

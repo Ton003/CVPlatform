@@ -62,12 +62,11 @@
   &:hover { background: #4338ca; }
 }
 
-/* ── Stats Strip ─────────────────────────────────────────────────── */
 .stats-strip {
   display: flex;
   align-items: center;
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
   padding: 0 4px;
   margin-bottom: 24px;
@@ -155,13 +154,17 @@
   gap: 16px;
 }
 
-/* ── Panel ───────────────────────────────────────────────────────── */
 .panel {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-lg);
   overflow: hidden;
   box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.panel:hover {
+  box-shadow: var(--shadow-md);
 }
 
 .panel-head {

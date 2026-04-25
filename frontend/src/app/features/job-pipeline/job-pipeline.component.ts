@@ -13,7 +13,7 @@ import { forkJoin, of } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { ToastService } from '../../core/services/toast.service';
-import { EmployeeService } from '../../core/services/employee.service';
+import { EmployeeService, PromotionResult } from '../../core/services/employee.service';
 
 export type PipelineStage =
   | 'applied'
@@ -22,6 +22,18 @@ export type PipelineStage =
   | 'assessment'
   | 'offer'
   | 'rejected';
+
+/** Canonical forward order used for backward-move detection. */
+const STAGE_ORDER: PipelineStage[] = [
+  'applied', 'screening', 'interview', 'assessment', 'offer', 'rejected',
+];
+
+function isBackwardMove(from: PipelineStage, to: PipelineStage): boolean {
+  const fromIdx = STAGE_ORDER.indexOf(from);
+  const toIdx   = STAGE_ORDER.indexOf(to);
+  // Both must be in the ordered list and target must be strictly earlier
+  return fromIdx !== -1 && toIdx !== -1 && toIdx < fromIdx;
+}
 
 export interface ApplicationCard {
   applicationId: string;
@@ -99,6 +111,7 @@ export class JobPipelineComponent implements OnInit {
   showPromoteModal = false;
   promoting = false;
   managers: any[] = [];
+  lastPromotionSource: 'manual' | 'ai_estimate' | null = null;
   promotePayload = {
     employeeId: '',
     hireDate: new Date().toISOString().split('T')[0],
@@ -275,8 +288,23 @@ export class JobPipelineComponent implements OnInit {
       return;
     }
 
-    const card = this.draggingCard;
+    const card      = this.draggingCard;
     const fromStage = this.draggingFromStage;
+
+    // ✅ FIX 3: Soft confirmation for backward moves
+    if (isBackwardMove(fromStage, targetCol.id)) {
+      const confirmed = window.confirm(
+        `⚠️ You are moving "${card.candidateName}" backwards from ` +
+        `"${fromStage.toUpperCase()}" to "${targetCol.label.toUpperCase()}".\n\n` +
+        `This will revert their pipeline progress. Are you sure?`
+      );
+      if (!confirmed) {
+        this.draggingCard = null;
+        this.draggingFromStage = null;
+        this.cdr.detectChanges();
+        return;
+      }
+    }
 
     const fromCol = this.columns.find((c) => c.id === fromStage);
     if (fromCol) {
@@ -343,6 +371,21 @@ export class JobPipelineComponent implements OnInit {
     if (newStage === this.selectedApplicationDetails.stage) return;
 
     const oldStage = this.selectedApplicationDetails.stage as PipelineStage;
+
+    // ✅ FIX 3: Soft confirmation for backward moves via side panel
+    if (isBackwardMove(oldStage, newStage)) {
+      const candidateName = this.selectedApplicationDetails.candidateName ?? 'this candidate';
+      const confirmed = window.confirm(
+        `⚠️ You are moving "${candidateName}" backwards from ` +
+        `"${oldStage.toUpperCase()}" to "${newStage.toUpperCase()}".\n\n` +
+        `This will revert their pipeline progress. Are you sure?`
+      );
+      if (!confirmed) {
+        // Reset the select element back to its previous value
+        select.value = oldStage;
+        return;
+      }
+    }
 
     const colFrom = this.columns.find((c) => c.id === oldStage);
     const colTo = this.columns.find((c) => c.id === newStage);
@@ -523,8 +566,13 @@ export class JobPipelineComponent implements OnInit {
       applicationId: appId,
       ...this.promotePayload
     }).subscribe({
-      next: () => {
-        this.toast.success('Candidate successfully promoted to Employee!');
+      next: (result: PromotionResult) => {
+        // ✅ FIX 4: Capture and surface competency source
+        this.lastPromotionSource = result.competencySource;
+        const sourceLabel = result.competencySource === 'manual'
+          ? '✅ Skills migrated from HR evaluations.'
+          : '⚠️ Skills estimated from AI CV parse — manual review recommended.';
+        this.toast.success(`Promoted to Employee! ${sourceLabel}`);
         this.closePromoteModal();
         this.closeSidePanel();
         this.loadApplications();

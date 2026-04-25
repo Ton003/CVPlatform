@@ -41,6 +41,37 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
   private lastCandidates: LastCandidate[] = [];
   private shouldScroll = false;
 
+  /** Maximum number of most-recent turns sent in each API call. */
+  private readonly HISTORY_WINDOW = 10;
+
+  /**
+   * Returns the payload-safe history slice.
+   * If the full history exceeds HISTORY_WINDOW, a synthetic summary message
+   * is prepended so the LLM retains context of earlier candidates discussed.
+   */
+  private buildHistoryPayload(): ConversationMessage[] {
+    const full  = this.conversationHistory;
+    const limit = this.HISTORY_WINDOW;
+
+    if (full.length <= limit) return full;
+
+    // Derive a brief summary from the oldest candidate names seen
+    const olderCandidateNames = this.lastCandidates
+      .slice(0, 5)
+      .map(c => c.name)
+      .filter(Boolean)
+      .join(', ');
+
+    const summary: ConversationMessage = {
+      role: 'system',
+      content: `Earlier in this conversation, the following candidates were discussed: ${
+        olderCandidateNames || 'various candidates'
+      }. Only the last ${limit} turns are shown below.`,
+    };
+
+    return [summary, ...full.slice(-limit)];
+  }
+
   constructor(
     private readonly http:        HttpClient,
     private readonly authService: AuthService,
@@ -129,7 +160,8 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
         message:        userMessage,
         mode:           'groq',
         apiKey:         this.apiKey.get(),
-        history:        this.conversationHistory,
+        // ✅ FIX 7: Send sliding window slice, not the full unbounded history
+        history:        this.buildHistoryPayload(),
         lastCandidates: this.lastCandidates,
         personType:     this.personTypeFilter,
       }
@@ -146,7 +178,7 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
           { role: 'user',      content: userMessage   },
           { role: 'assistant', content: assistantText },
         ];
-        if (this.conversationHistory.length > 12) this.conversationHistory = this.conversationHistory.slice(-12);
+        // Keep full history in memory; the API payload is capped by buildHistoryPayload()
 
         if (res.candidates?.length > 0) {
           this.lastCandidates = res.candidates.map((c: CandidateMatch) => ({

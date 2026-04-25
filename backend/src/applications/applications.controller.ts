@@ -9,9 +9,12 @@ import { SkipThrottle }         from '@nestjs/throttler';
 import { ApplicationsService } from './applications.service';
 import { UseInterceptors, UploadedFile} from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express/multer';
-import { memoryStorage }   from 'multer';
 import { IsString, IsOptional, IsUUID, IsInt, Min, Max } from 'class-validator';
 import { AssessmentUpdateDto, AssessmentItemUpdateDto } from '../shared/dto/assessment.dto';
+
+class UpdateAssessmentItemsDto {
+  items!: AssessmentItemUpdateDto[];
+}
 
 class CreateApplicationDto {
   @IsUUID()
@@ -163,4 +166,44 @@ updateRating(
 ) {
   return this.svc.updateCompetencyScore(id, compId, dto.evaluatedLevel, req.user.id);
 }
+
+// ── Application Assessments ───────────────────────────────────────
+
+@Get(':id/assessments')
+listAssessments(@Param('id') id: string) {
+  return this.svc.listAssessments(id);
+}
+
+@Post(':id/assessments')
+createAssessmentDraft(
+  @Param('id') id: string,
+  @Request() req: any,
+) {
+  return this.svc.createAssessmentDraft(id, req.user.id);
+}
+
+@Get('assessments/:id')
+getAssessment(@Param('id') id: string) {
+  return this.svc.getAssessment(id);
+}
+
+@Patch('assessments/:id/items')
+updateAssessmentItems(
+  @Param('id') id: string,
+  @Body() itemsArray: AssessmentItemUpdateDto[] | UpdateAssessmentItemsDto,
+  @Request() req: any,
+) {
+  // Support both direct array OR object with `items` property
+  const items = Array.isArray(itemsArray) ? itemsArray : (itemsArray as UpdateAssessmentItemsDto).items;
+  return this.svc.updateAssessmentItems(id, items, req.user.id);
+}
+
+@Post('assessments/:id/submit')
+submitAssessment(
+  @Param('id') id: string,
+  @Request() req: any,
+) {
+  return this.svc.submitAssessment(id, req.user.id);
+}
+
 }

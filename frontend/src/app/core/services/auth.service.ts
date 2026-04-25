@@ -36,41 +36,32 @@ export class AuthService {
 
   login(payload: LoginPayload): Observable<AuthResponse> {
     return this.http
-      .post<AuthResponse>(`${this.API_URL}/auth/login`, payload)
+      .post<AuthResponse>(`${this.API_URL}/auth/login`, payload, { withCredentials: true })
       .pipe(tap((response) => this.handleAuthSuccess(response)));
   }
 
   signup(payload: SignupPayload): Observable<AuthResponse> {
     return this.http
-      .post<AuthResponse>(`${this.API_URL}/auth/signup`, payload)
+      .post<AuthResponse>(`${this.API_URL}/auth/signup`, payload, { withCredentials: true })
       .pipe(tap((response) => this.handleAuthSuccess(response)));
   }
 
   logout(): void {
+    this.http.post(`${this.API_URL}/auth/logout`, {}, { withCredentials: true }).subscribe({
+      next: () => this.executeLogout(),
+      error: () => this.executeLogout()
+    });
+  }
+
+  executeLogout(): void {
     this.clearStorage(); // ✅ centralized
     this.currentUserSubject.next(null);
     this.router.navigate(['/auth/login']);
   }
 
-  getToken(): string | null {
-    if (!this.isBrowser) return null;
-    return localStorage.getItem(this.TOKEN_KEY);
-  }
-
   isLoggedIn(): boolean {
     if (!this.isBrowser) return false;
-    const token = this.getToken();
-    if (!token) return false;
-    try {
-      const parts = token.split('.');
-      if (parts.length !== 3) return false; // ✅ validate structure
-      const payload = JSON.parse(atob(parts[1]));
-      if (!payload.exp) return false;       // ✅ guard no-expiry tokens
-      return payload.exp * 1000 > Date.now();
-    } catch {
-      this.clearStorage();                  // ✅ corrupt token → clean up
-      return false;
-    }
+    return !!this.getUserFromStorage();
   }
 
   getCurrentUser(): User | null {
@@ -86,7 +77,7 @@ export class AuthService {
 
   // ✅ Call this on app init or after role changes
   refreshUser(): Observable<User> {
-    return this.http.get<User>(`${this.API_URL}/auth/me`).pipe(
+    return this.http.get<User>(`${this.API_URL}/auth/me`, { withCredentials: true }).pipe(
       tap((user) => {
         if (this.isBrowser) {
           localStorage.setItem(this.USER_KEY, JSON.stringify(user));
@@ -98,7 +89,6 @@ export class AuthService {
 
   private handleAuthSuccess(response: AuthResponse): void {
     if (this.isBrowser) {
-      localStorage.setItem(this.TOKEN_KEY, response.access_token);
       localStorage.setItem(this.USER_KEY, JSON.stringify(response.user));
     }
     this.currentUserSubject.next(response.user);
@@ -115,7 +105,6 @@ export class AuthService {
 
   private clearStorage(): void {
     if (!this.isBrowser) return;
-    localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);
   }
 }

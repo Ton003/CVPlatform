@@ -1,7 +1,7 @@
-import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, ChangeDetectorRef, inject } from '@angular/core';
+import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
@@ -21,7 +21,7 @@ interface CandidateProfile {
   education: EducationEntry[];
   experience: ExperienceEntry[];
   languages: LanguageEntry[];
-  competencySnapshot: Record<string, { level: number; name: string }>;
+  competencySnapshot: Record<string, any>;
 }
 
 interface EducationEntry {
@@ -75,7 +75,7 @@ interface CandidateScore {
 @Component({
   selector: 'app-candidate-profile',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, CountByStatusPipe],
+  imports: [CommonModule, FormsModule, CountByStatusPipe],
   templateUrl: './candidate-profile.component.html',
   styleUrls: ['./candidate-profile.component.scss'],
 })
@@ -123,6 +123,7 @@ export class CandidateProfileComponent implements OnInit {
   // Role Comparison
   roles: any[] = [];
   selectedCompareRoleId = '';
+  selectedCompareLevelId = '';
   comparisonData: any = null;
   comparing = false;
 
@@ -158,6 +159,7 @@ export class CandidateProfileComponent implements OnInit {
     private readonly http: HttpClient,
     private readonly auth: AuthService,
     private readonly cdr: ChangeDetectorRef,
+    private readonly location: Location = inject(Location)
   ) { }
 
   ngOnInit(): void {
@@ -264,6 +266,13 @@ export class CandidateProfileComponent implements OnInit {
     if (score >= 65) return '#6d55fa';
     if (score >= 50) return '#f59e0b';
     return '#f43f5e';
+  }
+
+  scoreLabel(score: number): string {
+    if (score >= 80) return 'Exceptional Match';
+    if (score >= 65) return 'Strong Match';
+    if (score >= 50) return 'Average Match';
+    return 'Poor Match';
   }
 
   scoreGradient(score: number): string {
@@ -416,19 +425,33 @@ export class CandidateProfileComponent implements OnInit {
   }
 
   onCompareRoleChange(): void {
-    if (!this.selectedCompareRoleId) { this.comparisonData = null; return; }
+    this.selectedCompareLevelId = '';
+    this.comparisonData = null;
+    
+    if (!this.selectedCompareRoleId) return;
+    
+    // Auto-select first level if exists
+    const role = this.roles.find(r => r.id === this.selectedCompareRoleId);
+    if (role?.levels?.length > 0) {
+      this.selectedCompareLevelId = role.levels[0].id;
+      this.onCompareLevelChange();
+    }
+  }
+
+  onCompareLevelChange(): void {
+    if (!this.selectedCompareLevelId) { this.comparisonData = null; return; }
     this.comparing = true;
     this.cdr.detectChanges();
-    this.http.get<any>(`${this.apiUrl}/job-architecture/roles/${this.selectedCompareRoleId}`)
+    this.http.get<any>(`${this.apiUrl}/job-architecture/levels/${this.selectedCompareLevelId}`)
       .pipe(finalize(() => { this.comparing = false; this.cdr.detectChanges(); }))
       .subscribe({
-        next: role => { this.comparisonData = this.calculateComparison(role); },
-        error: () => { },
+        next: level => { this.comparisonData = this.calculateComparison(level); },
+        error: () => { this.comparisonData = []; },
       });
   }
 
-  private calculateComparison(role: any): any {
-    const requirements = role.sfiaRequirements || [];
+  private calculateComparison(level: any): any {
+    const requirements = level.competencyRequirements || level.sfiaRequirements || [];
     const snapshot = this.candidate?.competencySnapshot || {};
 
     return requirements.map((req: any) => {
@@ -466,6 +489,14 @@ export class CandidateProfileComponent implements OnInit {
   }
 
   // ── Helpers ────────────────────────────────────────────────────
+  goBack(): void {
+    this.location.back();
+  }
+
+  getLevelDots(level: number): number[] {
+    return [1, 2, 3, 4, 5];
+  }
+
   setRating(r: number): void { this.newRating = this.newRating === r ? 0 : r; }
 
   stageLabel(stage: NoteStage): string {
@@ -523,6 +554,11 @@ export class CandidateProfileComponent implements OnInit {
   }
 
   gapStatusLabel(status: string): string {
-    return { met: '✓ Met', near: '≈ Near', gap: '✗ Gap' }[status] ?? status;
+    const labels: Record<string, string> = {
+      met: 'Requirement Met',
+      near: 'Near Requirement',
+      gap: 'Significant Gap'
+    };
+    return labels[status] ?? status;
   }
 }
