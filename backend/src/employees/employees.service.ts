@@ -44,18 +44,53 @@ export class EmployeesService {
   async findOne(id: string) {
     const employee = await this.employeeRepo.findOne({
       where: { id },
-      relations: ['jobRole', 'jobRoleLevel', 'manager', 'competencies', 'competencies.competence', 'department']
+      relations: [
+        'jobRole',
+        'jobRole.levels',
+        'jobRoleLevel',
+        'jobRoleLevel.competencyRequirements',
+        'jobRoleLevel.competencyRequirements.competence',
+        'jobRoleLevel.competencyRequirements.competence.family',
+        'manager',
+        'competencies',
+        'competencies.competence',
+        'department'
+      ]
     });
     if (!employee) throw new NotFoundException(`Employee ${id} not found`);
+
+    // Attach next level if available
+    if (employee.jobRole?.levels && employee.jobRoleLevel) {
+      const currentLevelNum = employee.jobRoleLevel.levelNumber;
+      const sortedLevels = [...employee.jobRole.levels].sort((a, b) => a.levelNumber - b.levelNumber);
+      const nextLevel = sortedLevels.find(l => l.levelNumber === currentLevelNum + 1);
+      (employee as any).nextJobRoleLevel = nextLevel || null;
+    }
+
     return employee;
   }
 
   async findAllManagers(departmentId?: string) {
-    // DIAGNOSTIC: Return EVERYONE to see why they are hidden
-    return this.employeeRepo.createQueryBuilder('e')
+    const qb = this.employeeRepo.createQueryBuilder('e')
       .leftJoinAndSelect('e.jobRole', 'role')
-      .orderBy('e.lastName', 'ASC')
-      .getMany();
+      .where('e.isManager = :isManager', { isManager: true })
+      .orderBy('e.lastName', 'ASC');
+
+    if (departmentId) {
+      qb.andWhere('e.departmentId = :departmentId', { departmentId });
+    }
+
+    const managers = await qb.getMany();
+
+    // Fallback: if no employees are flagged as managers, return all employees
+    if (managers.length === 0) {
+      return this.employeeRepo.createQueryBuilder('e')
+        .leftJoinAndSelect('e.jobRole', 'role')
+        .orderBy('e.lastName', 'ASC')
+        .getMany();
+    }
+
+    return managers;
   }
 
   async promoteCandidate(dto: PromoteCandidateDto) {
@@ -68,6 +103,20 @@ export class EmployeesService {
       if (!app) throw new NotFoundException('Application not found');
       const { candidate, job: jobOffer } = app;
 
+      // Resolve jobRoleId: prefer direct value, fallback to jobRoleLevel's parent role
+      let resolvedJobRoleId = jobOffer.jobRoleId;
+      const resolvedJobRoleLevelId = jobOffer.jobRoleLevelId;
+
+      if (!resolvedJobRoleId && jobOffer.jobRoleLevel) {
+        resolvedJobRoleId = jobOffer.jobRoleLevel.jobRoleId;
+      }
+
+      if (!resolvedJobRoleId) {
+        throw new BadRequestException(
+          'Cannot promote: the job offer has no associated Job Role. Please assign a Job Role to the offer first.',
+        );
+      }
+
       const employee = manager.create(Employee, {
         employeeId: dto.employeeId || `EMP-${Date.now()}`,
         firstName: candidate.firstName,
@@ -75,8 +124,8 @@ export class EmployeesService {
         email: candidate.email,
         hireDate: new Date(dto.hireDate),
         status: EmployeeStatus.PROBATION,
-        jobRoleId: jobOffer.jobRoleId!,
-        jobRoleLevelId: jobOffer.jobRoleLevelId!,
+        jobRoleId: resolvedJobRoleId,
+        jobRoleLevelId: resolvedJobRoleLevelId!,
         manager: dto.managerId ? { id: dto.managerId } as any : null,
         candidateId: candidate.id,
       });
@@ -123,9 +172,45 @@ export class EmployeesService {
   }
 
   async promoteToNextLevel(id: string, effectiveDate?: string, notes?: string) {
-    // Simplified promotion logic for modernization
-    const employee = await this.findOne(id);
-    this.logger.log(`Promoting ${employee.firstName} ${employee.lastName}`);
-    return { success: true };
+    return this.dataSource.transaction(async (manager) => {
+      const employee = await this.findOne(id);
+      
+      const nextLevel = (employee as any).nextJobRoleLevel;
+      if (!nextLevel) {
+        throw new BadRequestException('Employee is already at the maximum level for this role');
+      }
+
+      this.logger.log(`Promoting ${employee.firstName} to level ${nextLevel.title} (${nextLevel.id})`);
+
+      const oldLevelId = employee.jobRoleLevelId;
+      const oldDeptId = employee.departmentId;
+
+      // Update Employee using direct update to ensure column is changed
+      await manager.update(Employee, id, {
+        jobRoleLevelId: nextLevel.id
+      });
+
+      // Create History Entry
+      const history = manager.create(EmployeeHistory, {
+        employeeId: employee.id,
+        eventType: EmployeeHistoryEventType.PROMOTION,
+        effectiveDate: effectiveDate ? new Date(effectiveDate) : new Date(),
+        notes: notes || `Promoted to ${nextLevel.title}`,
+        oldRoleLevelId: oldLevelId,
+        newRoleLevelId: nextLevel.id,
+        oldDepartmentId: oldDeptId,
+        newDepartmentId: oldDeptId,
+      });
+      await manager.save(history);
+
+      // Return updated employee - fetch again from DB to be 100% sure
+      const updated = await this.findOne(id);
+      return {
+        success: true,
+        newLevelId: nextLevel.id,
+        newLevelTitle: nextLevel.title,
+        employee: updated
+      };
+    });
   }
 }

@@ -670,7 +670,6 @@ export class ApplicationDetailComponent implements OnInit {
 
   // ── Promote to Employee (modal-based) ──────────────────────────
   openPromoteModal(): void {
-    console.log('openPromoteModal called', { app: this.app });
     if (!this.app) {
       this.toast.error('Application data not loaded yet.');
       return;

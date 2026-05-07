@@ -102,7 +102,7 @@ export class CvSearchService implements OnModuleInit {
   ): Promise<RawCandidate[]> {
     const vectorStr = `[${queryEmbedding.join(',')}]`;
     const params: any[] = [vectorStr, limit];
-    let pIdx = 3; // start from 3 because $1=vector, $2=limit
+    let pIdx = 3; 
 
     let candidateScope = '';
     if (scopedCandidateIds && scopedCandidateIds.length > 0) {
@@ -110,45 +110,31 @@ export class CvSearchService implements OnModuleInit {
       candidateScope = `AND c.id::text = ANY($${pIdx++}::text[])`;
     }
 
-    let employeeScope = '';
-    if (scopedDepartmentId) {
-      params.push(scopedDepartmentId);
-      employeeScope = `AND dm.id = $${pIdx++}::uuid`;
-    }
-
-    const typeFilter = personType && personType !== 'all' ? `WHERE "personType" = '${personType}'` : '';
-
+    // NOTE: Employee search removed per user request for external-only chatbot
     const query = `
-      WITH unified_pool AS (
-        SELECT 
-          c.id::text AS "candidateId", 'candidate' AS "personType",
-          CONCAT(c.first_name, ' ', c.last_name) AS name,
-          c.email, c.location, c.current_title AS "currentTitle",
-          c.years_experience AS "yearsExp", cpd.skills_technical AS skills,
-          cpd.llm_summary AS summary, cpd.embedding::vector AS embedding,
-          NULL AS "buName", NULL AS "departmentName", NULL AS "rankName"
-        FROM candidates c
-        JOIN cvs cv ON cv.candidate_id = c.id::text
-        JOIN cv_parsed_data cpd ON cpd.cv_id = cv.id::text
-        WHERE cpd.embedding IS NOT NULL ${candidateScope}
-        UNION ALL
-        SELECT 
-          e.id::text AS "candidateId", 'employee' AS "personType",
-          CONCAT(e.first_name, ' ', e.last_name) AS name,
-          e.email, NULL AS location, jr.name AS "currentTitle",
-          NULL::smallint AS "yearsExp", '[]'::jsonb AS skills,
-          e.llm_summary AS summary, e.embedding::vector AS embedding,
-          bu.name AS "buName", dm.name AS "departmentName", jrl.title AS "rankName"
-        FROM employees e
-        JOIN job_roles jr ON jr.id = e.job_role_id
-        JOIN job_role_levels jrl ON jrl.id = e.job_role_level_id
-        JOIN departments dm ON dm.id = jr.department_id
-        JOIN business_units bu ON bu.id = dm.business_unit_id
-        WHERE e.embedding IS NOT NULL ${employeeScope}
-      )
-      SELECT *, 1 - (embedding <=> $1::vector) AS similarity
-      FROM unified_pool
-      ${typeFilter}
+      SELECT 
+        c.id::text AS "candidateId", 
+        'candidate' AS "personType",
+        CONCAT(c.first_name, ' ', c.last_name) AS name,
+        c.email, c.location, c.current_title AS "currentTitle",
+        c.years_experience AS "yearsExp", cpd.skills_technical AS skills,
+        cpd.llm_summary AS summary,
+        
+        -- FAIR SCORING LOGIC:
+        -- 1. Semantic Similarity (0.0 to 1.0) - Weighted at 60%
+        (1 - (cpd.embedding::vector <=> $1::vector)) * 0.6 +
+        
+        -- 2. Experience Boost (Up to 10% bonus for seasoned candidates, normalized)
+        LEAST(COALESCE(c.years_experience, 0) / 15.0, 1.0) * 0.1 +
+        
+        -- 3. Data Completeness (Up to 30% bonus for having rich profiles/summaries)
+        (CASE WHEN cpd.llm_summary IS NOT NULL AND LENGTH(cpd.llm_summary) > 100 THEN 0.3 ELSE 0.1 END)
+        AS similarity
+        
+      FROM candidates c
+      JOIN cvs cv ON cv.candidate_id = c.id::text
+      JOIN cv_parsed_data cpd ON cpd.cv_id = cv.id::text
+      WHERE cpd.embedding IS NOT NULL ${candidateScope}
       ORDER BY similarity DESC LIMIT $2
     `;
 
@@ -156,9 +142,6 @@ export class CvSearchService implements OnModuleInit {
     return results.map((r: any) => ({
       ...this.mapRaw(r),
       similarity: parseFloat(r.similarity ?? 0),
-      buName: r.buName,
-      departmentName: r.departmentName,
-      rankName: r.rankName
     }));
   }
 

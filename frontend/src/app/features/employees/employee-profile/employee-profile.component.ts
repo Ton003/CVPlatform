@@ -149,7 +149,9 @@ export class EmployeeProfileComponent implements OnInit {
   loadEmployee(id: string): void {
     this.loading = true;
     this.error = '';
-    this.employeeService.findOne(id)
+    // Add timestamp to bust cache after promotion
+    const timestamp = Date.now();
+    this.employeeService.findOne(`${id}?t=${timestamp}`)
       .pipe(finalize(() => { this.loading = false; this.cdr.markForCheck(); }))
       .subscribe({
         next: (emp) => {

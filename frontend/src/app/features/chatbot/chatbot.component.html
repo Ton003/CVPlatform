@@ -6,14 +6,6 @@
   </div>
 
   <div class="topbar-right">
-    <!-- Mode toggle: API first -->
-    <div class="search-filters" style="display: flex; gap: 8px; margin-right: 16px;">
-      <select [(ngModel)]="personTypeFilter" class="field-select" style="padding: 4px 8px; font-size: 13px;">
-        <option value="all">All Profiles</option>
-        <option value="candidate">External (Candidates)</option>
-        <option value="employee">Internal (Employees)</option>
-      </select>
-    </div>
 
     <div class="mode-toggle">
       <button class="btn-action" [class.active]="mode === 'groq'" (click)="toggleMode('groq')">

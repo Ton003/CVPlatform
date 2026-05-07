@@ -75,7 +75,14 @@ export class ChatbotService {
 
     // 2. Enrichment & Narrative Generation
     const enriched: FullCandidate[] = await Promise.all(
-      recalled.slice(0, 10).map(c => this.cvSearch.findFullCandidate(c.candidateId).catch(() => c as FullCandidate))
+      recalled.slice(0, 10).map(async (c) => {
+        try {
+          const full = await this.cvSearch.findFullCandidate(c.candidateId);
+          return { ...full, similarity: c.similarity }; // Preserve similarity score
+        } catch (err) {
+          return c as FullCandidate;
+        }
+      })
     );
 
     const reranked = await this.groqService.rerank(dto.message, enriched, dto.apiKey!, dto.history || [], []);

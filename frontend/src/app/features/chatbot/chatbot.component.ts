@@ -26,7 +26,7 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
   @ViewChild('chatEnd') chatEnd!: ElementRef;
 
   mode: 'local' | 'groq' = 'groq';
-  personTypeFilter: 'all' | 'candidate' | 'employee' = 'all';
+  personTypeFilter: 'candidate' = 'candidate';
 
   jobDescription = '';
   loading        = false;
@@ -163,7 +163,7 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
         // ✅ FIX 7: Send sliding window slice, not the full unbounded history
         history:        this.buildHistoryPayload(),
         lastCandidates: this.lastCandidates,
-        personType:     this.personTypeFilter,
+        personType:     'candidate',
       }
     ).pipe(
       finalize(() => { this.chatLoading = false; this.shouldScroll = true; this.cdr.detectChanges(); })
