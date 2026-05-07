@@ -23,7 +23,7 @@
 </div>
 
 <!-- Controls: mode selector + re-run button (no API key here anymore) -->
-<div class="controls-card">
+<div class="card controls-card">
   <div class="mode-row">
     <div class="mode-toggle">
       <button class="mode-btn" [class.active]="mode === 'groq'" (click)="mode = 'groq'">
@@ -51,20 +51,6 @@
   {{ error }}
 </div>
 
-<!-- Loading skeleton -->
-<div *ngIf="loading" class="skeleton-wrap">
-  <div class="skel skel--banner"></div>
-  <div class="candidates-grid">
-    <div class="match-card match-card--skeleton" *ngFor="let i of [1,2,3,4]">
-      <div class="skel skel--avatar"></div>
-      <div class="skel-body">
-        <div class="skel skel--name"></div>
-        <div class="skel skel--sub"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Results -->
   <div class="match-layout">
     <div class="match-results">
@@ -81,6 +67,7 @@
           Internal Employees
         </button>
       </div>
+
       <!-- AI narrative -->
       <div class="ai-banner" *ngIf="aiMessage">
         <div class="ai-banner-icon">
@@ -91,10 +78,24 @@
         <p class="ai-banner-text">{{ aiMessage }}</p>
       </div>
 
-      <p class="results-meta">Found <strong>{{ total }}</strong> matching candidate{{ total !== 1 ? 's' : '' }}</p>
+      <!-- Loading skeleton -->
+      <div *ngIf="loading" class="skeleton-wrap" style="margin-top: 1rem;">
+        <div class="candidates-grid">
+          <div class="card match-card match-card--skeleton" *ngFor="let i of [1,2,3,4]">
+            <div class="skel skel--avatar"></div>
+            <div class="skel-body">
+              <div class="skel skel--name"></div>
+              <div class="skel skel--sub"></div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      <div class="candidates-grid" *ngIf="activeTab === 'external'">
-        <div class="match-card" *ngFor="let c of candidates; let i = index" (click)="goToProfile(c.candidateId)">
+      <div *ngIf="!loading">
+        <p class="results-meta">Found <strong>{{ total }}</strong> matching candidate{{ total !== 1 ? 's' : '' }}</p>
+
+        <div class="candidates-grid" *ngIf="activeTab === 'external'">
+        <div class="card match-card" *ngFor="let c of candidates; let i = index" (click)="goToProfile(c.candidateId)">
 
           <!-- Rank badge -->
           <div class="rank-badge">#{{ i + 1 }}</div>
@@ -136,9 +137,9 @@
 
           <!-- Skills -->
           <div class="skill-row" *ngIf="c.matchedSkills.length || c.relevantSkills.length || c.skills.length">
-            <span class="skill matched" *ngFor="let s of (c.matchedSkills.length ? c.matchedSkills : c.relevantSkills).slice(0, 4)">{{ s }}</span>
+            <span class="skill-chip skill matched" *ngFor="let s of (c.matchedSkills.length ? c.matchedSkills : c.relevantSkills).slice(0, 4)">{{ s }}</span>
             <ng-container *ngIf="!(c.matchedSkills.length || c.relevantSkills.length)">
-              <span class="skill" *ngFor="let s of c.skills.slice(0, 4)">{{ s }}</span>
+              <span class="skill-chip skill" *ngFor="let s of c.skills.slice(0, 4)">{{ s }}</span>
             </ng-container>
             <span class="skill-more" *ngIf="c.skills.length > 4">+{{ c.skills.length - 4 }}</span>
           </div>
@@ -174,15 +175,15 @@
         </div>
 
         <div class="candidates-grid" *ngIf="!loadingInternal && internalCandidates.length > 0">
-          <div class="match-card" *ngFor="let emp of internalCandidates; let i = index" (click)="goToEmployee(emp.uuid)">
+          <div class="card match-card" *ngFor="let emp of internalCandidates; let i = index" (click)="goToEmployee(emp.uuid)">
             <!-- Rank badge -->
             <div class="rank-badge">#{{ i + 1 }}</div>
 
             <!-- Header -->
             <div class="match-head">
-              <div class="candidate-avatar" style="background: var(--accent-color);">{{ initials(emp.firstName + ' ' + emp.lastName) }}</div>
+              <div class="candidate-avatar" style="background: var(--accent-color);">{{ initials((emp.firstName || 'U') + ' ' + (emp.lastName || '')) }}</div>
               <div class="candidate-info">
-                <span class="candidate-name">{{ emp.firstName }} {{ emp.lastName }}</span>
+                <span class="candidate-name">{{ (emp.firstName || 'Internal') }} {{ (emp.lastName || 'Candidate') }}</span>
                 <span class="candidate-title">{{ emp.currentRank || 'Employee' }}</span>
               </div>
               <div class="score-pill" [style.color]="scoreColor(emp.totalScore)" [style.background]="scoreBg(emp.totalScore)" [style.borderColor]="scoreColor(emp.totalScore) + '44'">
@@ -192,7 +193,7 @@
 
             <!-- Meta / Breakdown -->
             <div class="match-meta" style="flex-wrap: wrap; margin-bottom: 12px; gap: 8px;">
-              <span class="fit-chip" [attr.data-fit]="emp.suggestedAction === 'promotion_ready' ? 'excellent' : (emp.suggestedAction === 'near_ready' ? 'good' : 'poor')">
+              <span class="chip fit-chip" *ngIf="emp.suggestedAction" [attr.data-fit]="emp.suggestedAction === 'promotion_ready' ? 'excellent' : (emp.suggestedAction === 'near_ready' ? 'good' : 'poor')">
                 {{ emp.suggestedAction.replace('_', ' ') | titlecase }}
               </span>
             </div>
@@ -210,11 +211,13 @@
               Managerial Match: {{ emp.breakdown.managerial.score }}%
             </div>
             
-            <div class="card-footer">
-              <span class="view-link">View readiness details →</span>
+            <div class="card-footer" style="display: flex; justify-content: space-between; align-items: center;">
+              <span class="view-link" (click)="$event.stopPropagation(); goToEmployee(emp.uuid)">View Profile</span>
+              <button class="btn-gap-analysis" (click)="$event.stopPropagation(); openGapAnalysis(emp)">View Gap Analysis →</button>
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
 
@@ -265,3 +268,14 @@
   <p class="empty-sub">{{ aiMessage || 'Try uploading more CVs or adjusting the job offer description.' }}</p>
 </div>
 }
+
+<!-- Gap Analysis Side Drawer -->
+<app-employee-gap-panel
+  *ngIf="showGapPanel && selectedEmployee"
+  [employeeId]="selectedEmployee.uuid"
+  [jobOfferId]="offer?.id || ''"
+  [jobTitle]="offer?.title || ''"
+  [employeeName]="selectedEmployee.firstName + ' ' + selectedEmployee.lastName"
+  (closePanel)="closeGapAnalysis()"
+  (nominated)="onNominated()">
+</app-employee-gap-panel>

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from '../auth/auth.module';
 import { EmployeesService } from './employees.service';
 import { EmployeesController } from './employees.controller';
 import { InternalMobilityController } from './internal-mobility.controller';
@@ -18,6 +19,8 @@ import { EmployeeAssessmentItem } from './entities/employee-assessment-item.enti
 import { AssessmentsController } from './assessments.controller';
 import { AssessmentsService } from './assessments.service';
 
+import { EmployeeHistory } from './entities/employee-history.entity';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
@@ -30,8 +33,10 @@ import { AssessmentsService } from './assessments.service';
       JobOffer,
       JobRoleLevel,
       EmployeeAssessment,
-      EmployeeAssessmentItem
+      EmployeeAssessmentItem,
+      EmployeeHistory
     ]),
+    AuthModule,
   ],
   controllers: [EmployeesController, InternalMobilityController, AssessmentsController],
   providers: [EmployeesService, InternalMobilityService, UnifiedScoringService, AssessmentsService],

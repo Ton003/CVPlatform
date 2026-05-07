@@ -218,13 +218,9 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
     return '#f43f5e';
   }
 
-  getNoteForCandidate(notes: any[], candidateName: string): any | null {
+  getNoteForCandidate(notes: any[], candidateId: string): any | null {
     if (!notes?.length) return null;
-    const nameLow = candidateName.toLowerCase().trim();
-    return notes.find(n => n.name?.toLowerCase().trim() === nameLow)
-      ?? notes.find(n => { const nl = n.name?.toLowerCase().trim() ?? ''; return nameLow.includes(nl) || nl.includes(nameLow); })
-      ?? notes.find(n => nameLow.split(' ')[0] === n.name?.toLowerCase().trim().split(' ')[0])
-      ?? null;
+    return notes.find(n => n.candidateId === candidateId) ?? null;
   }
 
   getFollowUpQuestion(msg: ChatMessage): string { return msg.result?.ragAnalysis?.followUpQuestion ?? ''; }

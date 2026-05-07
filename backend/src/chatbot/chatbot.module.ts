@@ -2,6 +2,7 @@ import { Module }         from '@nestjs/common';
 import { HttpModule }     from '@nestjs/axios';
 import { ConfigModule }   from '@nestjs/config';
 import { CvUploadModule } from '../cv-upload/cv-upload.module';
+import { AuthModule } from '../auth/auth.module';
 
 import { ChatbotController }       from './chatbot.controller';
 import { ChatbotService }          from './chatbot.service';
@@ -15,6 +16,7 @@ import { GroqService }             from './groq.service';
     ConfigModule,
     HttpModule.register({ timeout: 180_000 }),
     CvUploadModule,
+    AuthModule,
   ],
   controllers: [ChatbotController],
   providers: [
@@ -24,6 +26,6 @@ import { GroqService }             from './groq.service';
     Phi3IntentService,
     GroqService,
   ],
-  exports: [ChatbotService], // ✅ allows JobOffersModule to inject ChatbotService
+  exports: [ChatbotService, GroqService], // ✅ allows other modules to use AI logic
 })
 export class ChatbotModule {}

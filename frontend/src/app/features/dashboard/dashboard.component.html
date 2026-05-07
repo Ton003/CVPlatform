@@ -1,202 +1,98 @@
-<header class="topbar">
-  <div class="topbar-left">
-    <h1 class="page-title">Dashboard</h1>
-    <p class="page-sub">Welcome back, {{ currentUser?.first_name }} · {{ today }}</p>
-  </div>
-  <div class="topbar-right">
-    <span class="role-chip" [attr.data-role]="currentUser?.role">
-      {{ getRoleBadgeLabel(currentUser?.role || '') }}
-    </span>
-    <a class="btn-new" routerLink="/job-offers">
-      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-      </svg>
-      New Job Offer
-    </a>
-  </div>
-</header>
-
-<!-- ── Compact Stats Strip ── -->
-<div class="stats-strip">
-  <div class="stat-item">
-    <div class="stat-icon-wrap stat-icon-wrap--blue">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>
-    </div>
-    <div class="stat-body">
-      <span class="stat-val">
-        <span *ngIf="statsLoading" class="skeleton-val"></span>
-        <span *ngIf="!statsLoading">{{ stats?.totalCandidates ?? 0 }}</span>
-      </span>
-      <span class="stat-lbl">Candidates</span>
-    </div>
-    <div class="stat-trend" *ngIf="!statsLoading && stats?.addedThisWeek">+{{ stats?.addedThisWeek }} this week</div>
-  </div>
-
-  <div class="stat-divider"></div>
-
-  <div class="stat-item">
-    <div class="stat-icon-wrap stat-icon-wrap--purple">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <rect x="2" y="7" width="20" height="14" rx="2"/>
-        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-      </svg>
-    </div>
-    <div class="stat-body">
-      <span class="stat-val">
-        <span *ngIf="jobsLoading" class="skeleton-val"></span>
-        <span *ngIf="!jobsLoading">{{ openJobs.length }}</span>
-      </span>
-      <span class="stat-lbl">Open Jobs</span>
-    </div>
-  </div>
-
-  <div class="stat-divider"></div>
-
-  <div class="stat-item">
-    <div class="stat-icon-wrap stat-icon-wrap--amber">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-      </svg>
-    </div>
-    <div class="stat-body">
-      <span class="stat-val">
-        <span *ngIf="jobsLoading" class="skeleton-val"></span>
-        <span *ngIf="!jobsLoading">{{ totalApps }}</span>
-      </span>
-      <span class="stat-lbl">Applications</span>
-    </div>
-  </div>
-
-  <div class="stat-divider"></div>
-
-  <div class="stat-item">
-    <div class="stat-icon-wrap stat-icon-wrap--green">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-      </svg>
-    </div>
-    <div class="stat-body">
-      <span class="stat-val">
-        <span *ngIf="jobsLoading" class="skeleton-val"></span>
-        <span *ngIf="!jobsLoading">{{ getStageCount('offer') }}</span>
-      </span>
-      <span class="stat-lbl">Offers Extended</span>
-    </div>
-  </div>
-</div>
-
-<!-- ── Main Content Grid ── -->
-<section class="content-grid">
-
-  <!-- Recent Applications (wide) -->
-  <div class="panel panel--wide">
-    <div class="panel-head">
-      <span class="panel-title">Recent Applications</span>
-      <a routerLink="/candidates" class="panel-link">View all candidates</a>
-    </div>
-
-    <div *ngIf="jobsLoading" class="recent-list">
-      <div *ngFor="let i of [1,2,3,4,5]" class="recent-item recent-item--skeleton">
-        <div class="skeleton skeleton--avatar"></div>
-        <div class="skeleton-body"><div class="skeleton skeleton--name"></div><div class="skeleton skeleton--sub"></div></div>
+<div class="command-center">
+  <!-- Astra Briefing Hero -->
+  <header class="briefing-hero">
+    <div class="hero-main">
+      <div class="astra-pulse">
+        <div class="orb"></div>
+        <div class="rings"><span></span><span></span><span></span></div>
+      </div>
+      <div class="briefing-text">
+        <div class="status-badge">SYSTEM ONLINE · ACTIVE SURVEILLANCE</div>
+        <h1>Astra Intelligence</h1>
+        <p class="mission-statement">Monitoring {{ openJobs.length }} active missions and {{ stats?.totalCandidates || 0 }} talent vectors.</p>
       </div>
     </div>
+    
+    <div class="hero-stats">
+      <div class="quick-stat">
+        <span class="label">Total Pipeline</span>
+        <span class="value">{{ totalApps }}</span>
+      </div>
+      <div class="quick-stat">
+        <span class="label">Hiring Velocity</span>
+        <span class="value">High</span>
+      </div>
+      <div class="quick-stat">
+        <span class="label">Retention Health</span>
+        <span class="value">94%</span>
+      </div>
+    </div>
+  </header>
 
-    <div *ngIf="!jobsLoading && recentApps.length === 0" class="empty-panel">
-      <p class="empty-title">No applications yet</p>
-      <p class="empty-sub">Upload CVs and link them to jobs to populate the pipeline.</p>
+  <main class="dashboard-grid">
+    <!-- Center: Intelligence Stream -->
+    <div class="grid-main">
+      <app-scout-agent></app-scout-agent>
     </div>
 
-    <div *ngIf="!jobsLoading && recentApps.length > 0" class="recent-list">
-      <div class="recent-item" *ngFor="let app of recentApps" (click)="openApplication(app.applicationId)">
-        <div class="recent-avatar">{{ initials(app.candidateName || '?') }}</div>
-        <div class="recent-body">
-          <p class="recent-name">{{ app.candidateName }}</p>
-          <p class="recent-title">{{ app.jobTitle }}</p>
+    <!-- Right: Activity & Controls -->
+    <aside class="grid-side">
+      <!-- Recent Activity -->
+      <div class="mini-panel">
+        <div class="panel-head">
+          <span class="panel-title">Recent Transmissions</span>
+          <a routerLink="/candidates" class="panel-link">Logs →</a>
         </div>
-        <span class="stage-pill stage-pill--{{ app.stage }}">{{ app.stage | titlecase }}</span>
-        <svg class="recent-chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-        </svg>
-      </div>
-    </div>
-  </div>
-
-  <!-- Right column -->
-  <div class="right-column">
-
-    <!-- Open Jobs -->
-    <div class="panel">
-      <div class="panel-head">
-        <span class="panel-title">Open Jobs</span>
-        <a routerLink="/job-offers" class="panel-link">Manage →</a>
-      </div>
-
-      <div *ngIf="jobsLoading" class="recent-list">
-        <div *ngFor="let i of [1,2]" class="recent-item recent-item--skeleton">
-          <div class="skeleton skeleton--avatar"></div>
-          <div class="skeleton-body"><div class="skeleton skeleton--name"></div><div class="skeleton skeleton--sub"></div></div>
-        </div>
-      </div>
-
-      <div *ngIf="!jobsLoading && openJobs.length === 0" class="empty-panel">
-        <p class="empty-title">No open jobs</p>
-        <a class="btn-ghost" routerLink="/job-offers">Create job offer</a>
-      </div>
-
-      <div *ngIf="!jobsLoading && openJobs.length > 0" class="recent-list">
-        <div class="recent-item" *ngFor="let job of openJobs" (click)="viewPipeline(job.id)">
-          <div class="recent-avatar recent-avatar--job">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="2" y="7" width="20" height="14" rx="2"/>
-              <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-            </svg>
-          </div>
-          <div class="recent-body">
-            <p class="recent-name">{{ job.title }}</p>
-            <p class="recent-title">{{ job.location || 'No location' }}</p>
-          </div>
-          <span class="pipeline-link-chip">Pipeline →</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Pipeline Breakdown -->
-    <div class="panel">
-      <div class="panel-head">
-        <span class="panel-title">Applications by Stage</span>
-        <span class="panel-count" *ngIf="!jobsLoading">{{ totalApps }} total</span>
-      </div>
-
-      <div *ngIf="jobsLoading" class="pipeline-body">
-        <div *ngFor="let i of [1,2,3,4,5,6]" class="pipeline-row">
-          <div class="skeleton skeleton--stage-label"></div>
-          <div class="skeleton skeleton--stage-bar"></div>
-          <div class="skeleton skeleton--stage-count"></div>
-        </div>
-      </div>
-
-      <div *ngIf="!jobsLoading && totalApps === 0" class="empty-panel">
-        <p class="empty-title">No applications yet</p>
-      </div>
-
-      <div *ngIf="!jobsLoading && totalApps > 0" class="pipeline-body">
-        <div class="pipeline-row" *ngFor="let stage of stages">
-          <span class="pipeline-label">{{ stage.label }}</span>
-          <div class="pipeline-bar-wrap">
-            <div class="pipeline-bar"
-              [style.width.%]="stageBarWidth(getStageCount(stage.id))"
-              [style.background]="stage.color">
+        <div class="activity-feed">
+          <div class="activity-item" *ngFor="let app of recentApps" (click)="openApplication(app.applicationId)">
+            <div class="activity-time">{{ (app.stage || 'Applied') | titlecase }}</div>
+            <div class="activity-body">
+              <strong>{{ app.candidateName || 'Unknown Candidate' }}</strong> linked to <em>{{ app.jobTitle || 'Unknown Job' }}</em>
             </div>
           </div>
-          <span class="pipeline-count">{{ getStageCount(stage.id) }}</span>
         </div>
       </div>
-    </div>
 
-  </div>
-</section>
+      <!-- Open Missions -->
+      <div class="mini-panel">
+        <div class="panel-head">
+          <span class="panel-title">Active Missions</span>
+          <a routerLink="/job-offers" class="panel-link">Manage →</a>
+        </div>
+        <div *ngIf="jobsLoading" class="mission-list">
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Loading missions...</p>
+        </div>
+        <div *ngIf="!jobsLoading && openJobs.length === 0" class="mission-list">
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">No active missions found.</p>
+        </div>
+        <div *ngIf="!jobsLoading && openJobs.length > 0" class="mission-list">
+          <div class="mission-item" *ngFor="let job of openJobs" (click)="viewPipeline(job.id)">
+            <div class="mission-info">
+              <span class="title">{{ job.title }}</span>
+              <span class="sub">{{ job.location || 'Remote' }}</span>
+            </div>
+            <div class="mission-badge">ACTIVE</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pipeline Breakdown -->
+      <div class="mini-panel">
+        <div class="panel-head">
+          <span class="panel-title">Pipeline Health</span>
+        </div>
+        <div *ngIf="statsLoading" class="health-chart">
+           <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Loading pipeline...</p>
+        </div>
+        <div *ngIf="!statsLoading" class="health-chart">
+          <div class="health-row" *ngFor="let stage of stages">
+            <div class="health-bar-wrap">
+              <div class="health-bar" [style.width.%]="stageBarWidth(getStageCount(stage.id))" [style.background]="stage.color"></div>
+            </div>
+            <span class="health-label">{{ stage.label }} ({{ getStageCount(stage.id) }})</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>

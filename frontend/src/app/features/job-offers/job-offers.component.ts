@@ -84,6 +84,7 @@ export class JobOffersComponent implements OnInit {
   activeRoles: any[] = [];
   selectedRankBlueprint: any | null = null;
   loadingBlueprint = false;
+  managers: any[] = [];
 
 
 
@@ -159,7 +160,17 @@ export class JobOffersComponent implements OnInit {
     this.availableRanks = [];
     this.selectedRankBlueprint = null;
     this.showModal = true;
-    await this.loadActiveRoles();
+    await Promise.all([this.loadActiveRoles(), this.loadManagers()]);
+  }
+
+  async loadManagers(): Promise<void> {
+    try {
+      const list = await firstValueFrom(this.http.get<any[]>(`${environment.apiUrl}/employees/managers`));
+      this.managers = list;
+      this.cdr.markForCheck();
+    } catch {
+      this.toast.error('Failed to load manager list.');
+    }
   }
 
   async loadActiveRoles(): Promise<void> {
@@ -280,7 +291,6 @@ export class JobOffersComponent implements OnInit {
   cancelDelete(): void { this.deleteModal = false; }
   viewMatches(id: string, event: MouseEvent): void { event.stopPropagation(); this.router.navigate(['/job-offers', id, 'matches']); }
   viewPipeline(id: string, event: MouseEvent): void { event.stopPropagation(); this.router.navigate(['/job-offers', id, 'pipeline']); }
-  viewComparison(id: string, event: MouseEvent): void { event.stopPropagation(); this.router.navigate(['/job-offers', id, 'compare']); }
   formatDate(d: string): string { return new Date(d).toLocaleDateString('en-GB'); }
   expandedSkills: Record<string, boolean> = {};
 
@@ -316,7 +326,7 @@ export class JobOffersComponent implements OnInit {
     this.showModal = true;
     this.cdr.markForCheck();
     
-    await this.loadActiveRoles();
+    await Promise.all([this.loadActiveRoles(), this.loadManagers()]);
     this.selectedRoleId = offer.jobRoleId || '';
     this.onRoleChange();
     this.form.jobRoleLevelId = offer.jobRoleLevelId || '';

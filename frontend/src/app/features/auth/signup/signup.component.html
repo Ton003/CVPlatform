@@ -32,18 +32,18 @@
         <div class="field">
           <label>First name</label>
           <div class="input-wrap">
-            <input type="text" formControlName="first_name" placeholder="First name"
-              [class.is-error]="first_name.invalid && first_name.touched" />
+            <input type="text" formControlName="firstName" placeholder="First name"
+              [class.is-error]="firstName.invalid && firstName.touched" />
           </div>
-          <span class="field-error" *ngIf="first_name.invalid && first_name.touched">Required</span>
+          <span class="field-error" *ngIf="firstName.invalid && firstName.touched">Required</span>
         </div>
         <div class="field">
           <label>Last name</label>
           <div class="input-wrap">
-            <input type="text" formControlName="last_name" placeholder="Last name"
-              [class.is-error]="last_name.invalid && last_name.touched" />
+            <input type="text" formControlName="lastName" placeholder="Last name"
+              [class.is-error]="lastName.invalid && lastName.touched" />
           </div>
-          <span class="field-error" *ngIf="last_name.invalid && last_name.touched">Required</span>
+          <span class="field-error" *ngIf="lastName.invalid && lastName.touched">Required</span>
         </div>
       </div>
 
@@ -102,8 +102,42 @@
         </div>
         <div class="field">
           <label>Department <span class="label-opt">(optional)</span></label>
-          <div class="input-wrap">
-            <input type="text" formControlName="department" placeholder="e.g. DSI, Digital" />
+          <div class="select-wrap">
+            <select formControlName="departmentId" (change)="onDepartmentChange()">
+              <option value="">— Select Department —</option>
+              <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+            </select>
+            <svg class="select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manager specific fields -->
+      <div class="field-row animate-in" *ngIf="selectedRole === 'manager' || selectedRole === 'admin'">
+        <div class="field">
+          <label>Job Role</label>
+          <div class="select-wrap">
+            <select #roleSel (change)="onRoleSelection(roleSel.value)">
+              <option value="">— Select Role —</option>
+              <option *ngFor="let r of roles" [value]="r.id">{{ r.name }}</option>
+            </select>
+            <svg class="select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </div>
+        </div>
+        <div class="field">
+          <label>Seniority Level</label>
+          <div class="select-wrap">
+            <select formControlName="jobRoleLevelId">
+              <option value="">— Select Level —</option>
+              <option *ngFor="let l of levels" [value]="l.id">Level {{ l.levelNumber }}: {{ l.title }}</option>
+            </select>
+            <svg class="select-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
           </div>
         </div>
       </div>

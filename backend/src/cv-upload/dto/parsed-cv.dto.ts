@@ -7,8 +7,8 @@ export class EducationEntryDto {
 export class ExperienceEntryDto {
   title:      string;
   company:    string | null;
-  start_date: string | null;
-  end_date:   string | null;
+  startDate: string | null;
+  endDate:   string | null;
   description: string | null;
   inferredTags?: any[]; // optional, added during processing
 }
@@ -21,17 +21,17 @@ export class LanguageEntryDto {
 
 export class ParsedCvDto {
   // ── Identity ──────────────────────────────────────────────
-  first_name:     string | null;
-  last_name:      string | null;
+  firstName:     string | null;
+  lastName:      string | null;
   email:          string | null;
   phone:          string | null;
-  linkedin_url:   string | null;
-  current_title:  string | null;
+  linkedinUrl:   string | null;
+  currentTitle:  string | null;
   location:       string | null;
 
   // ── Skills ────────────────────────────────────────────────
-  skills_technical: string[];
-  skills_soft:      string[];
+  skillsTechnical: string[];
+  skillsSoft:      string[];
 
   // ── Languages ─────────────────────────────────────────────
   languages: LanguageEntryDto[];
@@ -43,11 +43,11 @@ export class ParsedCvDto {
   experience: ExperienceEntryDto[];
 
   // ── Computed ──────────────────────────────────────────────
-  years_experience:        number | null;
-  total_experience_months: number | null;
+  yearsExperience:        number | null;
+  totalExperienceMonths: number | null;
 
   // ── LLM ───────────────────────────────────────────────────
-  llm_summary: string;
+  llmSummary: string;
 
   // ✅ Detected CV language — used by cv-storage instead of hardcoded 'fr'
   language?: string;

@@ -63,6 +63,11 @@ export class JobArchitectureController {
     return this.jaService.successionCandidates(id);
   }
 
+  @Get('job-role-levels/:id/succession-candidates')
+  getSuccessionCandidatesByLevel(@Param('id') id: string): Promise<any[]> {
+    return this.jaService.successionCandidates(id);
+  }
+
   @Post('roles')
   createRole(
     @Body() dto: { 

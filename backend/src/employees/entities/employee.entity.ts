@@ -25,6 +25,19 @@ export enum EmployeeStatus {
   TERMINATED = 'terminated'
 }
 
+export enum SuccessionReadiness {
+  READY_NOW = 'ready_now',
+  READY_1_YR = 'ready_1_yr',
+  READY_2_YRS = 'ready_2_yrs',
+  NOT_READY = 'not_ready',
+}
+
+export enum RiskLevel {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+}
+
 @Entity('employees')
 export class Employee {
   @PrimaryGeneratedColumn('uuid')
@@ -87,9 +100,12 @@ export class Employee {
   @JoinColumn({ name: 'department_id' })
   department: Department;
 
-  @ManyToOne(() => Employee, { nullable: true })
+  @ManyToOne(() => Employee, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'manager_id' })
   manager: Employee | null;
+
+  @Column({ name: 'is_manager', default: false })
+  isManager: boolean;
 
   @OneToMany(() => EmployeeCompetency, (ec) => ec.employee, { cascade: true })
   competencies: Relation<EmployeeCompetency[]>;
@@ -102,6 +118,34 @@ export class Employee {
 
   @Column({ type: 'text', nullable: true })
   embedding: string | null;
+
+  // ── Succession & Risk Management ────────────────────────────────
+  @Column({
+    name: 'succession_readiness',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+    default: null,
+  })
+  successionReadiness: SuccessionReadiness | null;
+
+  @Column({
+    name: 'retention_risk',
+    type: 'varchar',
+    length: 10,
+    nullable: true,
+    default: null,
+  })
+  retentionRisk: RiskLevel | null;
+
+  @Column({
+    name: 'impact_of_loss',
+    type: 'varchar',
+    length: 10,
+    nullable: true,
+    default: null,
+  })
+  impactOfLoss: RiskLevel | null;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

@@ -13,8 +13,8 @@ const TIMEOUT    = 180_000;
 export interface ExperienceEntry {
   title:       string;
   company:     string | null;
-  start_date:  string | null;
-  end_date:    string | null;
+  startDate:  string | null;
+  endDate:    string | null;
   description: string | null;
 }
 
@@ -30,26 +30,26 @@ export interface LanguageEntry {
 }
 
 export interface ExtractionResult {
-  first_name:               string | null;
-  last_name:                string | null;
+  firstName:               string | null;
+  lastName:                string | null;
   email:                    string | null;
   phone:                    string | null;
-  linkedin_url:             string | null;
+  linkedinUrl:             string | null;
   location:                 string | null;
-  current_title:            string | null;
-  skills_technical:         string[];
+  currentTitle:            string | null;
+  skillsTechnical:         string[];
   languages:                LanguageEntry[];
   education:                EducationEntry[];
   experience:               ExperienceEntry[];
-  years_experience:         number | null;
-  total_experience_months:  number | null;
-  job_titles:               string[];
+  yearsExperience:         number | null;
+  totalExperienceMonths:  number | null;
+  jobTitles:               string[];
   companies:                string[];
   degrees:                  string[];
   institutions:             string[];
   dates:                    string[];
-  entities_raw:             Record<string, string[]>;
-  normalized_text:          string;
+  entitiesRaw:             Record<string, string[]>;
+  normalizedText:          string;
 }
 
 export interface ExtractionOptions {
@@ -135,24 +135,24 @@ ${excerpt}
 
 Return ONLY this JSON:
 {
-  "first_name": null,
-  "last_name": null,
+  "firstName": null,
+  "lastName": null,
   "location": null,
-  "current_title": null,
-  "skills_technical": [],
+  "currentTitle": null,
+  "skillsTechnical": [],
   "languages": [],
   "education": [],
   "experience": []
 }
 
 Rules:
-- first_name/last_name: given name and family name. Title Case always, never ALL CAPS. If name is ALL CAPS like "FERJENI Saif" then first_name="Saif" last_name="Ferjeni"
+- firstName/lastName: given name and family name. Title Case always, never ALL CAPS. If name is ALL CAPS like "FERJENI Saif" then firstName="Saif" lastName="Ferjeni"
 - location: city only, from contact section
-- current_title: from profile or header section, max 10 words
-- skills_technical: ALL programming languages and tools mentioned anywhere in CV. Max 20 items. Short names only: "Python" not "Python programming language"
+- currentTitle: from profile or header section, max 10 words
+- skillsTechnical: ALL programming languages and tools mentioned anywhere in CV. Max 20 items. Short names only: "Python" not "Python programming language"
 - languages: from LANGUES section only. Use field name "name" not "language". Level mapping: maternelle/natif=native, C1/C2=fluent, B2=advanced, B1=intermediate, A1/A2=beginner
 - education: degree + institution short name + date range. Max 3 entries. Use field name "date" not "date_range"
-- experience: title max 4 words + company (null if freelance) + start_date + end_date + description (sentences describing the role)
+- experience: title max 4 words + company (null if freelance) + startDate + endDate + description (sentences describing the role)
 - CRITICAL: use EXACTLY these field names — no variations, no comments inside JSON
 - null for missing fields, [] for missing arrays`;
   }
@@ -192,11 +192,11 @@ Rules:
 
   private extractFieldsRobustly(raw: string): any {
     return {
-      first_name:       this.extractStringField(raw, 'first_name'),
-      last_name:        this.extractStringField(raw, 'last_name'),
+      firstName:       this.extractStringField(raw, 'firstName'),
+      lastName:        this.extractStringField(raw, 'lastName'),
       location:         this.extractStringField(raw, 'location'),
-      current_title:    this.extractStringField(raw, 'current_title'),
-      skills_technical: this.extractArrayField(raw, 'skills_technical'),
+      currentTitle:    this.extractStringField(raw, 'currentTitle'),
+      skillsTechnical: this.extractArrayField(raw, 'skillsTechnical'),
       languages:        this.extractArrayField(raw, 'languages'),
       education:        this.extractArrayField(raw, 'education'),
       experience:       this.extractArrayField(raw, 'experience'),
@@ -249,31 +249,31 @@ Rules:
     const education  = this.parseEducation(parsed.education);
 
     const result: ExtractionResult = {
-      first_name:              this.str(parsed.first_name),
-      last_name:               this.str(parsed.last_name),
+      firstName:              this.str(parsed.firstName),
+      lastName:               this.str(parsed.lastName),
       email:                   this.str(parsed.email),
       phone:                   this.str(parsed.phone),
-      linkedin_url:            this.str(parsed.linkedin_url),
+      linkedinUrl:            this.str(parsed.linkedinUrl),
       location:                this.str(parsed.location),
-      current_title:           this.str(parsed.current_title),
-      skills_technical:        this.strArray(parsed.skills_technical),
+      currentTitle:           this.str(parsed.currentTitle),
+      skillsTechnical:        this.strArray(parsed.skillsTechnical),
       languages:               this.parseLanguages(parsed.languages),
       education,
       experience,
-      years_experience:        null,
-      total_experience_months: null,
-      job_titles:              experience.map(e => e.title),
+      yearsExperience:        null,
+      totalExperienceMonths: null,
+      jobTitles:              experience.map(e => e.title),
       companies:               experience.map(e => e.company).filter(Boolean) as string[],
       degrees:                 education.map(e => e.degree).filter(Boolean) as string[],
       institutions:            education.map(e => e.institution).filter(Boolean) as string[],
       dates:                   education.map(e => e.date).filter(Boolean) as string[],
-      entities_raw:            {},
-      normalized_text:         rawText,
+      entitiesRaw:            {},
+      normalizedText:         rawText,
     };
 
     const months = this.calculateExperienceMonths(result.experience);
-    result.total_experience_months = months;
-    result.years_experience        = months !== null ? Math.floor(months / 12) : null;
+    result.totalExperienceMonths = months;
+    result.yearsExperience        = months !== null ? Math.floor(months / 12) : null;
 
     return result;
   }
@@ -283,11 +283,11 @@ Rules:
     let totalMonths = 0, counted = 0;
 
     for (const entry of experience) {
-      const start = this.parseDate(entry.start_date);
-      const end   = entry.end_date?.toLowerCase().includes('present') ||
-                    entry.end_date?.toLowerCase().includes('aujourd')
+      const start = this.parseDate(entry.startDate);
+      const end   = entry.endDate?.toLowerCase().includes('present') ||
+                    entry.endDate?.toLowerCase().includes('aujourd')
         ? new Date()
-        : this.parseDate(entry.end_date);
+        : this.parseDate(entry.endDate);
 
       if (!start || !end) continue;
       const months = (end.getFullYear() - start.getFullYear()) * 12 +
@@ -353,22 +353,22 @@ Rules:
       .map(e => ({
         title:       e.title.trim(),
         company:     this.str(e.company),
-        start_date:  this.str(e.start_date),
-        end_date:    this.str(e.end_date),
+        startDate:  this.str(e.startDate ?? e.start_date),
+        endDate:    this.str(e.endDate ?? e.end_date),
         description: this.str(e.description ?? e.summary ?? e.responsibilities),
       }));
   }
 
   private emptyResult(rawText = ''): ExtractionResult {
     return {
-      first_name: null, last_name: null, email: null,
-      phone: null, linkedin_url: null, location: null,
-      current_title: null, skills_technical: [],
+      firstName: null, lastName: null, email: null,
+      phone: null, linkedinUrl: null, location: null,
+      currentTitle: null, skillsTechnical: [],
       languages: [], education: [], experience: [],
-      years_experience: null, total_experience_months: null,
-      job_titles: [], companies: [], degrees: [],
-      institutions: [], dates: [], entities_raw: {},
-      normalized_text: rawText,
+      yearsExperience: null, totalExperienceMonths: null,
+      jobTitles: [], companies: [], degrees: [],
+      institutions: [], dates: [], entitiesRaw: {},
+      normalizedText: rawText,
     };
   }
 }

@@ -12,6 +12,7 @@ export type ApplicationStage =
   | 'interview'
   | 'assessment'
   | 'offer'
+  | 'hired'
   | 'rejected';
 
 @Entity('applications')

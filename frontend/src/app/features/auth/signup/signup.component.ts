@@ -5,6 +5,7 @@ import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angula
 import { Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs'; // ✅ add this
 import { AuthService } from '../../../core/services/auth.service';
+import { JobArchitectureService, BusinessUnit, Department, JobRole, JobRoleLevel } from '../../../core/services/job-architecture.service';
 
 @Component({
   selector: 'app-signup',
@@ -19,25 +20,58 @@ export class SignupComponent {
   errorMessage = '';
   showPassword = false;
 
+  // Architecture Data
+  departments: Department[] = [];
+  roles: JobRole[] = [];
+  levels: JobRoleLevel[] = [];
+
   constructor(
     private readonly fb: FormBuilder,
     private readonly authService: AuthService,
+    private readonly jaService: JobArchitectureService,
     private readonly router: Router,
   ) {
     this.signupForm = this.fb.group({
-      first_name: ['', [Validators.required, Validators.maxLength(100)]],
-      last_name:  ['', [Validators.required, Validators.maxLength(100)]],
-      email:      ['', [Validators.required, Validators.email]],
-      password:   ['', [Validators.required, Validators.minLength(8)]],
-      role:       ['hr'],
-      department: [''],
+      firstName:      ['', [Validators.required, Validators.maxLength(100)]],
+      lastName:       ['', [Validators.required, Validators.maxLength(100)]],
+      email:          ['', [Validators.required, Validators.email]],
+      password:       ['', [Validators.required, Validators.minLength(8)]],
+      role:           ['hr'],
+      departmentId:   [''],
+      jobRoleLevelId: [''],
+    });
+
+    this.loadArchitecture();
+  }
+
+  get firstName() { return this.signupForm.get('firstName')!; }
+  get lastName()  { return this.signupForm.get('lastName')!; }
+  get email()      { return this.signupForm.get('email')!; }
+  get password()   { return this.signupForm.get('password')!; }
+  get selectedRole() { return this.signupForm.get('role')?.value; }
+
+  private loadArchitecture(): void {
+    this.jaService.getTree().subscribe(tree => {
+      this.departments = tree.flatMap(bu => bu.departments || []);
     });
   }
 
-  get first_name() { return this.signupForm.get('first_name')!; }
-  get last_name()  { return this.signupForm.get('last_name')!; }
-  get email()      { return this.signupForm.get('email')!; }
-  get password()   { return this.signupForm.get('password')!; }
+  onDepartmentChange(): void {
+    const deptId = this.signupForm.get('departmentId')?.value;
+    const dept = this.departments.find(d => d.id === deptId);
+    this.roles = dept?.jobRoles || [];
+    this.levels = [];
+    this.signupForm.patchValue({ jobRoleLevelId: '' });
+  }
+
+  onRoleChange(): void {
+    const roleId = this.signupForm.get('roleId')?.value; // Wait, I didn't add roleId to form yet. I'll just use the selection to filter levels.
+  }
+
+  onRoleSelection(roleId: string): void {
+    const role = this.roles.find(r => r.id === roleId);
+    this.levels = role?.levels || [];
+  }
 
   onSubmit(): void {
     if (this.signupForm.invalid) {

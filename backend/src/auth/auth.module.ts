@@ -1,38 +1,51 @@
-// auth.module.ts
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigService } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
+import { PolicyService } from './policy.service';
 import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
     UsersModule,
-    PassportModule,
-    ConfigModule,
-    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
+    PassportModule.register({ defaultStrategy: 'jwt' }),
+    
+    // 1. Configurable Rate Limiting
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (cfg: ConfigService) => [{
+        ttl: cfg.get<number>('THROTTLE_TTL', 60000),
+        limit: cfg.get<number>('THROTTLE_LIMIT', 100),
+      }],
+    }),
+
+    // 2. Dynamic JWT Configuration
     JwtModule.registerAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.getOrThrow<string>('JWT_SECRET'),
+      inject: [ConfigService],
+      useFactory: (cfg: ConfigService) => ({
+        secret: cfg.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.getOrThrow<string>('JWT_EXPIRES_IN') as `${number}${'s' | 'm' | 'h' | 'd'}`,
+          expiresIn: cfg.get<string>('JWT_EXPIRES_IN', '1d') as any,
         },
       }),
-      inject: [ConfigService],
     }),
   ],
   providers: [
     AuthService,
     JwtStrategy,
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    PolicyService,
+    // Global Rate Limiting Guard
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
   controllers: [AuthController],
-  exports: [AuthService, JwtStrategy, PassportModule],
+  exports: [AuthService, PolicyService],
 })
 export class AuthModule {}

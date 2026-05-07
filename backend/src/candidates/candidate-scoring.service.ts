@@ -1,9 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 
-// ── Role catalog ──────────────────────────────────────────────────────────────
-// Moved here from CandidatesController where it did not belong.
 const ROLE_CATALOG: Record<string, string[]> = {
   'Frontend Developer':        ['javascript', 'typescript', 'react', 'angular', 'vue', 'html', 'css', 'tailwind', 'bootstrap'],
   'Backend Developer':         ['node', 'nodejs', 'nestjs', 'express', 'java', 'spring', 'python', 'django', 'flask', 'fastapi', 'php', 'laravel', 'sql', 'postgresql', 'mysql', 'mongodb', 'rest api', 'docker'],
@@ -18,8 +16,7 @@ const ROLE_CATALOG: Record<string, string[]> = {
 };
 
 export interface ScoreBreakdown {
-  technical:   { score: number; weight: number; role: string; available: boolean };
-  manager:     { score: number | null; weight: number; available: boolean; noteCount: number };
+  technical: { score: number; weight: number; role: string; available: boolean };
 }
 
 export interface CandidateScoreResult {
@@ -31,6 +28,7 @@ export interface CandidateScoreResult {
 
 @Injectable()
 export class CandidateScoringService {
+  private readonly logger = new Logger(CandidateScoringService.name);
 
   constructor(
     @InjectDataSource()
@@ -38,9 +36,9 @@ export class CandidateScoringService {
   ) {}
 
   async score(candidateId: string): Promise<CandidateScoreResult> {
-    // ── 1. Fetch candidate data (Skills & Competency Snapshot) ──
     const profileRows = await this.dataSource.query(`
       SELECT 
+        c.id,
         c.competency_snapshot AS "competencySnapshot",
         cpd.skills_technical AS skills
       FROM candidates c
@@ -51,23 +49,15 @@ export class CandidateScoringService {
       LIMIT 1
     `, [candidateId]);
 
+    if (!profileRows.length) {
+      throw new NotFoundException(`Candidate ${candidateId} not found`);
+    }
+
     const row = profileRows[0];
     const skills: string[] = (row?.skills ?? []).map((s: string) => s.toLowerCase());
     const snapshot: Record<string, any> = row?.competencySnapshot || {};
 
-    // ── 2. Manager score — average of note ratings ──
-    const noteRows = await this.dataSource.query(`
-      SELECT rating FROM candidate_notes
-      WHERE candidate_id = $1 AND rating > 0
-    `, [candidateId]);
-
-    let managerScore: number | null = null;
-    if (noteRows.length > 0) {
-      const avg = noteRows.reduce((sum: number, n: any) => sum + n.rating, 0) / noteRows.length;
-      managerScore = Math.round((avg / 5) * 100);
-    }
-
-    // ── 3. SFIA Competency Score ──
+    // 1. SFIA Competency Score
     let sfiaScore = 0;
     const compEntries = Object.values(snapshot);
     if (compEntries.length > 0) {
@@ -75,9 +65,9 @@ export class CandidateScoringService {
       sfiaScore = Math.round((totalLevels / (compEntries.length * 5)) * 100);
     }
 
-    // ── 4. Technical match score — best role overlap from catalog ──
+    // 2. Technical match score
     let technicalScore = 0;
-    let bestRoleMatch  = '';
+    let bestRoleMatch  = 'General';
 
     for (const [role, roleSkills] of Object.entries(ROLE_CATALOG)) {
       const matched = roleSkills.filter(rs =>
@@ -90,21 +80,11 @@ export class CandidateScoringService {
       }
     }
 
-    // ── 5. Composite score ──
-    // Weights: 50% SFIA Levels, 30% Role Keyword Match, 20% Manager Ratings
-    const weights = { sfia: 0.50, role: 0.30, manager: 0.20 };
+    // 3. Composite score (60% SFIA, 40% Role)
+    const weights = { sfia: 0.60, role: 0.40 };
+    const compositeScore = Math.round((sfiaScore * weights.sfia) + (technicalScore * weights.role));
 
-    let weightedSum   = (sfiaScore * weights.sfia) + (technicalScore * weights.role);
-    let weightedTotal = weights.sfia + weights.role;
-
-    if (managerScore !== null) {
-      weightedSum   += managerScore * weights.manager;
-      weightedTotal += weights.manager;
-    }
-
-    const compositeScore = Math.round(weightedSum / weightedTotal);
-
-    // ── 6. Role suggestions ──
+    // 4. Role suggestions
     const roleSuggestions = Object.entries(ROLE_CATALOG)
       .map(([role, roleSkills]) => {
         const matched = roleSkills.filter(rs =>
@@ -116,21 +96,25 @@ export class CandidateScoringService {
       .sort((a, b) => b.score - a.score)
       .slice(0, 4);
 
-    // ── 7. Score label ──
-    const label =
-      compositeScore >= 80 ? 'Exceptional' :
-      compositeScore >= 65 ? 'Strong'      :
-      compositeScore >= 45 ? 'Developing'  : 'Junior / Entry';
-
     return {
       compositeScore,
-      label,
+      label: this.getScoreLabel(compositeScore),
       breakdown: {
-        technical:   { score: technicalScore, weight: 30, role: bestRoleMatch, available: true },
-        manager:     { score: managerScore,   weight: 20, available: managerScore !== null, noteCount: noteRows.length },
-        // Added sfia to the interface or handled as internal
-      } as any,
+        technical: { 
+          score: technicalScore, 
+          weight: 40, 
+          role: bestRoleMatch, 
+          available: skills.length > 0 
+        },
+      },
       roleSuggestions,
     };
+  }
+
+  private getScoreLabel(score: number): string {
+    if (score >= 80) return 'Exceptional';
+    if (score >= 65) return 'Strong';
+    if (score >= 45) return 'Developing';
+    return 'Junior / Entry';
   }
 }

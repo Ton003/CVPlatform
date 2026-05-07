@@ -5,6 +5,8 @@ import { InternalApplication, InternalApplicationStatus } from './entities/inter
 import { EmployeeRoleMatch } from './entities/employee-role-match.entity';
 import { Employee } from './entities/employee.entity';
 import { JobOffer } from '../job-offers/job-offer.entity';
+import { Candidate } from '../candidates/entities/candidates.entity';
+import { Application } from '../applications/application.entity';
 import { UnifiedScoringService } from '../shared/services/unified-scoring.service';
 
 @Injectable()
@@ -20,6 +22,10 @@ export class InternalMobilityService {
     private readonly employeeRepo: Repository<Employee>,
     @InjectRepository(JobOffer)
     private readonly offerRepo: Repository<JobOffer>,
+    @InjectRepository(Candidate)
+    private readonly candidateRepo: Repository<Candidate>,
+    @InjectRepository(Application)
+    private readonly appRepo: Repository<Application>,
     private readonly scoringService: UnifiedScoringService,
     @InjectDataSource()
     private readonly dataSource: DataSource,
@@ -65,6 +71,74 @@ export class InternalMobilityService {
   }
 
   /**
+   * Nominate an employee for a job role (Internal Kanban integration)
+   */
+  async nominateEmployee(employeeId: string, jobOfferId: string, nominatedBy: string) {
+    const employee = await this.employeeRepo.findOne({ 
+      where: { id: employeeId },
+      relations: ['jobRole']
+    });
+    if (!employee) throw new NotFoundException('Employee not found');
+
+    const job = await this.offerRepo.findOne({ where: { id: jobOfferId } });
+    if (!job) throw new NotFoundException('Job offer not found');
+
+    // 1. Mirror employee as a candidate if not already mirrored
+    let candidate = await this.candidateRepo.findOne({ where: { email: employee.email } });
+    if (!candidate) {
+      candidate = this.candidateRepo.create({
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        email: employee.email,
+        phone: null,
+        currentTitle: employee.jobRole?.name || 'Internal Employee',
+        source: 'internal',
+        createdBy: nominatedBy,
+        gdprConsent: true, // Internal employees have already consented implicitly
+        gdprConsentAt: new Date(),
+      });
+      candidate = await this.candidateRepo.save(candidate);
+    } else {
+      // Update source if it wasn't already marked internal
+      if (candidate.source !== 'internal') {
+        candidate.source = 'internal';
+        await this.candidateRepo.save(candidate);
+      }
+    }
+
+    // 2. Create standard Application record for the Kanban board
+    let application = await this.appRepo.findOne({
+      where: { candidateId: candidate.id, jobId: job.id }
+    });
+    if (!application) {
+      application = this.appRepo.create({
+        candidateId: candidate.id,
+        jobId: job.id,
+        stage: 'applied',
+        source: 'internal_nomination',
+        coverNote: `Internally nominated by ${nominatedBy}`,
+      });
+      application = await this.appRepo.save(application);
+    }
+
+    // 3. Mark the internal match as APPLIED in InternalApplication to track it there too
+    let internalApp = await this.applicationRepo.findOne({
+      where: { employeeId, jobOfferId }
+    });
+    if (!internalApp) {
+      internalApp = this.applicationRepo.create({
+        employeeId,
+        jobOfferId,
+        status: InternalApplicationStatus.APPLIED,
+        managerNotes: `Nominated by ${nominatedBy}`
+      });
+      await this.applicationRepo.save(internalApp);
+    }
+
+    return { application, candidate, internalApp };
+  }
+
+  /**
    * Get role recommendations for an employee.
    * Uses cache if available and fresh (< 24h), else calculates.
    */
@@ -104,6 +178,9 @@ export class InternalMobilityService {
         match.totalScore = result.totalScore;
         match.isComplete = result.isComplete;
         match.breakdown = result.breakdown;
+        match.readinessLabel = result.readinessLabel ?? 'NOT_READY';
+        match.matchedComps = result.matchedCompetencies;
+        match.gapComps = result.gapCompetencies;
         match.lastCalculatedAt = new Date();
         
         await this.matchRepo.save(match);
@@ -114,7 +191,10 @@ export class InternalMobilityService {
         title: job.title,
         totalScore: match.totalScore,
         breakdown: match.breakdown,
-        isComplete: match.isComplete
+        isComplete: match.isComplete,
+        readinessLabel: match.readinessLabel,
+        matchedComps: match.matchedComps,
+        gapComps: match.gapComps
       });
     }
 

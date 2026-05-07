@@ -6,7 +6,15 @@
       <p class="emp-subtitle">{{ total }} staff members in the database</p>
     </div>
     <div class="emp-header-actions">
-      <button class="emp-btn emp-btn--primary" (click)="openAddModal()">
+      <div class="view-toggle">
+        <button [class.active]="viewMode === 'table'" (click)="viewMode = 'table'" title="Table View">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>
+        </button>
+        <button [class.active]="viewMode === 'grid'" (click)="viewMode = 'grid'" title="Grid View">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </button>
+      </div>
+      <button *ngIf="userRole !== 'manager'" class="btn-action btn-action--primary" (click)="openAddModal()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
           <circle cx="8.5" cy="7" r="4" />
@@ -22,21 +30,21 @@
   <div class="emp-filters card">
     <div class="filter-group">
       <label>Business Unit</label>
-      <select [(ngModel)]="filters.buId" (change)="onBUChange()">
+      <select class="field-select" [(ngModel)]="filters.buId" (change)="onBUChange()">
         <option value="">All Units</option>
         <option *ngFor="let bu of businessUnits" [value]="bu.id">{{ bu.name }}</option>
       </select>
     </div>
     <div class="filter-group">
       <label>Department</label>
-      <select [(ngModel)]="filters.departmentId" (change)="onDepartmentChange()" [disabled]="!filters.buId">
+      <select class="field-select" [(ngModel)]="filters.departmentId" (change)="onDepartmentChange()" [disabled]="!filters.buId">
         <option value="">All Departments</option>
         <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
       </select>
     </div>
     <div class="filter-group">
       <label>Job Role</label>
-      <select [(ngModel)]="filters.roleId" (change)="loadEmployees()" [disabled]="!filters.departmentId">
+      <select class="field-select" [(ngModel)]="filters.roleId" (change)="loadEmployees()" [disabled]="!filters.departmentId">
         <option value="">All Roles</option>
         <option *ngFor="let r of roles" [value]="r.id">{{ r.name }}</option>
       </select>
@@ -49,14 +57,14 @@
           <circle cx="11" cy="11" r="8" />
           <line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
-        <input type="text" [(ngModel)]="filters.search" (ngModelChange)="onSearchChange()"
+        <input type="text" class="field-input" [(ngModel)]="filters.search" (ngModelChange)="onSearchChange()"
           placeholder="Name, email or ID...">
       </div>
     </div>
   </div>
 
-  <!-- Table -->
-  <div class="emp-table-wrapper card">
+  <!-- Table View -->
+  <div class="emp-table-wrapper card" *ngIf="viewMode === 'table'">
     <div class="loading-overlay" *ngIf="loading">
       <div class="spinner"></div>
     </div>
@@ -68,6 +76,7 @@
           <th>ID</th>
           <th>Job Role &amp; Rank</th>
           <th>Status</th>
+          <th>Risk / Impact</th>
           <th>Hire Date</th>
           <th>Manager</th>
           <th></th>
@@ -77,7 +86,7 @@
         <tr *ngFor="let emp of employees" (click)="goToProfile(emp.id)" class="row-hover">
           <td>
             <div class="emp-info">
-              <div class="emp-avatar">{{ getInitials(emp) }}</div>
+              <div class="avatar emp-avatar">{{ getInitials(emp) }}</div>
               <div class="emp-names">
                 <span class="full-name">{{ emp.firstName }} {{ emp.lastName }}</span>
                 <span class="emp-email">{{ emp.email }}</span>
@@ -92,9 +101,15 @@
             </div>
           </td>
           <td>
-            <span class="status-badge" [attr.data-status]="emp.status">
+            <span class="chip status-badge" [attr.data-status]="emp.status">
               {{ emp.status | titlecase }}
             </span>
+          <td>
+            <div class="risk-indicators">
+              <span class="risk-dot" *ngIf="emp.retentionRisk" [attr.data-risk]="emp.retentionRisk" title="Retention Risk"></span>
+              <span class="impact-dot" *ngIf="emp.impactOfLoss" [attr.data-impact]="emp.impactOfLoss" title="Impact of Loss"></span>
+              <span class="no-risk" *ngIf="!emp.retentionRisk && !emp.impactOfLoss">Not Assessed</span>
+            </div>
           </td>
           <td class="date-cell">{{ emp.hireDate | date:'mediumDate' }}</td>
           <td>
@@ -104,7 +119,7 @@
             <span class="no-manager" *ngIf="!emp.manager">—</span>
           </td>
           <td class="cell-actions" (click)="$event.stopPropagation()">
-            <button class="icon-btn delete-btn" (click)="requestDelete(emp.id, $event)" title="Delete employee">
+            <button *ngIf="userRole !== 'manager'" class="icon-btn delete-btn" (click)="requestDelete(emp.id, $event)" title="Delete employee">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
               </svg>
@@ -116,19 +131,62 @@
             </button>
           </td>
         </tr>
-        <tr *ngIf="!loading && employees.length === 0">
-          <td colspan="7" class="empty-state">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-              <circle cx="8.5" cy="7" r="4" />
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-            <p>No employees found matching your criteria.</p>
-          </td>
-        </tr>
       </tbody>
     </table>
+  </div>
+
+  <!-- Grid View -->
+  <div class="emp-grid-wrapper" *ngIf="viewMode === 'grid'">
+    <div class="loading-overlay" *ngIf="loading">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="talent-grid">
+      <div class="talent-card card" *ngFor="let emp of employees" (click)="goToProfile(emp.id)">
+        <div class="card-header">
+          <div class="avatar talent-avatar">{{ getInitials(emp) }}</div>
+          <div class="header-main">
+            <h3 class="talent-name">{{ emp.firstName }} {{ emp.lastName }}</h3>
+            <span class="talent-id">#{{ emp.employeeId }}</span>
+          </div>
+          <span class="chip status-badge" [attr.data-status]="emp.status">
+            {{ emp.status | titlecase }}
+          </span>
+        </div>
+
+        <div class="card-body">
+          <div class="info-row">
+            <span class="label">Role</span>
+            <span class="val">{{ emp.jobRole?.name }}</span>
+          </div>
+          <div class="info-row">
+            <span class="label">Rank</span>
+            <span class="val">Rank {{ emp.jobRoleLevel?.levelNumber }}</span>
+          </div>
+          <div class="info-row" *ngIf="emp.manager">
+            <span class="label">Reports to</span>
+            <span class="val">{{ emp.manager.firstName }} {{ emp.manager.lastName }}</span>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <button class="btn-card-action" (click)="goToProfile(emp.id); $event.stopPropagation()">View Profile</button>
+          <button class="btn-card-action btn-card-action--primary" (click)="$event.stopPropagation(); goToProfile(emp.id)">Assess</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div class="card empty-state" *ngIf="!loading && employees.length === 0">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="8.5" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+    <p>No employees found matching your criteria.</p>
+  </div>
 
     <!-- FIX: pagination now includes prev/next controls and page numbers -->
     <div class="emp-pagination" *ngIf="total > filters.limit">
@@ -136,38 +194,37 @@
         Showing {{ (filters.page - 1) * filters.limit + 1 }}–{{ filters.page * filters.limit < total ? filters.page * filters.limit : total }} of {{ total }}
       </span>
       <div class="pagination-controls">
-        <button class="page-btn" (click)="goToPage(filters.page - 1)" [disabled]="filters.page === 1">
+        <button class="btn-action btn-action--outline nav-btn" (click)="goToPage(filters.page - 1)" [disabled]="filters.page === 1">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
         <span class="page-indicator">{{ filters.page }} / {{ totalPages }}</span>
-        <button class="page-btn" (click)="goToPage(filters.page + 1)" [disabled]="filters.page === totalPages">
+        <button class="btn-action btn-action--outline nav-btn" (click)="goToPage(filters.page + 1)" [disabled]="filters.page === totalPages">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
             <polyline points="9 18 15 12 9 6" />
           </svg>
         </button>
       </div>
     </div>
-  </div>
 
   <!-- Legacy Hire Modal -->
   <div class="modal-overlay" *ngIf="showAddModal" (click)="showAddModal = false">
     <div class="modal card" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Add Legacy Hire</h2>
-        <button class="close-btn" (click)="showAddModal = false" aria-label="Close">&times;</button>
+        <button class="modal-close" (click)="showAddModal = false" aria-label="Close">&times;</button>
       </div>
 
       <div class="modal-body">
         <div class="form-row">
           <div class="form-group">
-            <label>Employee ID</label>
-            <input type="text" [(ngModel)]="hireForm.employeeId" placeholder="e.g. EMP-1234">
+            <label>Employee ID <span class="label-opt">(optional)</span></label>
+            <input type="text" [(ngModel)]="hireForm.employeeId" placeholder="Auto-generated if blank">
           </div>
           <div class="form-group">
             <label>Hire Date</label>
-            <input type="date" [(ngModel)]="hireForm.hireDate">
+            <input type="date" class="field-input" [(ngModel)]="hireForm.hireDate">
           </div>
         </div>
 
@@ -178,13 +235,13 @@
           </div>
           <div class="form-group">
             <label>Last Name</label>
-            <input type="text" [(ngModel)]="hireForm.lastName" placeholder="Last name">
+            <input type="text" class="field-input" [(ngModel)]="hireForm.lastName" placeholder="Last name">
           </div>
         </div>
 
         <div class="form-group">
           <label>Email Address <span class="required">*</span></label>
-          <input type="email" [(ngModel)]="hireForm.email" placeholder="employee@company.com">
+          <input type="email" class="field-input" [(ngModel)]="hireForm.email" placeholder="employee@company.com">
         </div>
 
         <hr class="form-sep">
@@ -193,14 +250,14 @@
         <div class="form-row">
           <div class="form-group">
             <label>Business Unit</label>
-            <select [(ngModel)]="hireForm.buId" (change)="onModalBUChange()">
+            <select class="field-select" [(ngModel)]="hireForm.buId" (change)="onModalBUChange()">
               <option value="">Select unit...</option>
               <option *ngFor="let bu of businessUnits" [value]="bu.id">{{ bu.name }}</option>
             </select>
           </div>
           <div class="form-group">
             <label>Department</label>
-            <select [(ngModel)]="hireForm.departmentId" (change)="onModalDepartmentChange()"
+            <select class="field-select" [(ngModel)]="hireForm.departmentId" (change)="onModalDepartmentChange()"
               [disabled]="!hireForm.buId">
               <option value="">Select department...</option>
               <option *ngFor="let d of modalDepartments" [value]="d.id">{{ d.name }}</option>
@@ -211,14 +268,14 @@
         <div class="form-row">
           <div class="form-group">
             <label>Job Role</label>
-            <select [(ngModel)]="hireForm.roleId" (change)="onModalRoleChange()" [disabled]="!hireForm.departmentId">
+            <select class="field-select" [(ngModel)]="hireForm.roleId" (change)="onModalRoleChange()" [disabled]="!hireForm.departmentId">
               <option value="">Select role...</option>
               <option *ngFor="let r of modalRoles" [value]="r.id">{{ r.name }}</option>
             </select>
           </div>
           <div class="form-group">
             <label>Career Rank <span class="required">*</span></label>
-            <select [(ngModel)]="hireForm.rankId" [disabled]="!hireForm.roleId">
+            <select class="field-select" [(ngModel)]="hireForm.rankId" [disabled]="!hireForm.roleId">
               <option value="">Select rank...</option>
               <option *ngFor="let level of modalRanks" [value]="level.id">
                 {{ level.title }} (Level {{ level.levelNumber }})
@@ -238,8 +295,8 @@
       </div>
 
       <div class="modal-footer">
-        <button class="btn-ghost" (click)="showAddModal = false" [disabled]="savingHire">Cancel</button>
-        <button class="btn-primary" (click)="submitLegacyHire()" [disabled]="savingHire">
+        <button class="btn-action btn-action--ghost" (click)="showAddModal = false" [disabled]="savingHire">Cancel</button>
+        <button class="btn-action btn-action--primary" (click)="submitLegacyHire()" [disabled]="savingHire">
           <span *ngIf="savingHire" class="spinner-inline"></span>
           {{ savingHire ? 'Saving...' : 'Confirm Hire' }}
         </button>
@@ -252,16 +309,16 @@
     <div class="modal card modal--small" (click)="$event.stopPropagation()">
       <div class="modal-header">
         <h2>Confirm Deletion</h2>
-        <button class="close-btn" (click)="pendingDeleteId = null" aria-label="Close">&times;</button>
+        <button class="modal-close" (click)="pendingDeleteId = null" aria-label="Close">&times;</button>
       </div>
       <div class="modal-body">
         <p class="delete-warning">This action is permanent and will remove the employee along with all associated
           competency history.</p>
       </div>
       <div class="modal-footer">
-        <button class="btn-ghost" (click)="pendingDeleteId = null" [disabled]="deleting">Cancel</button>
+        <button class="btn-action btn-action--ghost" (click)="pendingDeleteId = null" [disabled]="deleting">Cancel</button>
         <!-- FIX: both states showed "Delete Permanently" — now shows "Deleting..." while in-flight -->
-        <button class="btn-danger" (click)="confirmDelete()" [disabled]="deleting">
+        <button class="btn-action btn-action--danger" (click)="confirmDelete()" [disabled]="deleting">
           <span *ngIf="deleting" class="spinner-inline spinner-inline--danger"></span>
           {{ deleting ? 'Deleting...' : 'Delete Permanently' }}
         </button>

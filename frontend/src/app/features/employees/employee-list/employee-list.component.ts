@@ -6,6 +6,7 @@ import { EmployeeService, Employee } from '../../../core/services/employee.servi
 import { JobArchitectureService } from '../../../core/services/job-architecture.service';
 import { finalize, debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import { ToastService } from '../../../core/services/toast.service';
+import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-employee-list',
@@ -19,6 +20,7 @@ export class EmployeeListComponent implements OnInit {
   employees: Employee[] = [];
   total = 0;
   loading = false;
+  viewMode: 'table' | 'grid' = 'table';
 
   filters = {
     buId: '',
@@ -56,10 +58,15 @@ export class EmployeeListComponent implements OnInit {
   constructor(
     private readonly employeeService: EmployeeService,
     private readonly jaService: JobArchitectureService,
+    private readonly auth: AuthService,
     private readonly cdr: ChangeDetectorRef,
     private readonly router: Router,
     private readonly toast: ToastService
   ) { }
+
+  get userRole(): string {
+    return this.auth.getCurrentUser()?.role || 'hr';
+  }
 
   ngOnInit(): void {
     this.loadCatalog();
@@ -116,7 +123,7 @@ export class EmployeeListComponent implements OnInit {
   }
 
   goToProfile(id: string): void {
-    this.router.navigate(['/employees', id]);
+    this.router.navigate(['/employees', id], { queryParams: { from: 'employees' } });
   }
 
   getInitials(e: Employee): string {

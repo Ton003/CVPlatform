@@ -1,0 +1,225 @@
+<div class="verdict-panel">
+
+  <!-- ── Loading ── -->
+  <div *ngIf="loading" class="vp-loading">
+    <div class="vp-spinner"></div>
+    <span>Analysing candidate…</span>
+  </div>
+
+  <!-- ── Error ── -->
+  <div *ngIf="!loading && error" class="vp-error">
+    <span>⚠️</span>
+    <p>{{ error }}</p>
+    <button class="vp-retry" (click)="loadVerdict()">Retry</button>
+  </div>
+
+  <!-- ── Verdict Content ── -->
+  <ng-container *ngIf="!loading && verdict">
+
+    <!-- Header -->
+    <div class="vp-header">
+      <div class="vp-title-row">
+        <span class="vp-icon">🤖</span>
+        <span class="vp-title">AI Verdict</span>
+        <span class="vp-confidence" [ngClass]="confidenceConfig.cls">{{ confidenceConfig.label }}</span>
+      </div>
+      <button class="vp-refresh" (click)="refresh()" [disabled]="refreshing" title="Recompute verdict">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          [class.spinning]="refreshing">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        {{ refreshing ? 'Refreshing…' : 'Refresh' }}
+      </button>
+    </div>
+
+    <!-- Score Ring -->
+    <div class="vp-score-ring">
+      <svg width="96" height="96" viewBox="0 0 96 96">
+        <circle cx="48" cy="48" r="36" fill="none" stroke="var(--border-subtle)" stroke-width="8"/>
+        <circle cx="48" cy="48" r="36" fill="none"
+          [attr.stroke]="scoreColor(verdict.matchScore)"
+          stroke-width="8" stroke-linecap="round"
+          stroke-dasharray="226"
+          [attr.stroke-dashoffset]="gaugeOffset(verdict.matchScore)"
+          transform="rotate(-90 48 48)"
+          style="transition: stroke-dashoffset .8s cubic-bezier(.4,0,.2,1)"/>
+      </svg>
+      <div class="vp-score-inner">
+        <span class="vp-score-num" [style.color]="scoreColor(verdict.matchScore)">{{ verdict.matchScore }}</span>
+        <span class="vp-score-denom">/100</span>
+      </div>
+    </div>
+
+    <!-- Evaluation Coverage -->
+    <div class="vp-coverage">
+      <div class="vp-coverage-bar">
+        <div class="vp-coverage-fill" [style.width.%]="coveragePct"
+          [class.fill--low]="coveragePct < 40"
+          [class.fill--mid]="coveragePct >= 40 && coveragePct < 75"
+          [class.fill--high]="coveragePct >= 75">
+        </div>
+      </div>
+      <span class="vp-coverage-label">
+        {{ verdict.ratedCompetencies }}/{{ verdict.totalCompetencies }} competencies rated
+      </span>
+    </div>
+
+    <!-- Recommendation Chip -->
+    <div class="vp-recommendation" [ngClass]="recommendationConfig.cls">
+      <span class="rec-icon">{{ recommendationConfig.icon }}</span>
+      <div class="rec-text">
+        <span class="rec-label">{{ recommendationConfig.label }}</span>
+        <span class="rec-desc">{{ recommendationConfig.desc }}</span>
+      </div>
+    </div>
+
+    <!-- Strengths -->
+    <div class="vp-section" *ngIf="verdict.strengths.length > 0">
+      <button class="vp-section-header" (click)="strengthsOpen = !strengthsOpen">
+        <span class="section-hd-left">
+          <span class="section-dot dot--strength"></span>
+          Top Strengths
+          <span class="section-badge badge--strength">{{ verdict.strengths.length }}</span>
+        </span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          [class.chevron--open]="strengthsOpen">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+      <div class="vp-section-body" *ngIf="strengthsOpen">
+        <div *ngFor="let s of verdict.strengths" class="verdict-item verdict-item--strength">
+          <div class="vi-top">
+            <span class="vi-code">{{ s.sfiaCode }}</span>
+            <span class="vi-name">{{ s.sfiaName }}</span>
+            <span class="vi-delta delta--pos" *ngIf="s.delta > 0">+{{ s.delta }}</span>
+            <span class="vi-delta delta--eq" *ngIf="s.delta === 0">=</span>
+          </div>
+          <p class="vi-reason">{{ s.reason }}</p>
+          <div class="vi-levels">
+            <span class="lv-chip lv-eval">L{{ s.evaluatedLevel }} Evaluated</span>
+            <span class="lv-sep">vs</span>
+            <span class="lv-chip lv-req">L{{ s.requiredLevel }} Required</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gaps -->
+    <div class="vp-section" *ngIf="verdict.gaps.length > 0">
+      <button class="vp-section-header" (click)="gapsOpen = !gapsOpen">
+        <span class="section-hd-left">
+          <span class="section-dot dot--gap"></span>
+          Gaps & Risks
+          <span class="section-badge badge--gap">{{ verdict.gaps.length }}</span>
+        </span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          [class.chevron--open]="gapsOpen">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+      <div class="vp-section-body" *ngIf="gapsOpen">
+        <div *ngFor="let g of verdict.gaps" class="verdict-item verdict-item--gap">
+          <div class="vi-top">
+            <span class="vi-code">{{ g.sfiaCode }}</span>
+            <span class="vi-name">{{ g.sfiaName }}</span>
+            <span class="vi-impact" [ngClass]="impactConfig(g.impact).cls">{{ impactConfig(g.impact).label }}</span>
+          </div>
+          <p class="vi-reason">{{ g.reason }}</p>
+          <div class="vi-levels">
+            <span class="lv-chip lv-eval" *ngIf="g.evaluatedLevel !== null">L{{ g.evaluatedLevel }} Evaluated</span>
+            <span class="lv-chip lv-unrated" *ngIf="g.evaluatedLevel === null">Not Rated</span>
+            <span class="lv-sep">vs</span>
+            <span class="lv-chip lv-req">L{{ g.requiredLevel }} Required</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Risk Flags -->
+    <div class="vp-section" *ngIf="verdict.riskFlags.length > 0">
+      <button class="vp-section-header" (click)="risksOpen = !risksOpen">
+        <span class="section-hd-left">
+          <span class="section-dot dot--risk"></span>
+          Risk Flags
+          <span class="section-badge badge--risk">{{ verdict.riskFlags.length }}</span>
+        </span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          [class.chevron--open]="risksOpen">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+      <div class="vp-section-body" *ngIf="risksOpen">
+        <div *ngFor="let r of verdict.riskFlags" class="risk-flag" [attr.data-sev]="r.severity">
+          <span class="risk-icon">{{ riskSeverityIcon(r.severity) }}</span>
+          <p class="risk-msg">{{ r.message }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Score Breakdown (collapsible) -->
+    <div class="vp-section">
+      <button class="vp-section-header" (click)="breakdownOpen = !breakdownOpen">
+        <span class="section-hd-left">
+          <span class="section-dot dot--score"></span>
+          Score Breakdown
+        </span>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          [class.chevron--open]="breakdownOpen">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+        </svg>
+      </button>
+      <div class="vp-section-body" *ngIf="breakdownOpen">
+        <div class="breakdown-row" *ngIf="verdict.scoreBreakdown.competency !== null">
+          <span class="bk-label">Competency</span>
+          <div class="bk-bar-wrap">
+            <div class="bk-bar" [style.width.%]="verdict.scoreBreakdown.competency"
+              [style.background]="scoreColor(verdict.scoreBreakdown.competency)"></div>
+          </div>
+          <span class="bk-val" [style.color]="scoreColor(verdict.scoreBreakdown.competency)">{{ verdict.scoreBreakdown.competency }}%</span>
+          <span class="bk-weight">×{{ formatWeight(verdict.scoreBreakdown.weights.competency) }}</span>
+        </div>
+        <div class="breakdown-row" *ngIf="verdict.scoreBreakdown.interview !== null">
+          <span class="bk-label">Interview</span>
+          <div class="bk-bar-wrap">
+            <div class="bk-bar" [style.width.%]="verdict.scoreBreakdown.interview"
+              [style.background]="scoreColor(verdict.scoreBreakdown.interview)"></div>
+          </div>
+          <span class="bk-val" [style.color]="scoreColor(verdict.scoreBreakdown.interview)">{{ verdict.scoreBreakdown.interview }}%</span>
+          <span class="bk-weight">×{{ formatWeight(verdict.scoreBreakdown.weights.interview) }}</span>
+        </div>
+        <div class="breakdown-row">
+          <span class="bk-label">Experience</span>
+          <div class="bk-bar-wrap">
+            <div class="bk-bar" [style.width.%]="verdict.scoreBreakdown.experience"
+              [style.background]="scoreColor(verdict.scoreBreakdown.experience)"></div>
+          </div>
+          <span class="bk-val" [style.color]="scoreColor(verdict.scoreBreakdown.experience ?? 0)">{{ verdict.scoreBreakdown.experience }}%</span>
+          <span class="bk-weight">×{{ formatWeight(verdict.scoreBreakdown.weights.experience) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer: computed time + feedback -->
+    <div class="vp-footer">
+      <span class="vp-computed-at">Computed {{ timeAgo(verdict.computedAt) }}</span>
+      <div class="vp-feedback" *ngIf="!feedbackSent && !showReasonInput">
+        <span class="vp-fb-label">Helpful?</span>
+        <button class="fb-btn fb-btn--yes" (click)="onFeedbackClick(true)" [disabled]="feedbackSending">👍</button>
+        <button class="fb-btn fb-btn--no"  (click)="onFeedbackClick(false)" [disabled]="feedbackSending">👎</button>
+      </div>
+
+      <div class="vp-feedback-reason" *ngIf="showReasonInput && !feedbackSent">
+        <p class="fb-reason-label">Why do you disagree?</p>
+        <textarea class="fb-reason-input" [(ngModel)]="disagreementReason" placeholder="Briefly explain why the AI was wrong…"></textarea>
+        <div class="fb-reason-actions">
+          <button class="fb-reason-cancel" (click)="showReasonInput = false">Cancel</button>
+          <button class="fb-reason-submit" (click)="sendFeedback(false)" [disabled]="!disagreementReason.trim() || feedbackSending">Submit</button>
+        </div>
+      </div>
+
+      <span class="vp-fb-thanks" *ngIf="feedbackSent">Thanks for the feedback!</span>
+    </div>
+
+  </ng-container>
+</div>

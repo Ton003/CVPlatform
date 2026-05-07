@@ -27,10 +27,12 @@ interface JobSummary {
   location: string | null; createdAt: string;
 }
 
+import { ScoutAgentComponent } from './scout-agent/scout-agent.component';
+
 @Component({
   selector:    'app-dashboard',
   standalone:  true,
-  imports:     [CommonModule, RouterLink],
+  imports:     [CommonModule, RouterLink, ScoutAgentComponent],
   templateUrl: './dashboard.component.html',
   styleUrls:   ['./dashboard.component.scss'],
 })
@@ -51,7 +53,8 @@ export class DashboardComponent implements OnInit {
     { id: 'screening',  label: 'Screening',  color: 'var(--purple)' },
     { id: 'interview',  label: 'Interview',  color: '#3b82f6' },
     { id: 'assessment', label: 'Assessment', color: 'var(--warning)' },
-    { id: 'offer',      label: 'Offer',      color: 'var(--success)' },
+    { id: 'offer',      label: 'Offer',      color: 'var(--purple)' },
+    { id: 'hired',      label: 'Hired',      color: 'var(--success)' },
     { id: 'rejected',   label: 'Rejected',   color: 'var(--danger)' },
   ];
 
@@ -75,34 +78,26 @@ export class DashboardComponent implements OnInit {
     this.statsLoading = true;
     this.jobsLoading  = true;
 
-    // Load candidate stats + jobs + applications in parallel
+    // Load candidate stats + jobs + recent applications
     forkJoin({
       stats: this.http.get<DashboardStats>(`${environment.apiUrl}/dashboard/stats`),
       jobs:  this.http.get<any[]>(`${environment.apiUrl}/job-offers`),
-      apps:  this.http.get<any>(`${environment.apiUrl}/applications?limit=200`),
+      recentApps: this.http.get<any[]>(`${environment.apiUrl}/applications?limit=5`),
     }).pipe(finalize(() => {
       this.statsLoading = false;
       this.jobsLoading  = false;
       this.cdr.detectChanges();
     })).subscribe({
-      next: ({ stats, jobs, apps }) => {
+      next: ({ stats, jobs, recentApps }) => {
         this.stats    = stats;
         this.openJobs = jobs.filter(j => j.status === 'open').slice(0, 5);
 
-        const appList: any[] = Array.isArray(apps) ? apps : (apps.data ?? []);
-        this.totalApps = appList.length;
+        this.totalApps = 0;
+        this.appsByStage = stats.stages || {};
+        Object.values(this.appsByStage).forEach(count => this.totalApps += count);
 
-        // Count by stage
-        this.appsByStage = {};
-        this.stages.forEach(s => this.appsByStage[s.id] = 0);
-        appList.forEach(a => {
-          if (this.appsByStage[a.stage] !== undefined) {
-            this.appsByStage[a.stage]++;
-          }
-        });
-
-        // Recent 5 applications
-        this.recentApps = appList.slice(0, 5);
+        // API returns { data: [], total, page, limit }
+        this.recentApps = (recentApps as any).data || [];
         this.cdr.detectChanges();
       },
       error: () => { this.cdr.detectChanges(); },

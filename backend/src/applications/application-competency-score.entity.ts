@@ -43,6 +43,15 @@ export class ApplicationCompetencyScore {
   @Column({ name: 'weighted_score', type: 'decimal', precision: 5, scale: 2, default: 0 })
   weightedScore: number;
 
+  @Column({ type: 'decimal', precision: 4, scale: 2, default: 1.0 })
+  weight: number;
+
+  @Column({ type: 'text', nullable: true })
+  reasoning: string | null;
+
+  @Column({ name: 'impact_label', type: 'varchar', length: 10, nullable: true })
+  impactLabel: string | null;
+
   // ── Relations ────────────────────────────────────────────────────────
   @ManyToOne(() => Application, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'application_id' })

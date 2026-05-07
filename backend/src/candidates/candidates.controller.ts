@@ -1,157 +1,86 @@
 import {
-  Controller, Get, Delete, Param, UseGuards, Query,
-  NotFoundException, HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Delete,
+  Param,
+  UseGuards,
+  Query,
+  HttpCode,
+  HttpStatus,
+  Logger,
 } from '@nestjs/common';
-import { SkipThrottle }            from '@nestjs/throttler';
-import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository }          from 'typeorm';
-import { JwtAuthGuard }            from '../auth/jwt-auth.guard';
-import { Candidate }               from './entities/candidates.entity';
-import { Cv }                      from '../cvs/entities/cv.entity';
-import { CandidateScoringService } from './candidate-scoring.service';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { CandidatesService } from './candidates.service';
+import { CandidateScoringService } from './candidate-scoring.service';
+import { PolicyService } from '../auth/policy.service';
+import { UserContext } from '../auth/jwt.strategy';
+import { Request } from '@nestjs/common';
+import { Roles } from '../auth/roles.decorator';
+
+@ApiTags('Candidates')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('candidates')
-@UseGuards(JwtAuthGuard)
 export class CandidatesController {
+  private readonly logger = new Logger(CandidatesController.name);
 
   constructor(
-    @InjectDataSource()
-    private readonly dataSource: DataSource,
-    @InjectRepository(Candidate)
-    private readonly candidateRepo: Repository<Candidate>,
-    @InjectRepository(Cv)
-    private readonly cvRepo: Repository<Cv>,
+    private readonly candidatesService: CandidatesService,
     private readonly scoringService: CandidateScoringService,
+    private readonly policyService: PolicyService,
   ) {}
 
-  // ── GET /candidates?search=&page=&limit= ─────────────────────────
-  @SkipThrottle()
   @Get()
+  @SkipThrottle()
+  @ApiOperation({ summary: 'List and filter candidates' })
+  @ApiResponse({ status: 200, description: 'Paginated list of candidates.' })
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
   async list(
     @Query('search') search?: string,
-    @Query('page')   page   = '1',
-    @Query('limit')  limit  = '20',
+    @Query('page') page = 1,
+    @Query('limit') limit = 20,
+    @Request() req?: { user: UserContext },
   ) {
-    const pageNum  = Math.max(1, parseInt(page,  10) || 1);
-    const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 20));
-    const offset   = (pageNum - 1) * limitNum;
-
-    const params: any[] = [];
-    let whereClause = '1=1';
-
-    if (search?.trim()) {
-      params.push(`%${search.trim().toLowerCase()}%`);
-      whereClause = `
-        LOWER(CONCAT(c.first_name, ' ', c.last_name)) ILIKE $${params.length}
-        OR LOWER(c.email) ILIKE $${params.length}
-        OR LOWER(c.current_title) ILIKE $${params.length}
-      `;
-    }
-
-    const countRows = await this.dataSource.query(`
-      SELECT COUNT(*) AS total
-      FROM candidates c
-      WHERE ${whereClause}
-    `, params);
-
-    const total = parseInt(countRows[0].total, 10);
-
-    params.push(limitNum, offset);
-    const rows = await this.dataSource.query(`
-      SELECT
-        c.id::text                              AS "candidateId",
-        CONCAT(c.first_name, ' ', c.last_name) AS name,
-        c.email,
-        c.location,
-        c.current_title                         AS "currentTitle",
-        c.years_experience                      AS "yearsExp",
-        c.created_at                            AS "createdAt"
-      FROM candidates c
-      WHERE ${whereClause}
-      ORDER BY c.created_at DESC
-      LIMIT $${params.length - 1}
-      OFFSET $${params.length}
-    `, params);
-
-    return {
-      data:       rows,
-      total,
-      page:       pageNum,
-      limit:      limitNum,
-      totalPages: Math.ceil(total / limitNum),
-    };
+    const pageNum = Math.max(1, Number(page));
+    const limitNum = Math.min(50, Math.max(1, Number(limit)));
+    
+    // ABAC: Get managed job IDs if the user is a manager
+    const managedJobIds = req?.user ? await this.policyService.getManagedJobIds(req.user) : [];
+    
+    return this.candidatesService.list(search, pageNum, limitNum, managedJobIds);
   }
 
-  // ── GET /candidates/:id ──────────────────────────────────────────
-  @SkipThrottle()
   @Get(':id')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Get detailed candidate profile' })
+  @ApiResponse({ status: 200, description: 'Candidate profile data.' })
+  @ApiResponse({ status: 404, description: 'Candidate not found.' })
   async getProfile(@Param('id') id: string) {
-    const rows = await this.dataSource.query(`
-      SELECT
-        c.id::text                             AS "candidateId",
-        CONCAT(c.first_name, ' ', c.last_name) AS name,
-        c.email,
-        c.location,
-        c.current_title                        AS "currentTitle",
-        c.years_experience                     AS "yearsExp",
-        c.created_at                           AS "createdAt",
-        cpd.skills_technical                   AS skills,
-        cpd.llm_summary                        AS summary,
-        cpd.education,
-        cpd.experience,
-        cpd.languages,
-        c.competency_snapshot                  AS "competencySnapshot"
-      FROM candidates c
-      JOIN cvs cv             ON cv.candidate_id = c.id::text
-      JOIN cv_parsed_data cpd ON cpd.cv_id       = cv.id::text
-      WHERE c.id = $1::uuid
-      LIMIT 1
-    `, [id]);
-
-    if (!rows.length) throw new NotFoundException(`Candidate ${id} not found`);
-
-    const r = rows[0];
-    return {
-      candidateId:        r.candidateId,
-      name:               r.name?.trim() || 'Unknown',
-      email:              r.email        ?? null,
-      location:           r.location     ?? null,
-      currentTitle:       r.currentTitle ?? null,
-      yearsExp:           r.yearsExp     ?? null,
-      createdAt:          r.createdAt    ?? null,
-      summary:            r.summary      ?? null,
-      skills:             Array.isArray(r.skills)     ? r.skills     : [],
-      education:          Array.isArray(r.education)  ? r.education  : [],
-      experience:         Array.isArray(r.experience) ? r.experience : [],
-      languages:          Array.isArray(r.languages)  ? r.languages  : [],
-      competencySnapshot: r.competencySnapshot        ?? {},
-    };
+    return this.candidatesService.getProfile(id);
   }
 
-  // ── GET /candidates/:id/score ────────────────────────────────────
-  @SkipThrottle()
   @Get(':id/score')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Get AI-calculated candidate suitability score' })
+  @ApiResponse({ status: 200, description: 'Composite score and role matches.' })
   async getScore(@Param('id') id: string) {
-    const rows = await this.dataSource.query(
-      `SELECT id FROM candidates WHERE id = $1::uuid`, [id],
-    );
-    if (!rows.length) throw new NotFoundException(`Candidate ${id} not found`);
-
     return this.scoringService.score(id);
   }
 
-  // ── DELETE /candidates/:id ───────────────────────────────────────
   @Delete(':id')
+  @Roles('admin', 'hr')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Delete candidate and all associated CV data' })
+  @ApiResponse({ status: 204, description: 'Candidate deleted successfully.' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions.' })
   async deleteCandidate(@Param('id') id: string) {
-    const candidate = await this.candidateRepo.findOne({ where: { id } });
-    if (!candidate) throw new NotFoundException(`Candidate ${id} not found`);
-
-    // Manually clean up associated CVs since the DB-level CASCADE 
-    // is not currently active to avoid schema sync issues.
-    await this.cvRepo.delete({ candidate_id: id });
-
-    // Deleting the candidate will remove them and (via DB cascade) their applications.
-    await this.candidateRepo.remove(candidate);
+    this.logger.warn(`Candidate deletion requested for ID: ${id}`);
+    await this.candidatesService.delete(id);
   }
 }

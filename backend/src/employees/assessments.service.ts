@@ -230,9 +230,16 @@ export class AssessmentsService {
         await queryRunner.manager.save(EmployeeCompetency, empComp);
       }
 
+      // Calculate totalScore (average of all rated items)
+      const ratedItems = assessment.items.filter(i => i.level !== null);
+      const totalScore = ratedItems.length > 0 
+        ? Math.round((ratedItems.reduce((sum, i) => sum + (i.level ?? 0), 0) / ratedItems.length) * 10) / 10
+        : null;
+
       // Mark the assessment as submitted
       assessment.status      = AssessmentStatus.SUBMITTED;
       assessment.submittedAt = now;
+      assessment.totalScore  = totalScore;
       await queryRunner.manager.save(EmployeeAssessment, assessment);
 
       await queryRunner.commitTransaction();
@@ -247,6 +254,23 @@ export class AssessmentsService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async remove(assessmentId: string, evaluatorUser: RequestUser): Promise<void> {
+    const assessment = await this.assessRepo.findOne({ where: { id: assessmentId } });
+    if (!assessment) throw new NotFoundException(`Assessment ${assessmentId} not found`);
+
+    if (evaluatorUser.role !== 'admin' && evaluatorUser.role !== 'hr') {
+      if (assessment.evaluatorId !== evaluatorUser.id) {
+        throw new ForbiddenException('Only the evaluator can delete this assessment.');
+      }
+    }
+
+    if (assessment.status === AssessmentStatus.SUBMITTED) {
+      throw new ConflictException('Cannot delete a submitted assessment.');
+    }
+
+    await this.assessRepo.remove(assessment);
   }
 
   // ─── 4. Get Assessment with Summary ─────────────────────────────────────────
@@ -269,7 +293,7 @@ export class AssessmentsService {
       where: { employeeId },
       order: { createdAt: 'DESC' },
       // Intentionally NOT loading items (performance)
-      select: ['id', 'cycleLabel', 'status', 'submittedAt', 'evaluatorId', 'createdAt'],
+      select: ['id', 'cycleLabel', 'status', 'submittedAt', 'evaluatorId', 'createdAt', 'totalScore'],
     });
 
     return assessments;
@@ -282,12 +306,13 @@ export class AssessmentsService {
     const assessedItems = items.filter((i) => i.level !== null);
     const totalCompetencies = items.length;
     const assessedCount = assessedItems.length;
-    const averageScore =
+    const averageScore = assessment.totalScore ?? (
       assessedCount > 0
         ? Math.round(
             assessedItems.reduce((s, i) => s + (i.level ?? 0), 0) / assessedCount * 10,
           ) / 10
-        : null;
+        : null
+    );
     const completionRate =
       totalCompetencies > 0
         ? Math.round((assessedCount / totalCompetencies) * 100)

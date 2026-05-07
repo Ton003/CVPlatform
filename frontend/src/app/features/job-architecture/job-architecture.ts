@@ -234,7 +234,7 @@ export class JobArchitecture implements OnInit {
     } else {
       if (this.addNodeType === 'bu') req = this.jaService.createBusinessUnit(name, description);
       else if (this.addNodeType === 'department') req = this.jaService.createDepartment(this.addNodeParentId!, name, description);
-      else if (this.addNodeType === 'role') req = this.jaService.createJobRole(this.addNodeParentId!, name, rankCount);
+      else if (this.addNodeType === 'role') req = this.jaService.createJobRole(this.addNodeParentId!, name, rankCount, status);
     }
 
     req?.subscribe({

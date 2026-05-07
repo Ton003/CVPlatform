@@ -11,6 +11,7 @@ export interface GroqIntentResult {
 }
 
 export interface RerankedCandidate {
+  candidateId?:   string;
   name:           string;
   score:          number;
   fit:            'excellent' | 'good' | 'partial' | 'poor';
@@ -347,6 +348,7 @@ Return ONLY valid JSON, no markdown:
               p => p.name.toLowerCase().trim() === (n.name ?? '').toLowerCase().trim()
             )?.matchScore ?? n.score ?? 0;
           return {
+            candidateId:    n.candidateId    ?? '',
             name:           n.name           ?? '',
             score:          authScore,
             fit:            scoreToFit(authScore),
@@ -524,14 +526,19 @@ RULES:
     }
   }
 
-  async generateRagAnalysis(
-    query: string, candidates: any[], apiKey: string, history: ConversationMessageDto[] = [],
-  ): Promise<RagAnalysis> {
-    return this.rerank(query, candidates, apiKey, history);
-  }
-
-  async generateRecommendation(query: string, candidates: any[], apiKey: string): Promise<string> {
-    const r = await this.rerank(query, candidates, apiKey, []);
-    return r.answer;
+  async executePrompt(prompt: string, apiKey: string, temperature = 0.1): Promise<string> {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(
+          this.groqUrl,
+          { model: this.groqModel, messages: [{ role: 'user', content: prompt }], temperature, max_tokens: 1500 },
+          { timeout: 30000, headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' } },
+        ),
+      );
+      return response.data?.choices?.[0]?.message?.content ?? '';
+    } catch (err) {
+      this.logger.error(`executePrompt failed: ${err.message}`);
+      return '';
+    }
   }
 }

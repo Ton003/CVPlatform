@@ -1,13 +1,13 @@
 export interface User {
   id: string;
   email: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   role: 'admin' | 'hr' | 'manager';
   department?: string;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface AuthResponse {
@@ -24,8 +24,8 @@ export interface LoginPayload {
 export interface SignupPayload {
   email: string;
   password: string;
-  first_name: string;
-  last_name: string;
+  firstName: string;
+  lastName: string;
   role?: 'admin' | 'hr' | 'manager';
   department?: string;
 }

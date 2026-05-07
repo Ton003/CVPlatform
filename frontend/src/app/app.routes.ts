@@ -76,11 +76,6 @@ export const routes: Routes = [
           import('./features/job-offers/job-offer-matches.component').then(m => m.JobOfferMatchesComponent),
       },
       {
-        path: 'job-offers/:id/compare',
-        loadComponent: () =>
-          import('./features/job-offers/job-offer-comparison.component').then(m => m.JobOfferComparisonComponent),
-      },
-      {
         path: 'job-offers/:id/pipeline',
         loadComponent: () =>
           import('./features/job-pipeline/job-pipeline.component').then(m => m.JobPipelineComponent),

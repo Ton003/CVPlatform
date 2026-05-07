@@ -12,136 +12,95 @@
     </svg>
   </div>
   <p class="state-title">{{ error }}</p>
-  <a href="javascript:void(0)" (click)="goBack()" class="btn-back-center">← {{ backLabel }}</a>
+  <button (click)="goBack()" class="btn-ghost" style="margin-top: 1rem;">← {{ backLabel }}</button>
 </div>
 
 <!-- Profile -->
-<ng-container *ngIf="!loading && !error && candidate">
+<div class="detail-root" *ngIf="!loading && !error && candidate">
+
+  <!-- Success/Error Alerts -->
+  <div *ngIf="successMessage" class="alert-success">
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <span>{{ successMessage }}</span>
+  </div>
+
+  <div *ngIf="errorBanner" class="alert-error">
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+    </svg>
+    <span>{{ errorBanner }}</span>
+  </div>
 
   <!-- Topbar -->
   <div class="topbar">
     <nav class="breadcrumbs">
-      <a class="crumb crumb--link" href="javascript:void(0)" (click)="goBack()">{{ backLabel }}</a>
-      <svg class="crumb-sep" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-        stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
-      </svg>
-      <span class="crumb crumb--current">{{ candidate.name }}</span>
+      <button class="crumb-link" (click)="goBack()">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        {{ backLabel }}
+      </button>
+      <span class="crumb-sep">/</span>
+      <span class="crumb-current">{{ candidate.name }}</span>
     </nav>
 
     <div class="topbar-actions">
-      <button class="btn-action" (click)="exportPdf()" [disabled]="exportingPdf">
-        <svg *ngIf="!exportingPdf" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-          stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-        </svg>
-        <span *ngIf="exportingPdf" class="spinner-sm"
-          style="border-color:rgba(0,0,0,.2);border-top-color:var(--text-secondary);width:12px;height:12px;"></span>
-        PDF
-      </button>
-      <button class="btn-action" (click)="exportExcel()" [disabled]="exportingExcel">
-        <svg *ngIf="!exportingExcel" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-          stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-        </svg>
-        <span *ngIf="exportingExcel" class="spinner-sm"
-          style="border-color:rgba(0,0,0,.2);border-top-color:var(--text-secondary);width:12px;height:12px;"></span>
-        Excel
-      </button>
-      <button class="btn-action btn-action--primary" (click)="openEmailModal()" [disabled]="!candidate.email">
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-          <path stroke-linecap="round" stroke-linejoin="round"
-            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-        </svg>
-        {{ candidate.email ? 'Email' : 'No Email' }}
-      </button>
-      <button class="btn-action btn-action--danger" (click)="requestDeletion()" [disabled]="deleting">
+      <button *ngIf="userRole !== 'manager'" class="btn-outline" (click)="requestDeletion()" [disabled]="deleting">
         <svg *ngIf="!deleting" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"
           stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round"
             d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
-        <span *ngIf="deleting" class="spinner-sm"
-          style="border-color:rgba(255,255,255,.3);border-top-color:#fff;width:12px;height:12px;"></span>
-        Delete
+        <span *ngIf="deleting" class="spinner-sm"></span>
+        Delete Candidate
       </button>
     </div>
   </div>
 
-  <!-- Feedback banners -->
-  <div class="alert-success-banner" *ngIf="successMessage">
-    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
-    {{ successMessage }}
-  </div>
-  <div class="alert-error-banner" *ngIf="errorBanner">
-    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-    {{ errorBanner }}
-  </div>
-
-  <!-- Hero Card -->
-  <div class="hero-card">
-    <div class="hero-glow"></div>
-    <div class="hero-left">
-      <div class="avatar-wrap">
-        <div class="avatar">{{ initials }}</div>
-        <div class="avatar-ring"></div>
-      </div>
-      <div class="hero-info">
-        <h1 class="hero-name">{{ candidate.name }}</h1>
-        <p class="hero-title">{{ candidate.currentTitle || 'Candidate' }}</p>
-        <div class="hero-meta">
-          <span *ngIf="candidate.location" class="meta-chip">
+  <!-- Hero / Dossier Header -->
+  <div class="dossier-header">
+    <div class="dossier-left">
+      <div class="dossier-avatar">{{ initials }}</div>
+      <div class="dossier-identity">
+        <div class="dossier-name-row">
+          <h1 class="dossier-name">{{ candidate.name }}</h1>
+        </div>
+        <p class="dossier-current-title">{{ candidate.currentTitle || 'Candidate Profile' }}</p>
+        
+        <div class="dossier-meta-row">
+          <span *ngIf="candidate.location" class="dossier-meta-item">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
             {{ candidate.location }}
           </span>
-          <span *ngIf="candidate.yearsExp != null" class="meta-chip">
+          <span *ngIf="candidate.yearsExp != null" class="dossier-meta-item">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            {{ candidate.yearsExp }} yr{{ candidate.yearsExp !== 1 ? 's' : '' }} experience
+            {{ candidate.yearsExp }} yr{{ candidate.yearsExp !== 1 ? 's' : '' }} Exp.
           </span>
-          <span *ngIf="candidate.email" class="meta-chip meta-chip--email">
+          <span *ngIf="candidate.email" class="dossier-meta-item">
             <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
             </svg>
             {{ candidate.email }}
           </span>
         </div>
       </div>
     </div>
-    <div class="hero-right">
-      <div class="stat-pill">
-        <span class="stat-pill-val">{{ candidate.skills.length }}</span>
-        <span class="stat-pill-lbl">Skills</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-pill-val">{{ candidate.experience.length }}</span>
-        <span class="stat-pill-lbl">Roles</span>
-      </div>
-      <div class="stat-pill">
-        <span class="stat-pill-val">{{ notes.length }}</span>
-        <span class="stat-pill-lbl">Notes</span>
-      </div>
-      <!-- BUG FIX: show loading state for score pill -->
-      <div class="stat-pill" *ngIf="scoreData || scoreLoading">
-        <span *ngIf="scoreLoading" class="spinner-sm"
-          style="width:14px;height:14px;margin:0 auto;display:block;"></span>
-        <span *ngIf="scoreData && !scoreLoading" class="stat-pill-val"
-          [style.color]="scoreColor(scoreData.compositeScore)">
-          {{ scoreData.compositeScore }}
-        </span>
-        <span class="stat-pill-lbl">Score</span>
+
+    <div class="dossier-right">
+      <!-- Score "Stamp" -->
+      <div class="stat-pill" *ngIf="scoreData || scoreLoading" style="border: none; background: var(--bg-raised); border-radius: var(--radius-lg); padding: 1rem; min-width: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+        <span *ngIf="scoreLoading" class="spinner-sm"></span>
+        <ng-container *ngIf="scoreData && !scoreLoading">
+          <span class="score-num" [style.color]="scoreColor(scoreData.compositeScore)" style="font-family: var(--font-display); font-size: 1.75rem; font-weight: 800; line-height: 1;">{{ scoreData.compositeScore }}</span>
+          <span class="score-sub" style="font-size: 0.6rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px;">Avg Score</span>
+        </ng-container>
       </div>
     </div>
   </div>
@@ -149,30 +108,30 @@
   <!-- Tabs -->
   <div class="tabs-bar">
     <button *ngFor="let tab of tabs" class="tab-btn" [class.active]="activeTab === tab.id" (click)="setTab(tab.id)">
-      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
         <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="tab.icon" />
       </svg>
       {{ tab.label }}
-      <span *ngIf="tab.id === 'notes' && notes.length > 0" class="tab-badge">{{ notes.length }}</span>
     </button>
   </div>
 
   <!-- ── TAB: OVERVIEW ──────────────────────────────────────── -->
   <div *ngIf="activeTab === 'overview'" class="tab-content">
     <div *ngIf="candidate.summary" class="card">
-      <div class="card-head"><span class="card-title">Summary</span></div>
+      <div class="card-head"><span class="card-title">Profile Summary</span></div>
       <p class="summary-text">{{ candidate.summary }}</p>
     </div>
+    
     <div *ngIf="candidate.skills.length" class="card">
       <div class="card-head">
         <span class="card-title">Technical Skills</span>
         <span class="card-count">{{ candidate.skills.length }}</span>
       </div>
       <div class="skills-grid">
-        <span *ngFor="let skill of candidate.skills; let i = index" class="skill-chip"
-          [attr.data-color]="skillColor(i)">{{ skill }}</span>
+        <span *ngFor="let skill of candidate.skills; let i = index" class="skill-chip">{{ skill }}</span>
       </div>
     </div>
+
     <div *ngIf="candidate.languages.length" class="card">
       <div class="card-head"><span class="card-title">Languages</span></div>
       <div class="lang-list">
@@ -187,40 +146,47 @@
         </div>
       </div>
     </div>
+
     <div *ngIf="!candidate.skills.length && !candidate.summary && !candidate.languages.length" class="empty-card">
-      <p class="empty-text">No overview data extracted from this CV.</p>
+      <p class="empty-text">No overview data available for this candidate.</p>
     </div>
   </div>
 
   <!-- ── TAB: EXPERIENCE ───────────────────────────────────── -->
   <div *ngIf="activeTab === 'experience'" class="tab-content">
-    <div *ngIf="candidate.experience.length; else noExp" class="timeline">
-      <div *ngFor="let exp of candidate.experience; let last = last" class="timeline-item">
-        <div class="timeline-dot" [class.timeline-dot--last]="last"></div>
-        <div *ngIf="!last" class="timeline-line"></div>
-        <div class="timeline-card">
-          <div class="tcard-head">
-            <div>
-              <p class="tcard-title">{{ exp.title || 'Position' }}</p>
-              <p class="tcard-company">{{ exp.company }}</p>
+    <div *ngIf="candidate.experience.length; else noExp" class="card">
+      <div class="card-head"><span class="card-title">Work History</span></div>
+      <div class="timeline">
+        <div *ngFor="let exp of candidate.experience; let last = last" class="timeline-item">
+          <div class="timeline-dot" [class.timeline-dot--last]="last"></div>
+          <div *ngIf="!last" class="timeline-line"></div>
+          <div class="timeline-card">
+            <div class="tcard-head">
+              <div>
+                <p class="tcard-title">{{ exp.title || 'Position' }}</p>
+                <p class="tcard-company">{{ exp.company }}</p>
+              </div>
+              <span class="tcard-date">
+                {{ formatDuration(exp.startDate, exp.endDate) }}
+              </span>
             </div>
-            <span class="tcard-date">
-              {{ formatDuration(exp.startDate ?? exp.start_date, exp.endDate ?? exp.end_date) }}
-            </span>
+            <p *ngIf="exp.description" class="tcard-desc">{{ exp.description }}</p>
+            
+            <div *ngIf="exp.sfiaTags && exp.sfiaTags.length" class="sfia-tags">
+              <span *ngFor="let tag of exp.sfiaTags" class="sfia-tag">{{ tag.code || tag }}</span>
+            </div>
+            
+            <div class="source-wrap">
+              <span *ngIf="exp.source === 'MANUAL'" class="source-badge source-badge--manual">Manual</span>
+              <span *ngIf="exp.source === 'AI'" class="source-badge source-badge--ai">AI Extracted</span>
+            </div>
           </div>
-          <p *ngIf="exp.description" class="tcard-desc">{{ exp.description }}</p>
-          <!-- BUG FIX: sfiaTags were in interface but never rendered -->
-          <div *ngIf="exp.sfiaTags && exp.sfiaTags.length" class="sfia-tags">
-            <span *ngFor="let tag of exp.sfiaTags" class="sfia-tag">{{ tag.code || tag }}</span>
-          </div>
-          <span *ngIf="exp.source === 'MANUAL'" class="source-badge source-badge--manual">Manual</span>
-          <span *ngIf="exp.source === 'AI'" class="source-badge source-badge--ai">AI Extracted</span>
         </div>
       </div>
     </div>
     <ng-template #noExp>
       <div class="empty-card">
-        <p class="empty-text">No work experience extracted from this CV.</p>
+        <p class="empty-text">No work experience found.</p>
       </div>
     </ng-template>
   </div>
@@ -247,41 +213,34 @@
     </div>
     <ng-template #noEdu>
       <div class="empty-card">
-        <p class="empty-text">No education data extracted from this CV.</p>
+        <p class="empty-text">No education data found.</p>
       </div>
     </ng-template>
   </div>
 
   <!-- ── TAB: SCORING ──────────────────────────────────────── -->
   <div *ngIf="activeTab === 'scoring'" class="tab-content">
-    <!-- Loading -->
     <div *ngIf="scoreLoading" class="state-center">
       <div class="loader-ring-sm"></div>
-      <p class="state-text">Computing score…</p>
+      <p class="state-text">Calculating fitment score…</p>
     </div>
 
-    <!-- No data -->
     <div *ngIf="!scoreLoading && !scoreData" class="empty-card">
-      <p class="empty-text">Score data is not available for this candidate.</p>
+      <p class="empty-text">Score data not available.</p>
     </div>
 
     <ng-container *ngIf="!scoreLoading && scoreData">
-      <!-- Composite gauge + label -->
       <div class="card score-hero-card">
         <div class="score-gauge-wrap">
           <svg width="140" height="140" viewBox="0 0 140 140">
-            <!-- Track -->
-            <circle cx="70" cy="70" r="54" fill="none" stroke="var(--border-default)" stroke-width="10" />
-            <!-- Progress -->
+            <circle cx="70" cy="70" r="54" fill="none" stroke="var(--border-subtle)" stroke-width="10" />
             <circle cx="70" cy="70" r="54" fill="none" [attr.stroke]="scoreColor(scoreData.compositeScore)"
               stroke-width="10" stroke-linecap="round" stroke-dasharray="339.3"
               [attr.stroke-dashoffset]="gaugeOffset(scoreData.compositeScore)" transform="rotate(-90 70 70)"
               style="transition: stroke-dashoffset .6s ease;" />
           </svg>
           <div class="score-gauge-label">
-            <span class="score-num" [style.color]="scoreColor(scoreData.compositeScore)">
-              {{ scoreData.compositeScore }}
-            </span>
+            <span class="score-num" [style.color]="scoreColor(scoreData.compositeScore)">{{ scoreData.compositeScore }}</span>
             <span class="score-sub">/ 100</span>
           </div>
         </div>
@@ -290,40 +249,23 @@
           <p class="score-hero-title">{{ scoreData.label }}</p>
           <div class="score-breakdown">
             <div class="score-row" *ngIf="scoreData.breakdown.technical.available">
-              <div class="score-row-info">
-                <span class="score-row-label">Technical Skills</span>
-              </div>
+              <span class="score-row-label">Technical Fit</span>
               <div class="score-row-bar-wrap">
                 <div class="score-row-bar" [style.width.%]="scoreData.breakdown.technical.score" [style.background]="scoreColor(scoreData.breakdown.technical.score)"></div>
               </div>
-              <span class="score-row-pct" [style.color]="scoreColor(scoreData.breakdown.technical.score)">{{ scoreData.breakdown.technical.score }}%</span>
-              <span class="score-row-weight">×{{ scoreData.breakdown.technical.weight }}%</span>
-            </div>
-            <div class="score-row" *ngIf="scoreData.breakdown.manager.available">
-              <div class="score-row-info">
-                <span class="score-row-label">Interviews</span>
-              </div>
-              <div class="score-row-bar-wrap">
-                <div class="score-row-bar" [style.width.%]="scoreData.breakdown.manager.score ?? 0" [style.background]="scoreColor(scoreData.breakdown.manager.score ?? 0)"></div>
-              </div>
-              <span class="score-row-pct" [style.color]="scoreColor(scoreData.breakdown.manager.score ?? 0)">{{ scoreData.breakdown.manager.score ?? '—' }}</span>
-              <span class="score-row-weight">×{{ scoreData.breakdown.manager.weight }}%</span>
-            </div>
-            <div class="score-row" *ngIf="!scoreData.breakdown.manager.available">
-               <span class="score-row-na">Interviews pending</span>
+              <span class="score-row-pct">{{ scoreData.breakdown.technical.score }}%</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Role suggestions -->
       <div *ngIf="scoreData.roleSuggestions.length" class="card">
         <div class="card-head">
-          <span class="card-title">Role Matches</span>
+          <span class="card-title">Top Role Matches</span>
           <span class="card-count">{{ scoreData.roleSuggestions.length }}</span>
         </div>
         <div class="role-suggestions">
-          <div *ngFor="let rs of scoreData.roleSuggestions" class="role-card" [attr.data-color]="roleMatchColor(rs.score)">
+          <div *ngFor="let rs of scoreData.roleSuggestions" class="role-card">
             <div class="role-card-head">
               <span class="role-name">{{ rs.role }}</span>
               <span class="role-score" [style.color]="roleMatchColor(rs.score) === 'green' ? 'var(--success)' : (roleMatchColor(rs.score) === 'indigo' ? 'var(--accent)' : 'var(--warning)')">{{ rs.score }}%</span>
@@ -344,23 +286,23 @@
   <!-- ── TAB: GAP ANALYSIS ─────────────────────────────────── -->
   <div *ngIf="activeTab === 'gap'" class="tab-content">
     <div class="card gap-controls-card">
-      <div class="card-head"><span class="card-title">Compare Against Role</span></div>
+      <div class="card-head"><span class="card-title">Job Alignment Analysis</span></div>
       <div class="gap-selectors-grid">
         <div class="gap-selector-item">
-          <label class="form-label">Job Role</label>
-          <select class="note-textarea selector-compact" [(ngModel)]="selectedCompareRoleId"
+          <label class="form-label">Target Role</label>
+          <select class="field-select selector-compact" [(ngModel)]="selectedCompareRoleId"
             (ngModelChange)="onCompareRoleChange()">
-            <option value="">— Pick a role —</option>
+            <option value="">— Select a role —</option>
             <optgroup *ngFor="let role of roles" [label]="role.path">
               <option [value]="role.id">{{ role.name }}</option>
             </optgroup>
           </select>
         </div>
         <div class="gap-selector-item" *ngIf="selectedCompareRoleId">
-          <label class="form-label">Level / Seniority</label>
-          <select class="note-textarea selector-compact" [(ngModel)]="selectedCompareLevelId"
+          <label class="form-label">Seniority Level</label>
+          <select class="field-select selector-compact" [(ngModel)]="selectedCompareLevelId"
             (ngModelChange)="onCompareLevelChange()">
-            <option value="">— Pick a level —</option>
+            <option value="">— Select a level —</option>
             <ng-container *ngFor="let role of roles">
               <ng-container *ngIf="role.id === selectedCompareRoleId">
                 <option *ngFor="let level of role.levels" [value]="level.id">{{ level.title }}</option>
@@ -371,31 +313,20 @@
       </div>
     </div>
 
-    <div *ngIf="comparing" class="state-center" style="padding: 2rem 0;">
+    <div *ngIf="comparing" class="state-center" style="padding: 3rem 0;">
       <div class="loader-ring-sm"></div>
-      <p class="state-text">Running comparison…</p>
-    </div>
-
-    <div *ngIf="!comparing && comparisonData && comparisonData.length === 0" class="empty-card">
-      <p class="empty-text">This role has no SFIA requirements defined.</p>
+      <p class="state-text">Comparing skills with role requirements…</p>
     </div>
 
     <div *ngIf="!comparing && comparisonData && comparisonData.length > 0" class="card">
       <div class="card-head">
         <span class="card-title">Competency Gaps</span>
-        <span class="card-count">{{ comparisonData.length }} competencies</span>
+        <span class="card-count">{{ comparisonData.length }}</span>
       </div>
-      <!-- Summary chips -->
       <div class="gap-summary">
-        <span class="gap-summary-chip gap-summary-chip--met">
-          ✓ {{ comparisonData | countByStatus:'met' }} Met
-        </span>
-        <span class="gap-summary-chip gap-summary-chip--near">
-          ≈ {{ comparisonData | countByStatus:'near' }} Near
-        </span>
-        <span class="gap-summary-chip gap-summary-chip--gap">
-          ✗ {{ comparisonData | countByStatus:'gap' }} Gaps
-        </span>
+        <span class="gap-summary-chip gap-summary-chip--met">✓ {{ (comparisonData | countByStatus:'met') }} Met</span>
+        <span class="gap-summary-chip gap-summary-chip--near">≈ {{ (comparisonData | countByStatus:'near') }} Near</span>
+        <span class="gap-summary-chip gap-summary-chip--gap">✗ {{ (comparisonData | countByStatus:'gap') }} Gaps</span>
       </div>
       <div class="gap-table">
         <div class="gap-table-header">
@@ -404,21 +335,16 @@
           <span class="text-center">Candidate</span>
           <span class="text-center">Status</span>
         </div>
-        <div *ngFor="let row of comparisonData" class="gap-table-row" [attr.data-status]="row.status">
+        <div *ngFor="let row of comparisonData" class="gap-table-row">
           <div class="gap-comp-info">
             <span class="gap-comp-name">{{ row.name }}</span>
           </div>
-          
           <div class="gap-level-dots">
-            <span *ngFor="let dot of getLevelDots(5)" class="gap-dot" 
-                  [class.gap-dot--filled]="dot <= row.requiredLevel"></span>
+            <span *ngFor="let dot of getLevelDots(5)" class="gap-dot" [class.gap-dot--filled]="dot <= row.requiredLevel"></span>
           </div>
-          
           <div class="gap-level-dots">
-            <span *ngFor="let dot of getLevelDots(5)" class="gap-dot gap-dot--candidate" 
-                  [class.gap-dot--filled]="dot <= row.candidateLevel"></span>
+            <span *ngFor="let dot of getLevelDots(5)" class="gap-dot gap-dot--candidate" [class.gap-dot--filled]="dot <= row.candidateLevel"></span>
           </div>
-
           <div class="gap-status-wrap">
             <span class="gap-status" [attr.data-status]="row.status">{{ gapStatusLabel(row.status) }}</span>
           </div>
@@ -427,197 +353,21 @@
     </div>
 
     <div *ngIf="!selectedCompareRoleId && !comparing" class="empty-card">
-      <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2"
-        class="empty-icon">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2" class="empty-icon">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
       </svg>
-      <p class="empty-text">Select a role above to see the competency gap analysis.</p>
+      <p class="empty-text">Pick a target role above to run a gap analysis.</p>
     </div>
   </div>
 
-  <!-- ── TAB: MANAGER NOTES ────────────────────────────────── -->
-  <div *ngIf="activeTab === 'notes'" class="tab-content">
-    <div class="notes-form card">
-      <div class="card-head"><span class="card-title">Add Note</span></div>
-      <div class="notes-form-body">
-        <div class="form-row">
-          <label class="form-label">Stage</label>
-          <div class="stage-select">
-            <button *ngFor="let s of stages" type="button" class="stage-btn" [class.active]="newStage === s.value"
-              [attr.data-stage]="s.value" (click)="newStage = s.value">{{ s.label }}</button>
-          </div>
-        </div>
-        <div class="form-row">
-          <label class="form-label">Rating <span class="form-label-hint">(optional)</span></label>
-          <div class="star-row">
-            <!-- BUG FIX: use starsArray instead of calling stars(5) in template -->
-            <button *ngFor="let s of starsArray; let i = index" type="button" class="star-btn"
-              [class.active]="s <= newRating" (click)="setRating(s)">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path
-                  d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-              </svg>
-            </button>
-            <button *ngIf="newRating > 0" type="button" class="star-clear" (click)="setRating(0)">Clear</button>
-          </div>
-        </div>
-        <div class="form-row">
-          <label class="form-label">Note</label>
-          <textarea class="note-textarea" [(ngModel)]="newNote"
-            placeholder="Add your assessment, interview feedback, or observations about this candidate…" rows="4"
-            maxlength="2000"></textarea>
-          <span class="char-count">{{ newNote.length }} / 2000</span>
-        </div>
-        <button class="btn-submit" [disabled]="!newNote.trim() || submitting" (click)="submitNote()">
-          <span *ngIf="!submitting">Save Note</span>
-          <span *ngIf="submitting" class="spinner-sm"></span>
-        </button>
-      </div>
-    </div>
+</div>
 
-    <div *ngIf="notesLoading" class="notes-loading">
-      <div class="loader-ring-sm"></div>
-      <span>Loading notes…</span>
-    </div>
-    <div *ngIf="!notesLoading && notes.length === 0" class="empty-card">
-      <svg width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2"
-        class="empty-icon">
-        <path stroke-linecap="round" stroke-linejoin="round"
-          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-      </svg>
-      <p class="empty-text">No notes yet. Be the first to leave feedback.</p>
-    </div>
-
-    <div *ngFor="let n of notes" class="note-card">
-      <div class="note-header">
-        <div class="note-author">
-          <div class="note-avatar">{{ noteInitials(n.author.name) }}</div>
-          <div class="note-author-info">
-            <span class="note-author-name">{{ n.author.name }}</span>
-            <span class="note-author-role">{{ n.author.role | titlecase }}</span>
-          </div>
-        </div>
-        <div class="note-meta">
-          <span class="note-stage" [attr.data-stage]="n.stage">{{ stageLabel(n.stage) }}</span>
-          <span class="note-date">{{ formatNoteDate(n.createdAt) }}</span>
-          <button *ngIf="canDeleteNote(n)" class="btn-note-delete" (click)="deleteNote(n.id)"
-            [disabled]="deletingNoteId === n.id" title="Delete note">
-            <svg *ngIf="deletingNoteId !== n.id" width="12" height="12" fill="none" viewBox="0 0 24 24"
-              stroke="currentColor" stroke-width="2.5">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-            <span *ngIf="deletingNoteId === n.id" class="spinner-sm" style="width:10px;height:10px;"></span>
-          </button>
-        </div>
-      </div>
-      <!-- BUG FIX: use starsArray instead of stars(5) -->
-      <div *ngIf="n.rating > 0" class="note-stars">
-        <svg *ngFor="let s of starsArray; let i = index" width="14" height="14" viewBox="0 0 24 24"
-          [class.filled]="s <= n.rating" class="note-star">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
-      </div>
-      <p class="note-body">{{ n.note }}</p>
-    </div>
-  </div>
-
-  <!-- ── EMAIL MODAL ───────────────────────────────────────── -->
-  <div class="modal-overlay" *ngIf="showEmailModal" (click)="closeEmailModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2 class="modal-title">Send Email to Candidate</h2>
-        <button class="modal-close" (click)="closeEmailModal()">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-row">
-          <label class="form-label">Email Type</label>
-          <select class="note-textarea" style="min-height:auto;padding:.6rem 1rem;" [(ngModel)]="emailType">
-            <option value="invite">Platform Invitation (Set Password)</option>
-            <option value="interview">Interview Invitation</option>
-            <option value="status">Application Status Update</option>
-          </select>
-        </div>
-
-        <!-- BUG FIX: interview fields were in TS but missing from template -->
-        <ng-container *ngIf="emailType === 'interview'">
-          <div class="form-row">
-            <label class="form-label">Interview Date</label>
-            <input type="datetime-local" class="note-textarea" style="min-height:auto;padding:.6rem 1rem;"
-              [(ngModel)]="interviewDate" />
-          </div>
-          <div class="form-row">
-            <label class="form-label">Location / Link</label>
-            <input type="text" class="note-textarea" style="min-height:auto;padding:.6rem 1rem;"
-              [(ngModel)]="interviewLocation" placeholder="e.g. Office Room 3B or Zoom link" />
-          </div>
-        </ng-container>
-
-        <div class="form-row" *ngIf="emailType === 'status'">
-          <label class="form-label">Status Context <span class="form-label-hint">— What stage are they
-              at?</span></label>
-          <select class="note-textarea" style="min-height:auto;padding:.6rem 1rem;" [(ngModel)]="emailStatus">
-            <option *ngFor="let s of stages" [value]="s.value">{{ s.label }}</option>
-          </select>
-        </div>
-
-        <p class="summary-text"
-          style="padding:1rem;background:var(--bg-surface);border-radius:var(--radius-md);border:1px dashed var(--border-default);">
-          An automated, branded email will be dispatched to <strong>{{ candidate.email }}</strong> using the selected
-          template.
-          <span *ngIf="emailType === 'invite'">They will receive a secure portal link.</span>
-          <span *ngIf="emailType === 'interview'">They will receive an interview invitation with date and location
-            details.</span>
-          <span *ngIf="emailType === 'status'">They will be informed of their application status securely.</span>
-        </p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-cancel" (click)="closeEmailModal()" [disabled]="emailSubmitting">Cancel</button>
-        <button class="btn-submit" (click)="sendEmail()" [disabled]="emailSubmitting">
-          <span *ngIf="emailSubmitting" class="spinner-sm"></span>
-          {{ emailSubmitting ? 'Sending…' : 'Send Message' }}
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- ── ADD TO JOB MODAL ──────────────────────────────────── -->
-  <!-- BUG FIX: this modal existed in TS but was entirely missing from the template -->
-  <div class="modal-overlay" *ngIf="showAddToJobModal" (click)="closeAddToJobModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
-      <div class="modal-header">
-        <h2 class="modal-title">Add to Job Pipeline</h2>
-        <button class="modal-close" (click)="closeAddToJobModal()">×</button>
-      </div>
-      <div class="modal-body">
-        <div *ngIf="jobsLoading" class="notes-loading" style="justify-content:center;padding:1.5rem 0;">
-          <div class="loader-ring-sm"></div>
-          <span>Loading open jobs…</span>
-        </div>
-
-        <ng-container *ngIf="!jobsLoading">
-          <div *ngIf="jobs.length === 0" class="empty-card" style="margin:0;">
-            <p class="empty-text">No open job offers found.</p>
-          </div>
-
-          <div *ngIf="jobs.length > 0" class="form-row">
-            <label class="form-label">Select Job Offer</label>
-            <select class="note-textarea" style="min-height:auto;padding:.6rem 1rem;" [(ngModel)]="selectedJobId">
-              <option value="">— Choose a job —</option>
-              <option *ngFor="let job of jobs" [value]="job.id">{{ job.title }}</option>
-            </select>
-          </div>
-        </ng-container>
-      </div>
-      <div class="modal-footer">
-        <button class="btn-cancel" (click)="closeAddToJobModal()" [disabled]="isAddingToJob">Cancel</button>
-        <button class="btn-submit" (click)="addToJob()" [disabled]="!selectedJobId || isAddingToJob || jobsLoading">
-          <span *ngIf="isAddingToJob" class="spinner-sm"></span>
-          {{ isAddingToJob ? 'Adding…' : 'Add to Pipeline' }}
-        </button>
-      </div>
-    </div>
-  </div>
-
-</ng-container>
+<app-confirm-modal
+  *ngIf="showDeleteModal"
+  [open]="true"
+  title="Delete Candidate"
+  [message]="'Permanently delete ' + (candidate?.name || 'this candidate') + ' and all associated data? This cannot be undone.'"
+  confirmText="Delete Candidate"
+  (confirmed)="confirmDeletion()"
+  (cancelled)="cancelDeletion()">
+</app-confirm-modal>

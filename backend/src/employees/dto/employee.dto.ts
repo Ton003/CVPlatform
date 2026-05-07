@@ -44,8 +44,9 @@ export class PromoteCandidateDto {
   @IsUUID()
   applicationId: string;
 
+  @IsOptional()
   @IsString()
-  employeeId: string;
+  employeeId?: string;
 
   @IsDateString()
   hireDate: string;

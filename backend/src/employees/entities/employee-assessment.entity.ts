@@ -51,6 +51,9 @@ export class EmployeeAssessment {
   @OneToMany(() => EmployeeAssessmentItem, (item) => item.assessment, { cascade: true })
   items: Relation<EmployeeAssessmentItem[]>;
 
+  @Column({ name: 'total_score', type: 'float', nullable: true })
+  totalScore: number | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 }

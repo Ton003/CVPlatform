@@ -1,0 +1,93 @@
+<div class="drawer-overlay" (click)="closePanel.emit()"></div>
+<div class="drawer-panel">
+  <button class="btn-close" (click)="closePanel.emit()">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+    </svg>
+  </button>
+
+  <!-- Loading & Error -->
+  <div class="panel-loading" *ngIf="loading">
+    <div class="spinner"></div>
+    <span>Analysing skill gaps…</span>
+  </div>
+
+  <div class="panel-error" *ngIf="!loading && error">
+    <p>{{ error }}</p>
+    <button (click)="loadAnalysis()">Retry</button>
+  </div>
+
+  <!-- Content -->
+  <ng-container *ngIf="!loading && analysis">
+    <div class="drawer-header">
+      <div class="dh-top">
+        <h2 class="dh-name">{{ employeeName }}</h2>
+        <span class="dh-arrow">→</span>
+        <h2 class="dh-role">{{ jobTitle }}</h2>
+      </div>
+      <div class="readiness-badge" [ngClass]="readinessClass">
+        Readiness: <strong>{{ readinessDisplay }}</strong> ({{ analysis.totalScore }}%)
+      </div>
+      <p class="readiness-summary">{{ analysis.readinessSummary }}</p>
+    </div>
+
+    <div class="drawer-body">
+      
+      <!-- Spider Chart Placeholder -->
+      <div class="spider-chart-container">
+        <!-- SVG Spider Chart would go here; omitted for brevity but represented below -->
+        <div class="chart-mock">
+          <svg width="200" height="200" viewBox="0 0 100 100">
+            <polygon points="50,10 90,30 90,70 50,90 10,70 10,30" fill="none" stroke="var(--border-default)" stroke-width="1" />
+            <circle cx="50" cy="50" r="30" fill="none" stroke="var(--border-subtle)" stroke-width="1" />
+            <!-- Required Polygon -->
+            <polygon points="50,20 80,40 70,70 30,70 20,40" fill="rgba(139,92,246,0.1)" stroke="var(--purple)" stroke-width="2" />
+            <!-- Actual Polygon -->
+            <polygon points="50,30 70,50 60,60 40,60 30,40" fill="rgba(34,197,94,0.3)" stroke="var(--success)" stroke-width="2" />
+          </svg>
+        </div>
+        <div class="chart-legend">
+          <span class="leg-item"><span class="leg-dot req"></span>Required</span>
+          <span class="leg-item"><span class="leg-dot act"></span>Actual</span>
+        </div>
+      </div>
+
+      <!-- Gaps -->
+      <div class="section gaps-section" *ngIf="analysis.gapCompetencies.length > 0">
+        <h3 class="sec-title">Gaps to Close ({{ analysis.gapCompetencies.length }})</h3>
+        <div class="gap-list">
+          <div class="gap-card" *ngFor="let gap of analysis.gapCompetencies">
+            <div class="gc-top">
+              <span class="gc-code">{{ gap.sfiaCode }}</span>
+              <span class="gc-name">{{ gap.name }}</span>
+            </div>
+            <div class="gc-levels">
+              <span class="lv-actual" *ngIf="gap.employeeLevel !== null">L{{ gap.employeeLevel }} Actual</span>
+              <span class="lv-actual danger" *ngIf="gap.employeeLevel === null">Not Rated</span>
+              <span class="lv-arrow">→</span>
+              <span class="lv-req">L{{ gap.requiredLevel }} Required</span>
+              <span class="lv-delta">({{ gap.delta }})</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Strengths -->
+      <div class="section strengths-section" *ngIf="analysis.matchedCompetencies.length > 0">
+        <h3 class="sec-title">Strengths (Already Met)</h3>
+        <div class="strength-tags">
+          <span class="strength-tag" *ngFor="let match of analysis.matchedCompetencies">
+            ✅ {{ match.sfiaCode }} <span class="st-lv">L{{ match.employeeLevel }}</span>
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="drawer-footer">
+      <button class="btn-primary" (click)="nominate()" [disabled]="nominating">
+        {{ nominating ? 'Nominating…' : 'Nominate for Role' }}
+      </button>
+    </div>
+  </ng-container>
+</div>

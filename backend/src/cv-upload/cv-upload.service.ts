@@ -1,4 +1,5 @@
 import { Injectable, Logger }       from '@nestjs/common';
+import { Candidate } from '../candidates/entities/candidates.entity';
 import { PdfExtractorService }      from './pdf-extractor.service';
 import { GroqCvParserService }      from './groq-cv-parser.service';
 import { CvStorageService }         from './cv-storage.service';
@@ -35,6 +36,32 @@ export class CvUploadService {
   ): Promise<any> {
     const parsed = await this.parseCv(file.buffer, options);
     return this.cvStorage.store(file, parsed, uploadedById, options.gdprConsent ?? false);
+  }
+
+  async processUploadAsync(
+    file:          Express.Multer.File,
+    candidateData: Partial<Candidate>,
+    uploadedById:  string,
+    options:       UploadOptions = {},
+  ): Promise<any> {
+    const { candidate, cv } = await this.cvStorage.storeInitial(file, candidateData, uploadedById);
+    
+    // Background parsing
+    setImmediate(async () => {
+      try {
+        const parsed = await this.parseCv(file.buffer, options);
+        await this.cvStorage.updateParsedData(cv.id, parsed);
+      } catch (err) {
+        this.logger.error(`❌ Background parsing failed for CV ${cv.id}: ${err.message}`);
+        await this.cvStorage.updateStatus(cv.id, 'failed');
+      }
+    });
+
+    return { candidateId: candidate.id, cvId: cv.id };
+  }
+
+  async getParseStatus(cvId: string) {
+    return this.cvStorage.getParseStatus(cvId);
   }
 
   async parseCv(pdfBuffer: Buffer, options: UploadOptions = {}): Promise<ParsedCvDto> {
@@ -82,42 +109,40 @@ export class CvUploadService {
     // Regex is more reliable than LLM for contact info patterns
     const email        = regexData.email        ?? null;
     const phone        = regexData.phone        ?? null;
-    const linkedin_url = regexData.linkedin_url ?? null;
+    const linkedinUrl = regexData.linkedin_url ?? null;
 
     // ── Step 4: Skill Normalization ───────────────────────────────────────
-    this.logger.log('🔧 STEP 4 — Skill Normalization (Skipped)...');
-    const skills_technical = groqResult.skills_technical;
-    this.logger.log(`   Before: ${groqResult.skills_technical.length} → After: ${skills_technical.length}`);
+    const skillsTechnical = groqResult.skills_technical;
 
-    // ── Step 5: SFIA Inference for Career Entries ────────────────────────
+    // ── Step 5: SFIA Inference for Career Entries (Parallelized) ─────────
     this.logger.log('🧠 STEP 5 — SFIA Inference for Career Entries...');
-    for (const entry of groqResult.experience) {
+    await Promise.all(groqResult.experience.map(async (entry) => {
       if (entry.description) {
         entry['inferredTags'] = await this.groqCvParser.inferProficiencyLevels(
           entry.description, 
           { apiKey: options.apiKey! }
         );
       }
-    }
+    }));
 
     // ── Step 6: Assemble ParsedCvDto ──────────────────────────────────────
     this.logger.log('📦 STEP 6 — Assembling result...');
     const result: ParsedCvDto = {
-      first_name:              groqResult.first_name,
-      last_name:               groqResult.last_name,
+      firstName:               groqResult.first_name,
+      lastName:                groqResult.last_name,
       email,
       phone,
-      linkedin_url,
+      linkedinUrl,
       location:                groqResult.location,
-      current_title:           groqResult.current_title,
-      skills_technical,
-      skills_soft:             groqResult.skills_soft,
+      currentTitle:            groqResult.current_title,
+      skillsTechnical,
+      skillsSoft:              groqResult.skills_soft,
       languages:               groqResult.languages,
       education:               groqResult.education,
       experience:              groqResult.experience as any[],
-      years_experience:        groqResult.years_experience,
-      total_experience_months: groqResult.total_experience_months,
-      llm_summary:             groqResult.llm_summary,
+      yearsExperience:         groqResult.years_experience,
+      totalExperienceMonths:   groqResult.total_experience_months,
+      llmSummary:              groqResult.llm_summary,
     };
 
 
@@ -146,51 +171,50 @@ export class CvUploadService {
     // Regex always wins for contact info
     extracted.email        = regexData.email        ?? extracted.email;
     extracted.phone        = regexData.phone        ?? extracted.phone;
-    extracted.linkedin_url = regexData.linkedin_url ?? extracted.linkedin_url;
+    extracted.linkedinUrl  = regexData.linkedin_url ?? extracted.linkedinUrl;
 
     // Title case name fix
-    if (extracted.first_name) {
-      extracted.first_name = extracted.first_name
+    if (extracted.firstName) {
+      extracted.firstName = extracted.firstName
         .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     }
-    if (extracted.last_name) {
-      extracted.last_name = extracted.last_name
+    if (extracted.lastName) {
+      extracted.lastName = extracted.lastName
         .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     }
 
     this.logger.log(`✅ STEP 2 DONE`);
-    this.logger.log(`   Name    : ${extracted.first_name ?? '?'} ${extracted.last_name ?? ''}`);
-    this.logger.log(`   Skills  : ${extracted.skills_technical.length} found`);
+    this.logger.log(`   Name    : ${extracted.firstName ?? '?'} ${extracted.lastName ?? ''}`);
+    this.logger.log(`   Skills  : ${extracted.skillsTechnical.length} found`);
 
     // ── Step 3: Skill Normalization ───────────────────────────────────────
-    this.logger.log('🔧 STEP 3 — Skill Normalization (Skipped)...');
-    const skills_technical = extracted.skills_technical;
+    const skillsTechnical = extracted.skillsTechnical;
 
     // ── Step 4: LLM Summary + Soft Skills ────────────────────────────────
     this.logger.log('✍️  STEP 4 — Local LLM Summary...');
     const llmResult = await this.llmParser.structure(rawText, {
       ...extracted,
-      skills_technical,
-      normalized_text: rawText,
+      skillsTechnical,
+      normalizedText: rawText,
     }, options);
 
     // ── Step 5: Assemble ──────────────────────────────────────────────────
     const result: ParsedCvDto = {
-      first_name:              extracted.first_name,
-      last_name:               extracted.last_name,
+      firstName:               extracted.firstName,
+      lastName:                extracted.lastName,
       email:                   extracted.email,
       phone:                   extracted.phone,
-      linkedin_url:            extracted.linkedin_url,
+      linkedinUrl:             extracted.linkedinUrl,
       location:                extracted.location,
-      current_title:           extracted.current_title,
-      skills_technical,
-      skills_soft:             llmResult.skills_soft,
+      currentTitle:            extracted.currentTitle,
+      skillsTechnical,
+      skillsSoft:              llmResult.skillsSoft,
       languages:               extracted.languages,
       education:               extracted.education,
-      experience:              extracted.experience,
-      years_experience:        extracted.years_experience,
-      total_experience_months: extracted.total_experience_months,
-      llm_summary:             llmResult.summary,
+      experience:              extracted.experience as any[],
+      yearsExperience:         extracted.yearsExperience,
+      totalExperienceMonths:   extracted.totalExperienceMonths,
+      llmSummary:              llmResult.summary,
     };
 
     this.logger.log('════════════════════════════════════════');

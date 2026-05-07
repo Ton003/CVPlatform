@@ -63,7 +63,7 @@ export class JobArchitectureService {
 
   /**
    * SUCCESSION MATCHING
-   * Returns candidates whose snapshot matches the requirements of a JOB LEVEL.
+   * Returns employees whose skills match the requirements of a JOB LEVEL.
    */
   async successionCandidates(levelId: string): Promise<any[]> {
     const level = await this.getJobRoleLevel(levelId);
@@ -71,44 +71,48 @@ export class JobArchitectureService {
     
     if (requirements.length === 0) return [];
 
-    // Query all candidates with snapshots
-    const candidates = await this.dataSource.query(`
+    // Query all employees who have a candidate link (so they have snapshots/skills)
+    // We join with candidate to get the competency_snapshot
+    const employees = await this.dataSource.query(`
       SELECT 
-        id, 
-        CONCAT(first_name, ' ', last_name) as name, 
-        email, 
-        current_title as current_title,
-        competency_snapshot as snapshot
-      FROM candidates
-      WHERE competency_snapshot IS NOT NULL
-      LIMIT 100
+        e.id, 
+        CONCAT(e.first_name, ' ', e.last_name) as name, 
+        e.email, 
+        jr.name as current_title,
+        c.competency_snapshot as snapshot
+      FROM employees e
+      LEFT JOIN job_roles jr ON e.job_role_id = jr.id
+      LEFT JOIN candidates c ON e.candidate_id = c.id
+      WHERE c.competency_snapshot IS NOT NULL
     `);
 
-    const matches = candidates.map(c => {
-      const snap = c.snapshot || {};
+    const matches = employees.map(e => {
+      const snap = e.snapshot || {};
       let totalReq = 0;
       let matchSum = 0;
 
       for (const req of requirements) {
         totalReq += req.requiredLevel;
         const candLvl = snap[req.competenceId]?.level || 0;
-        // Cap matching at requiredLevel (over-qualification doesn't increase score here)
         matchSum += Math.min(candLvl, req.requiredLevel);
       }
 
       const matchScore = totalReq > 0 ? Math.round((matchSum / totalReq) * 100) : 0;
 
       return {
-        ...c,
+        id: e.id,
+        name: e.name,
+        email: e.email,
+        current_title: e.current_title,
         match_score: matchScore
       };
     });
 
-    // Filter to those with > 60% match for succession readiness
+    // Return top 5 potential successors with > 40% match
     return matches
-      .filter(m => m.match_score >= 60)
+      .filter(m => m.match_score >= 40)
       .sort((a, b) => b.match_score - a.match_score)
-      .slice(0, 10);
+      .slice(0, 5);
   }
 
   // --- CRUD Operations ---
@@ -135,7 +139,7 @@ export class JobArchitectureService {
       sfiaRequirements?: any[];
       successorRoleIds?: string[];
       levelCount?: number;
-    }
+    } & { status?: string }
   ): Promise<JobRole> {
     const d = await this.departmentRepo.findOne({ where: { id: data.departmentId } });
     if (!d) throw new NotFoundException('Department not found');
@@ -147,7 +151,7 @@ export class JobArchitectureService {
       level: data.level ?? 1,
       sfiaRequirements: data.sfiaRequirements ?? [],
       successorRoleIds: data.successorRoleIds ?? [],
-      status: 'DRAFT',
+      status: data.status || 'DRAFT',
     }));
 
     // Generate Levels

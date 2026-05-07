@@ -5,17 +5,17 @@ export class CvParsedData {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
-  cv_id: string;
+  @Column({ unique: true, name: 'cv_id' })
+  cvId: string;
 
-  @Column({ type: 'text', nullable: true, default: null })
-  raw_text: string | null;
+  @Column({ type: 'text', nullable: true, default: null, name: 'raw_text' })
+  rawText: string | null;
 
-  @Column({ type: 'jsonb', nullable: true, default: null })
-  skills_technical: string[] | null;
+  @Column({ type: 'jsonb', nullable: true, default: null, name: 'skills_technical' })
+  skillsTechnical: string[] | null;
 
-  @Column({ type: 'jsonb', nullable: true, default: null })
-  skills_soft: string[] | null;
+  @Column({ type: 'jsonb', nullable: true, default: null, name: 'skills_soft' })
+  skillsSoft: string[] | null;
 
   @Column({ type: 'jsonb', nullable: true, default: null })
   languages: object[] | null;
@@ -26,14 +26,14 @@ export class CvParsedData {
   @Column({ type: 'jsonb', nullable: true, default: null })
   experience: object[] | null;
 
-  @Column({ type: 'smallint', nullable: true, default: null })
-  total_experience_months: number | null;
+  @Column({ type: 'smallint', nullable: true, default: null, name: 'total_experience_months' })
+  totalExperienceMonths: number | null;
 
-  @Column({ type: 'text', nullable: true, default: null })
-  llm_summary: string | null;
+  @Column({ type: 'text', nullable: true, default: null, name: 'llm_summary' })
+  llmSummary: string | null;
 
-  @Column({ type: 'timestamptz', nullable: true, default: null })
-  parsed_at: Date | null;
+  @Column({ type: 'timestamptz', nullable: true, default: null, name: 'parsed_at' })
+  parsedAt: Date | null;
 
   // ── NEW: vector embedding for semantic search ─────────────────────────
   @Column({ type: 'text', nullable: true, default: null })

@@ -21,6 +21,10 @@ export interface Employee {
   personalDetails?: any;
   department?: any;
   businessUnit?: any;
+  isManager?: boolean;
+  successionReadiness?: string | null;
+  retentionRisk?: string | null;
+  impactOfLoss?: string | null;
 }
 
 export interface PromotionResult extends Employee {
@@ -45,8 +49,12 @@ export class EmployeeService {
     return this.http.post<PromotionResult>(`${this.baseUrl}/promote`, payload);
   }
 
-  getManagers(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/users/managers`);
+  getManagers(departmentId?: string): Observable<any[]> {
+    const params: Record<string, string> = {};
+    if (departmentId) {
+      params['departmentId'] = departmentId;
+    }
+    return this.http.get<any[]>(`${this.baseUrl}/managers`, { params });
   }
 
   create(payload: any): Observable<Employee> {
@@ -61,6 +69,17 @@ export class EmployeeService {
     return this.http.delete<void>(`${this.baseUrl}/${id}`);
   }
 
+  toggleManager(id: string): Observable<Employee> {
+    return this.http.patch<Employee>(`${this.baseUrl}/${id}/toggle-manager`, {});
+  }
+
+  promoteToNextLevel(id: string, payload: { effectiveDate?: string; notes?: string }): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/${id}/promote-level`, payload);
+  }
+
+  getHistory(id: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/${id}/history`);
+  }
 
 
   // Assessments
@@ -82,5 +101,9 @@ export class EmployeeService {
 
   submitAssessment(id: string): Observable<any> {
     return this.http.post<any>(`${environment.apiUrl}/assessments/${id}/submit`, {});
+  }
+
+  deleteAssessment(id: string): Observable<void> {
+    return this.http.delete<void>(`${environment.apiUrl}/assessments/${id}`);
   }
 }

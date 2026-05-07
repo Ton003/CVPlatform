@@ -71,8 +71,8 @@ export class JobArchitectureService {
     return this.http.post<Department>(`${this.baseUrl}/departments`, { businessUnitId, name, description });
   }
 
-  createJobRole(departmentId: string, name: string, rankCount: number = 5): Observable<JobRole> {
-    return this.http.post<JobRole>(`${this.baseUrl}/roles`, { departmentId, name, levelCount: rankCount });
+  createJobRole(departmentId: string, name: string, rankCount: number = 5, status: string = 'DRAFT'): Observable<JobRole> {
+    return this.http.post<JobRole>(`${this.baseUrl}/roles`, { departmentId, name, levelCount: rankCount, status });
   }
 
   updateBusinessUnit(id: string, name?: string, description?: string): Observable<BusinessUnit> {

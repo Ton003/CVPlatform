@@ -21,11 +21,12 @@ export type PipelineStage =
   | 'interview'
   | 'assessment'
   | 'offer'
+  | 'hired'
   | 'rejected';
 
 /** Canonical forward order used for backward-move detection. */
 const STAGE_ORDER: PipelineStage[] = [
-  'applied', 'screening', 'interview', 'assessment', 'offer', 'rejected',
+  'applied', 'screening', 'interview', 'assessment', 'offer', 'hired', 'rejected',
 ];
 
 function isBackwardMove(from: PipelineStage, to: PipelineStage): boolean {
@@ -57,6 +58,8 @@ export interface JobDetail {
   status: string;
   location?: string;
   department?: string;
+  departmentId?: string;
+  hiringManagerId?: string;
 }
 
 export interface StageColumn {
@@ -70,11 +73,12 @@ export interface StageColumn {
 }
 
 import { CvUploadComponent } from '../cv-upload/cv-upload.component';
+import { ConfirmModalComponent } from '../../shared/confirm-modal/confirm-modal.component';
 
 @Component({
   selector: 'app-job-pipeline',
   standalone: true,
-  imports: [CommonModule, FormsModule, CvUploadComponent],
+  imports: [CommonModule, FormsModule, CvUploadComponent, ConfirmModalComponent],
   templateUrl: './job-pipeline.component.html',
   styleUrls: ['./job-pipeline.component.scss'],
 })
@@ -105,7 +109,12 @@ export class JobPipelineComponent implements OnInit {
   selectedApplicationDetails: any = null;
   selectedNotes: any[] = [];
   selectedInterviews: any[] = [];
+  selectedScore: any = null;
   sidePanelLoading = false;
+
+  // Quick Note State
+  quickNote = '';
+  savingNote = false;
 
   // Promotion Lifecycle
   showPromoteModal = false;
@@ -116,6 +125,16 @@ export class JobPipelineComponent implements OnInit {
     employeeId: '',
     hireDate: new Date().toISOString().split('T')[0],
     managerId: ''
+  };
+
+  // Modern Confirmation Modals
+  confirmModal = {
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    isDanger: true,
+    action: null as (() => void) | null
   };
 
   columns: StageColumn[] = [
@@ -178,15 +197,17 @@ export class JobPipelineComponent implements OnInit {
     this.sidePanelLoading = true;
     this.selectedNotes = [];
     this.selectedInterviews = [];
+    this.selectedScore = null;
 
     forkJoin({
       details: this.http.get<any>(`${environment.apiUrl}/applications/${appId}`).pipe(catchError(() => of(null))),
       notes: this.http.get<any[]>(`${environment.apiUrl}/applications/${appId}/notes`).pipe(catchError(() => of([]))),
       interviews: this.http.get<any[]>(`${environment.apiUrl}/applications/${appId}/interviews`).pipe(catchError(() => of([]))),
+      score: this.http.get<any>(`${environment.apiUrl}/applications/${appId}/score`).pipe(catchError(() => of(null))),
     })
       .pipe(finalize(() => { this.sidePanelLoading = false; this.cdr.detectChanges(); }))
       .subscribe({
-        next: ({ details, notes, interviews }) => {
+        next: ({ details, notes, interviews, score }) => {
           if (!details) {
             this.toast.error('Failed to load application details.');
             this.closeSidePanel();
@@ -200,8 +221,29 @@ export class JobPipelineComponent implements OnInit {
           this.selectedApplicationDetails = details;
           this.selectedNotes = notes ?? [];
           this.selectedInterviews = interviews ?? [];
+          this.selectedScore = score;
         },
       });
+  }
+
+  saveQuickNote(): void {
+    if (!this.quickNote.trim() || !this.selectedApplicationId) return;
+
+    this.savingNote = true;
+    this.http.post<any>(`${environment.apiUrl}/applications/${this.selectedApplicationId}/notes`, {
+      note: this.quickNote
+    }).subscribe({
+      next: (note) => {
+        this.selectedNotes.unshift(note);
+        this.quickNote = '';
+        this.toast.success('Note added');
+      },
+      error: () => this.toast.error('Failed to add note'),
+      complete: () => {
+        this.savingNote = false;
+        this.cdr.detectChanges();
+      }
+    });
   }
 
   mapToCard(app: any): ApplicationCard {
@@ -291,57 +333,62 @@ export class JobPipelineComponent implements OnInit {
     const card      = this.draggingCard;
     const fromStage = this.draggingFromStage;
 
-    // ✅ FIX 3: Soft confirmation for backward moves
-    if (isBackwardMove(fromStage, targetCol.id)) {
-      const confirmed = window.confirm(
-        `⚠️ You are moving "${card.candidateName}" backwards from ` +
-        `"${fromStage.toUpperCase()}" to "${targetCol.label.toUpperCase()}".\n\n` +
-        `This will revert their pipeline progress. Are you sure?`
-      );
-      if (!confirmed) {
-        this.draggingCard = null;
-        this.draggingFromStage = null;
-        this.cdr.detectChanges();
-        return;
+    const executeDrop = () => {
+      const fromCol = this.columns.find((c) => c.id === fromStage);
+      if (fromCol) {
+        fromCol.cards = fromCol.cards.filter(
+          (c) => c.applicationId !== card.applicationId
+        );
       }
+      card.stage = targetCol.id;
+      card.daysInStage = 0;
+      targetCol.cards.push(card);
+
+      this.draggingCard = null;
+      this.draggingFromStage = null;
+      this.updatingCardId = card.applicationId;
+      this.cdr.detectChanges();
+
+      this.http
+        .patch(`${environment.apiUrl}/applications/${card.applicationId}/stage`, {
+          stage: targetCol.id,
+        })
+        .pipe(finalize(() => { this.updatingCardId = null; this.cdr.detectChanges(); }))
+        .subscribe({
+          next: () => {
+            this.toast.success(`Moved to ${targetCol.label}`);
+            // Fix "Stale Stage" bug: Update side panel if it's open for this card
+            if (this.selectedApplicationId === card.applicationId && this.selectedApplicationDetails) {
+              this.selectedApplicationDetails.stage = targetCol.id;
+            }
+            this.loadApplications();
+          },
+          error: () => {
+            targetCol.cards = targetCol.cards.filter(
+              (c) => c.applicationId !== card.applicationId
+            );
+            card.stage = fromStage;
+            const rollbackCol = this.columns.find((c) => c.id === fromStage);
+            if (rollbackCol) rollbackCol.cards.push(card);
+            this.toast.error('Failed to update stage. Change reverted.');
+            this.cdr.detectChanges();
+          },
+        });
+    };
+
+    if (isBackwardMove(fromStage, targetCol.id)) {
+      this.confirmModal = {
+        isOpen: true,
+        title: 'Confirm Backward Move',
+        message: `You are moving "${card.candidateName}" backwards to "${targetCol.label}". This will revert their progress. Are you sure?`,
+        confirmText: 'Move Backwards',
+        isDanger: true,
+        action: executeDrop
+      };
+      this.cdr.detectChanges();
+    } else {
+      executeDrop();
     }
-
-    const fromCol = this.columns.find((c) => c.id === fromStage);
-    if (fromCol) {
-      fromCol.cards = fromCol.cards.filter(
-        (c) => c.applicationId !== card.applicationId
-      );
-    }
-    card.stage = targetCol.id;
-    card.daysInStage = 0;
-    targetCol.cards.push(card);
-
-    this.draggingCard = null;
-    this.draggingFromStage = null;
-    this.updatingCardId = card.applicationId;
-    this.cdr.detectChanges();
-
-    this.http
-      .patch(`${environment.apiUrl}/applications/${card.applicationId}/stage`, {
-        stage: targetCol.id,
-      })
-      .pipe(finalize(() => { this.updatingCardId = null; this.cdr.detectChanges(); }))
-      .subscribe({
-        next: () => {
-          this.toast.success(`Moved to ${targetCol.label}`);
-          this.loadApplications();
-        },
-        error: () => {
-          targetCol.cards = targetCol.cards.filter(
-            (c) => c.applicationId !== card.applicationId
-          );
-          card.stage = fromStage;
-          const rollbackCol = this.columns.find((c) => c.id === fromStage);
-          if (rollbackCol) rollbackCol.cards.push(card);
-          this.toast.error('Failed to update stage. Change reverted.');
-          this.cdr.detectChanges();
-        },
-      });
   }
 
   openApplication(cardId: string): void {
@@ -355,12 +402,14 @@ export class JobPipelineComponent implements OnInit {
     this.selectedApplicationDetails = null;
     this.selectedNotes = [];
     this.selectedInterviews = [];
+    this.selectedScore = null;
+    this.quickNote = '';
     this.sidePanelLoading = false;
   }
 
   goToFullProfile(): void {
     if (this.selectedApplicationId) {
-      window.open(`/applications/${this.selectedApplicationId}`, '_blank');
+      this.router.navigate(['/applications', this.selectedApplicationId], { queryParams: { from: 'pipeline' } });
     }
   }
 
@@ -371,93 +420,124 @@ export class JobPipelineComponent implements OnInit {
     if (newStage === this.selectedApplicationDetails.stage) return;
 
     const oldStage = this.selectedApplicationDetails.stage as PipelineStage;
+    const candidateName = this.selectedApplicationDetails.candidateName ?? 'this candidate';
 
-    // ✅ FIX 3: Soft confirmation for backward moves via side panel
-    if (isBackwardMove(oldStage, newStage)) {
-      const candidateName = this.selectedApplicationDetails.candidateName ?? 'this candidate';
-      const confirmed = window.confirm(
-        `⚠️ You are moving "${candidateName}" backwards from ` +
-        `"${oldStage.toUpperCase()}" to "${newStage.toUpperCase()}".\n\n` +
-        `This will revert their pipeline progress. Are you sure?`
-      );
-      if (!confirmed) {
-        // Reset the select element back to its previous value
-        select.value = oldStage;
-        return;
+    const executeUpdate = () => {
+      const colFrom = this.columns.find((c) => c.id === oldStage);
+      const colTo = this.columns.find((c) => c.id === newStage);
+
+      let movedCard: ApplicationCard | undefined;
+
+      if (colFrom) {
+        const idx = colFrom.cards.findIndex(
+          (c) => c.applicationId === this.selectedApplicationId
+        );
+        if (idx !== -1) {
+          [movedCard] = colFrom.cards.splice(idx, 1);
+          movedCard.stage = newStage;
+          if (colTo) colTo.cards.push(movedCard);
+        }
       }
-    }
 
-    const colFrom = this.columns.find((c) => c.id === oldStage);
-    const colTo = this.columns.find((c) => c.id === newStage);
+      this.selectedApplicationDetails = { ...this.selectedApplicationDetails, stage: newStage };
+      this.cdr.detectChanges();
 
-    let movedCard: ApplicationCard | undefined;
-
-    if (colFrom) {
-      const idx = colFrom.cards.findIndex(
-        (c) => c.applicationId === this.selectedApplicationId
-      );
-      if (idx !== -1) {
-        [movedCard] = colFrom.cards.splice(idx, 1);
-        movedCard.stage = newStage;
-        if (colTo) colTo.cards.push(movedCard);
-      }
-    }
-
-    this.selectedApplicationDetails = { ...this.selectedApplicationDetails, stage: newStage };
-    this.cdr.detectChanges();
-
-    this.http
-      .patch(`${environment.apiUrl}/applications/${this.selectedApplicationId}/stage`, {
-        stage: newStage,
-      })
-      .subscribe({
-        next: () => this.toast.success('Stage updated successfully'),
-        error: () => {
-          this.toast.error('Failed to update stage');
-          if (movedCard && colTo && colFrom) {
-            const revertIdx = colTo.cards.findIndex(
-              (c) => c.applicationId === this.selectedApplicationId
-            );
-            if (revertIdx !== -1) {
-              colTo.cards.splice(revertIdx, 1);
+      this.http
+        .patch(`${environment.apiUrl}/applications/${this.selectedApplicationId}/stage`, {
+          stage: newStage,
+        })
+        .subscribe({
+          next: () => this.toast.success('Stage updated successfully'),
+          error: () => {
+            this.toast.error('Failed to update stage');
+            if (movedCard && colTo && colFrom) {
+              const revertIdx = colTo.cards.findIndex(
+                (c) => c.applicationId === this.selectedApplicationId
+              );
+              if (revertIdx !== -1) {
+                colTo.cards.splice(revertIdx, 1);
+              }
+              movedCard.stage = oldStage;
+              colFrom.cards.push(movedCard);
             }
-            movedCard.stage = oldStage;
-            colFrom.cards.push(movedCard);
-          }
-          this.selectedApplicationDetails = {
-            ...this.selectedApplicationDetails,
-            stage: oldStage,
-          };
-          this.cdr.detectChanges();
-        },
-      });
+            this.selectedApplicationDetails = {
+              ...this.selectedApplicationDetails,
+              stage: oldStage,
+            };
+            this.cdr.detectChanges();
+          },
+        });
+    };
+
+    if (isBackwardMove(oldStage, newStage)) {
+      this.confirmModal = {
+        isOpen: true,
+        title: 'Confirm Backward Move',
+        message: `You are moving "${candidateName}" backwards to "${newStage.toUpperCase()}". This will revert their progress. Are you sure?`,
+        confirmText: 'Move Backwards',
+        isDanger: true,
+        action: executeUpdate
+      };
+      // Reset select until confirmed
+      select.value = oldStage;
+      this.cdr.detectChanges();
+    } else {
+      executeUpdate();
+    }
   }
 
   deleteApplication(): void {
     if (!this.selectedApplicationId || !this.selectedApplicationDetails) return;
-    if (!confirm('Are you sure you want to completely remove this candidate from the pipeline?')) return;
 
-    const appId = this.selectedApplicationId;
-    const currentStage = this.selectedApplicationDetails.stage as PipelineStage;
+    this.confirmModal = {
+      isOpen: true,
+      title: 'Remove from Pipeline',
+      message: 'Are you sure you want to completely remove this candidate from the recruitment pipeline? This action is permanent.',
+      confirmText: 'Remove Candidate',
+      isDanger: true,
+      action: () => {
+        const appId = this.selectedApplicationId!;
+        const currentStage = this.selectedApplicationDetails.stage as PipelineStage;
+        this.closeSidePanel();
 
-    this.closeSidePanel();
+        this.http.delete(`${environment.apiUrl}/applications/${appId}`)
+          .subscribe({
+            next: () => {
+              this.toast.success('Application removed from pipeline.');
+              const col = this.columns.find((c) => c.id === currentStage);
+              if (col) {
+                col.cards = col.cards.filter((c) => c.applicationId !== appId);
+                this.cdr.detectChanges();
+              }
+            },
+            error: () => this.toast.error('Failed to remove application.'),
+          });
+      }
+    };
+    this.cdr.detectChanges();
+  }
 
-    this.http.delete(`${environment.apiUrl}/applications/${appId}`)
-      .subscribe({
-        next: () => {
-          this.toast.success('Application removed from pipeline.');
-          const col = this.columns.find((c) => c.id === currentStage);
-          if (col) {
-            col.cards = col.cards.filter((c) => c.applicationId !== appId);
-            this.cdr.detectChanges();
-          }
-        },
-        error: () => this.toast.error('Failed to remove application.'),
-      });
+  onConfirmModal(): void {
+    if (this.confirmModal.action) {
+      this.confirmModal.action();
+    }
+    this.confirmModal.isOpen = false;
+    this.cdr.detectChanges();
+  }
+
+  onCancelModal(): void {
+    this.confirmModal.isOpen = false;
+    this.confirmModal.action = null;
+    this.cdr.detectChanges();
   }
 
   goBack(): void {
-    this.router.navigate(['/job-offers']);
+    const from = this.route.snapshot.queryParamMap.get('from');
+    if (from === 'scout' || from === 'dashboard') {
+      this.router.navigate(['/dashboard']);
+    } else {
+      this.router.navigate(['/job-offers']);
+    }
   }
 
   trackByCard(_: number, card: ApplicationCard): string {
@@ -533,16 +613,26 @@ export class JobPipelineComponent implements OnInit {
   openPromoteModal(): void {
     if (!this.selectedApplicationId || !this.selectedApplicationDetails) return;
     
+    const departmentId = this.job?.departmentId || undefined;
+    const hiringManagerId = this.job?.hiringManagerId || '';
+
     this.showPromoteModal = true;
     this.promotePayload = {
       employeeId: '',
       hireDate: new Date().toISOString().split('T')[0],
-      managerId: ''
+      managerId: hiringManagerId
     };
     
-    this.employeeService.getManagers().subscribe({
+    this.employeeService.getManagers(departmentId).subscribe({
       next: (m) => {
         this.managers = m;
+        // Fallback if department filter returns nothing but we have a hiring manager
+        if (this.managers.length === 0 && hiringManagerId) {
+          this.employeeService.getManagers().subscribe(all => {
+            this.managers = all;
+            this.cdr.detectChanges();
+          });
+        }
         this.cdr.detectChanges();
       },
       error: () => this.toast.error('Failed to load manager list.')
@@ -554,20 +644,22 @@ export class JobPipelineComponent implements OnInit {
   }
 
   confirmPromotion(): void {
-    if (!this.promotePayload.employeeId || !this.promotePayload.hireDate) {
-      this.toast.error('Employee ID and Hire Date are required.');
+    if (!this.promotePayload.hireDate) {
+      this.toast.error('Hire Date is required.');
       return;
     }
 
     this.promoting = true;
     const appId = this.selectedApplicationId!;
     
-    this.employeeService.promoteCandidate({
+    const payload: any = {
       applicationId: appId,
       ...this.promotePayload
-    }).subscribe({
+    };
+    if (!payload.managerId) delete payload.managerId;
+
+    this.employeeService.promoteCandidate(payload).subscribe({
       next: (result: PromotionResult) => {
-        // ✅ FIX 4: Capture and surface competency source
         this.lastPromotionSource = result.competencySource;
         const sourceLabel = result.competencySource === 'manual'
           ? '✅ Skills migrated from HR evaluations.'
@@ -575,7 +667,13 @@ export class JobPipelineComponent implements OnInit {
         this.toast.success(`Promoted to Employee! ${sourceLabel}`);
         this.closePromoteModal();
         this.closeSidePanel();
-        this.loadApplications();
+        
+        // Navigate to the new employee profile
+        if (result.id) {
+          this.router.navigate(['/employees', result.id]);
+        } else {
+          this.loadApplications();
+        }
       },
       error: (err) => {
         this.toast.error(err.error?.message || 'Promotion failed.');

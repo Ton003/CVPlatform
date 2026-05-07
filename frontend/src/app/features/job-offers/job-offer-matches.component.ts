@@ -36,18 +36,22 @@ interface MatchResponse {
 }
 
 import { InternalMobilityService, UnifiedScoreResult } from '../employees/services/internal-mobility.service';
+import { EmployeeGapPanelComponent } from './employee-gap-panel/employee-gap-panel.component';
 
 interface InternalCandidateMatch extends UnifiedScoreResult {
   uuid: string;
   firstName: string;
   lastName: string;
   currentRank?: string;
+  readinessLabel?: string;
+  matchedComps?: any[];
+  gapComps?: any[];
 }
 
 @Component({
   selector:    'app-job-offer-matches',
   standalone:  true,
-  imports:     [CommonModule, FormsModule, RouterLink],
+  imports:     [CommonModule, FormsModule, RouterLink, EmployeeGapPanelComponent],
   templateUrl: './job-offer-matches.component.html',
   styleUrls:   ['./job-offer-matches.component.scss'],
 })
@@ -69,6 +73,10 @@ export class JobOfferMatchesComponent implements OnInit {
   mode        = 'groq';
   activeTab   = 'external'; // 'external' or 'internal'
 
+  // Gap Analysis Panel State
+  selectedEmployee: InternalCandidateMatch | null = null;
+  showGapPanel = false;
+
   private offerId = '';
 
   constructor(
@@ -89,8 +97,14 @@ export class JobOfferMatchesComponent implements OnInit {
 
   setTab(tab: 'external' | 'internal'): void {
     this.activeTab = tab;
-    if (tab === 'internal' && this.internalCandidates.length === 0) {
-      this.loadInternalMatches();
+    if (tab === 'internal') {
+      if (this.internalCandidates.length === 0) {
+        this.loadInternalMatches();
+      } else {
+        this.total = this.internalCandidates.length;
+      }
+    } else {
+      this.total = this.candidates.length;
     }
   }
 
@@ -100,7 +114,10 @@ export class JobOfferMatchesComponent implements OnInit {
     this.internalMobility.getOfferMatches(this.offerId).pipe(
       finalize(() => { this.loadingInternal = false; this.cdr.detectChanges(); })
     ).subscribe({
-      next: res => { this.internalCandidates = res; },
+      next: res => { 
+        this.internalCandidates = res; 
+        this.total = res.length;
+      },
       error: () => this.toast.error('Failed to load internal candidates.')
     });
   }
@@ -147,16 +164,18 @@ export class JobOfferMatchesComponent implements OnInit {
   }
 
   loadSuccessors(): void {
-    if (!this.offer?.jobRoleId) return;
+    if (!this.offer?.jobRoleLevelId) return;
     this.loadingSuccessors = true;
-    this.http.get<any[]>(`${environment.apiUrl}/job-architecture/job-roles/${this.offer.jobRoleId}/succession-candidates`)
+    this.http.get<any[]>(`${environment.apiUrl}/job-architecture/job-role-levels/${this.offer.jobRoleLevelId}/succession-candidates`)
       .pipe(finalize(() => { this.loadingSuccessors = false; this.cdr.detectChanges(); }))
       .subscribe({
         next: (res) => {
           this.successionCandidates = res || [];
         },
-        error: () => {
-          this.toast.error('Failed to load succession candidates.');
+        error: (err) => {
+          // If 404, it might just mean no requirements are set yet, but we'll log it
+          console.warn('Succession check failed:', err);
+          this.successionCandidates = [];
         }
       });
   }
@@ -167,6 +186,21 @@ export class JobOfferMatchesComponent implements OnInit {
 
   goToEmployee(id: string): void {
     this.router.navigate(['/employees', id]);
+  }
+
+  openGapAnalysis(emp: InternalCandidateMatch): void {
+    this.selectedEmployee = emp;
+    this.showGapPanel = true;
+  }
+
+  closeGapAnalysis(): void {
+    this.showGapPanel = false;
+    this.selectedEmployee = null;
+  }
+
+  onNominated(): void {
+    // Optionally reload the internal matches to update state
+    this.loadInternalMatches();
   }
 
   scoreColor(score: number): string {
@@ -187,6 +221,6 @@ export class JobOfferMatchesComponent implements OnInit {
     return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
   }
 
-  get userName():  string { const u = this.auth.getCurrentUser(); return u ? `${u.first_name} ${u.last_name}` : 'HR Manager'; }
+  get userName():  string { const u = this.auth.getCurrentUser(); return u ? `${u.firstName} ${u.lastName}` : 'HR Manager'; }
   get userRole():  string { return this.auth.getCurrentUser()?.role ?? 'hr'; }
 }

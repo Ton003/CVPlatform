@@ -13,7 +13,7 @@
   margin-left: var(--sidebar-width);
   width: calc(100vw - var(--sidebar-width));
   height: 100vh;
-  overflow: hidden;
+  overflow-y: auto;
   position: relative;
   padding: 40px 60px;
   animation: fadeUp .5s cubic-bezier(0.2, 0.8, 0.2, 1) both;

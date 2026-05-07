@@ -1,0 +1,99 @@
+<div class="agent-shell">
+  <!-- Agent Intelligence Header -->
+  <div class="agent-briefing-header">
+    <div class="briefing-info">
+      <div class="ai-status">
+        <span class="status-pulse"></span>
+        <span class="status-text">ASTRA CORE ACTIVE</span>
+      </div>
+      <div class="briefing-meta">
+        Analyzing <span class="highlight">{{ insights.length }}</span> talent vectors · 
+        Focusing on <span class="highlight">{{ currentMission }}</span> mode
+      </div>
+    </div>
+    
+    <div class="mission-selector">
+      <button *ngFor="let mode of missionModes" 
+              (click)="setMission(mode)" 
+              [class.active]="currentMission === mode">
+        {{ mode }}
+      </button>
+    </div>
+
+    <button class="btn-refresh" (click)="triggerScan()" [class.spinning]="loading" title="Manual Sweep">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- Intelligence Feed -->
+  <div class="insights-feed" *ngIf="!loading">
+    <div *ngIf="filteredInsights.length === 0" class="empty-briefing">
+      <div class="empty-icon">📡</div>
+      <p>Mission focus: <strong>{{ currentMission }}</strong>. No immediate vectors detected.</p>
+    </div>
+
+    <div class="dossier-card" *ngFor="let insight of filteredInsights" [attr.data-priority]="insight.priority">
+      <div class="dossier-tag">{{ insight.priority }} PRIORITY // {{ insight.type }}</div>
+      
+      <div class="dossier-main">
+        <div class="subject-profile">
+          <div class="avatar-ring" [style.border-color]="getPriorityColor(insight.priority)">
+            <div class="avatar" [style.background]="getAvatarGradient(insight)">
+              {{ (insight.candidate?.firstName || insight.employee?.firstName || '?')[0] }}
+            </div>
+          </div>
+          <div class="subject-details">
+            <h4 class="name">{{ insight.candidate?.firstName }} {{ insight.candidate?.lastName || insight.employee?.firstName }} {{ insight.employee?.lastName }}</h4>
+            <div class="matches-list" *ngIf="insight.matches?.length > 0">
+              <div class="match-badge" *ngFor="let match of insight.matches">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+                {{ match.job.title }} <span class="match-score">({{ match.score }}%)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="dossier-reasoning">
+          <div class="reasoning-label">AGENT REASONING</div>
+          <p class="reasoning-text" *ngFor="let reason of insight.allReasoning">{{ reason }}</p>
+        </div>
+
+        <div class="dossier-metrics">
+          <div class="metric-item">
+            <span class="m-val">{{ ((insight.confidence || 0) * 100) | number:'1.0-0' }}%</span>
+            <span class="m-lbl">CONFIDENCE</span>
+          </div>
+          <div class="metric-item">
+            <span class="m-val">{{ insight.score || 0 }}%</span>
+            <span class="m-lbl">MATCH</span>
+          </div>
+        </div>
+
+        <div class="dossier-actions">
+          <button class="btn-dossier-dismiss" (click)="updateStatus(insight, 'DISMISSED')" [disabled]="actioningId === insight.id">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+          <button class="btn-dossier-action" (click)="actionDossier(insight)" [disabled]="actioningId === insight.id" [class.is-loading]="actioningId === insight.id">
+            <span *ngIf="actioningId === insight.id" class="btn-spinner-sm"></span>
+            {{ actioningId === insight.id ? 'OPENING...' : (insight.type === 'MATCH' ? 'VIEW DOSSIER' : insight.type === 'RISK' ? 'VIEW PROFILE' : 'VIEW MOBILITY') }}
+          </button>
+        </div>
+      </div>
+      
+      <div class="escalation-alert" *ngIf="insight.action === 'ESCALATE'">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>
+        IMMEDIATE ESCALATION REQUIRED
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div class="briefing-loading" *ngIf="loading">
+    <div class="loading-pulse">
+      <div class="pulse-ring"></div>
+      <p>ASTRA IS RE-SCANNING TALENT VECTORS...</p>
+    </div>
+  </div>
+</div>

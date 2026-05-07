@@ -64,7 +64,10 @@
           >
             <div class="card-top">
               <div class="card-identity">
-                <span class="card-name">{{ card.candidateName }}</span>
+                <span class="card-name">
+                  {{ card.candidateName }}
+                  <span class="internal-badge" *ngIf="card.source === 'internal' || card.source === 'internal_nomination'">INTERNAL</span>
+                </span>
                 <span class="card-title">{{ card.currentTitle || 'No title' }}</span>
               </div>
               <div 
@@ -125,32 +128,78 @@
       </div>
 
       <div class="sp-body">
-        <div class="sp-field">
-          <label class="sp-label">Stage</label>
-          <select class="sp-select" [value]="selectedApplicationDetails.stage" (change)="updateStageFromPanel($event)">
-            <option *ngFor="let col of columns" [value]="col.id">{{ col.label }}</option>
-          </select>
-        </div>
-
-        <div class="sp-meta">
-          <span *ngIf="selectedApplicationDetails.email">📧 {{ selectedApplicationDetails.email }}</span>
-          <span>⏱ {{ selectedApplicationDetails.daysInStage }}d in stage</span>
-        </div>
-
-        <div class="sp-section" *ngIf="selectedNotes.length > 0">
-          <p class="sp-section-title">Recent Notes</p>
-          <ng-container *ngFor="let n of selectedNotes; let i = index">
-            <div class="sp-note" *ngIf="i < 3">
-              <p class="sp-note-body">{{ n.note }}</p>
-              <span class="sp-note-date">{{ n.createdAt | date:'MMM d' }}</span>
+        <!-- Match Score Gauge -->
+        <div class="sp-score-section" *ngIf="selectedScore">
+          <div class="score-circle" [ngClass]="getScoreClass(selectedScore.totalScore)">
+            <span class="score-val">{{ selectedScore.totalScore }}%</span>
+            <span class="score-lbl">Match Score</span>
+          </div>
+          <div class="score-insights" *ngIf="selectedScore.explanation">
+            <div class="insight-row strength" *ngFor="let s of selectedScore.explanation.strengths">
+              <span class="insight-icon">✅</span> {{ s }}
             </div>
-          </ng-container>
+            <div class="insight-row risk" *ngFor="let r of selectedScore.explanation.risks">
+              <span class="insight-icon">⚠️</span> {{ r }}
+            </div>
+          </div>
         </div>
 
+        <div class="sp-divider"></div>
+
+
+        <!-- Skills Cloud -->
+        <div class="sp-section" *ngIf="selectedApplicationDetails.skills?.length > 0">
+          <p class="sp-section-title">Technical Skills</p>
+          <div class="sp-skills-cloud">
+            <span class="sp-skill-tag" *ngFor="let s of selectedApplicationDetails.skills">{{ s }}</span>
+          </div>
+        </div>
+
+        <div class="sp-divider"></div>
+
+        <!-- Quick Notes -->
+        <div class="sp-section">
+          <div class="sp-section-header">
+            <p class="sp-section-title">Quick Notes</p>
+            <span class="sp-count">{{ selectedNotes.length }}</span>
+          </div>
+          
+          <div class="quick-note-input">
+            <textarea 
+              [(ngModel)]="quickNote" 
+              placeholder="Add a quick note..."
+              (keyup.enter)="saveQuickNote()"
+            ></textarea>
+            <button 
+              class="btn-send" 
+              [disabled]="!quickNote.trim() || savingNote"
+              (click)="saveQuickNote()"
+            >
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9-7-9-7V19z"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="sp-notes-list">
+            <div class="sp-note-mini" *ngFor="let n of selectedNotes; let i = index">
+              <div class="note-meta">
+                <span class="note-author">{{ n.author?.name }}</span>
+                <span class="note-date">{{ n.createdAt | date:'MMM d, HH:mm' }}</span>
+              </div>
+              <p class="note-text">{{ n.note }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interviews -->
         <div class="sp-section" *ngIf="selectedInterviews.length > 0">
-          <p class="sp-section-title">Interviews ({{ selectedInterviews.length }})</p>
-          <div class="sp-interview" *ngFor="let iv of selectedInterviews">
-            <span class="sp-iv-type">{{ iv.type }}</span>
+          <p class="sp-section-title">Interviews</p>
+          <div class="sp-interview-compact" *ngFor="let iv of selectedInterviews">
+            <div class="iv-main">
+              <span class="iv-type">{{ iv.type }}</span>
+              <span class="iv-date">{{ iv.scheduledAt | date:'MMM d, HH:mm' }}</span>
+            </div>
             <span class="sp-iv-status" [attr.data-status]="iv.status">{{ iv.status | titlecase }}</span>
           </div>
         </div>
@@ -215,7 +264,7 @@
           <div class="search-results" *ngIf="searchResults.length > 0">
             <div class="result-item" *ngFor="let c of searchResults">
               <div class="result-info">
-                <p class="result-name">{{ c.first_name }} {{ c.last_name }}</p>
+                <p class="result-name">{{ c.firstName }} {{ c.lastName }}</p>
                 <p class="result-meta">{{ c.email }} • {{ c.current_title || 'No title' }}</p>
               </div>
               <button class="btn-primary result-add-btn" (click)="addExistingCandidate(c.candidateId || c.id)">
@@ -251,8 +300,8 @@
         </p>
 
         <div class="form-group sp-field">
-          <label class="sp-label">Employee ID <span class="required">*</span></label>
-          <input type="text" class="sp-select" [(ngModel)]="promotePayload.employeeId" placeholder="e.g. EMP-2026-001">
+          <label class="sp-label">Employee ID</label>
+          <input type="text" class="sp-select" [(ngModel)]="promotePayload.employeeId" placeholder="Auto-generated if left blank">
         </div>
 
         <div class="form-group sp-field">
@@ -265,7 +314,7 @@
           <select class="sp-select" [(ngModel)]="promotePayload.managerId">
             <option value="">-- No direct manager --</option>
             <option *ngFor="let m of managers" [value]="m.id">
-              {{ m.first_name }} {{ m.last_name }} ({{ m.role | uppercase }})
+              {{ m.firstName }} {{ m.lastName }} <ng-container *ngIf="m.jobRole">({{ m.jobRole.name }})</ng-container>
             </option>
           </select>
         </div>
@@ -281,4 +330,14 @@
     </div>
   </div>
 
+  <!-- ── Confirmation Modal ── -->
+  <app-confirm-modal
+    [open]="confirmModal.isOpen"
+    [title]="confirmModal.title"
+    [message]="confirmModal.message"
+    [confirmText]="confirmModal.confirmText"
+    [isDanger]="confirmModal.isDanger"
+    (confirmed)="onConfirmModal()"
+    (cancelled)="onCancelModal()"
+  ></app-confirm-modal>
 </div>

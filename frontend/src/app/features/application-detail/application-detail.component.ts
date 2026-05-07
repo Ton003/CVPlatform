@@ -12,8 +12,11 @@ import { ToastService } from '../../core/services/toast.service';
 import { AuthService } from '../../core/services/auth.service';
 import { EmployeeService } from '../../core/services/employee.service';
 import { AssessmentPanelComponent } from '../employees/employee-profile/assessment-panel.component';
+import { ConfirmModalComponent } from '../../shared/confirm-modal/confirm-modal.component';
+import { AiVerdictPanelComponent } from './ai-verdict-panel/ai-verdict-panel.component';
+import { HiringOutcomeComponent } from './hiring-outcome/hiring-outcome.component';
 
-export type AppTab = 'overview' | 'notes' | 'scoring' | 'activity' | 'interviews' | 'evaluation';
+export type AppTab = 'overview' | 'notes' | 'tasks' | 'scoring' | 'activity' | 'interviews' | 'evaluation';
 
 export interface Interview {
   id: string;
@@ -37,7 +40,7 @@ export interface Task {
   title: string;
   dueDate?: string;
   priority: 'low' | 'medium' | 'high';
-  completed: boolean;
+  isCompleted: boolean;
 }
 
 export interface JobCompetency {
@@ -59,7 +62,7 @@ export interface PromoteForm {
 @Component({
   selector: 'app-application-detail',
   standalone: true,
-  imports: [CommonModule, FormsModule, AssessmentPanelComponent],
+  imports: [CommonModule, FormsModule, AssessmentPanelComponent, ConfirmModalComponent, AiVerdictPanelComponent, HiringOutcomeComponent],
   templateUrl: './application-detail.component.html',
   styleUrls: ['./application-detail.component.scss'],
 })
@@ -77,6 +80,18 @@ export class ApplicationDetailComponent implements OnInit {
   loading = true;
   error = '';
   activeTab: AppTab = 'overview';
+  backLabel = 'Pipeline';
+  backRoute = '/job-offers';
+
+  // Modern Confirmation Modal
+  confirmModal = {
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    isDanger: true,
+    action: null as (() => void) | null
+  };
 
   // Notes
   notes: any[] = [];
@@ -85,11 +100,14 @@ export class ApplicationDetailComponent implements OnInit {
   newRating = 0;
   newStage = 'screening';
   savingNote = false;
-  deletingNoteId = '';
+  deletingNoteId: string | null = null;
 
   // Scoring
   score: any = null;
   scoreLoading = false;
+
+  // AI Verdict
+  verdict: any = null;
 
   // Evaluation
   jobCompetencies: JobCompetency[] = [];
@@ -119,6 +137,7 @@ export class ApplicationDetailComponent implements OnInit {
   tasks: Task[] = [];
   tasksLoading = false;
   newTaskTitle = '';
+  togglingTaskIds = new Set<string>();
 
   // Promote modal (replaces browser prompt())
   showPromoteModal = false;
@@ -127,12 +146,13 @@ export class ApplicationDetailComponent implements OnInit {
   promoteForm: PromoteForm = { employeeId: '', hireDate: '', managerId: '' };
 
   readonly tabs: { id: AppTab; label: string; icon: string }[] = [
-    { id: 'overview', label: 'Overview', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
-    { id: 'evaluation', label: 'Evaluation', icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
-    { id: 'notes', label: 'Notes', icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
-    { id: 'scoring', label: 'Scoring', icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z' },
-    { id: 'interviews', label: 'Interviews', icon: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z' },
-    { id: 'activity', label: 'Activity', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { id: 'overview',    label: 'Application Dossier', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' },
+    { id: 'evaluation',  label: 'Competency Matrix',   icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01' },
+    { id: 'notes',       label: 'Recruiter Notes',     icon: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z' },
+    { id: 'tasks',       label: 'Pipeline Tasks',      icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4' },
+    { id: 'scoring',     label: 'Fit Score',            icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z' },
+    { id: 'interviews',  label: 'Interviews',           icon: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z' },
+    { id: 'activity',    label: 'Activity Log',          icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
   ];
 
   readonly stageNoteOptions = [
@@ -141,13 +161,32 @@ export class ApplicationDetailComponent implements OnInit {
     { value: 'interview', label: 'Interview' },
     { value: 'assessment', label: 'Assessment' },
     { value: 'offer', label: 'Offer' },
+    { value: 'hired', label: 'Hired' },
     { value: 'rejected', label: 'Rejected' },
   ];
+
+  get userRole(): string {
+    return this.auth.getCurrentUser()?.role || 'hr';
+  }
 
   readonly interviewTypes = ['Technical', 'HR', 'Final'];
 
   ngOnInit(): void {
     this.applicationId = this.route.snapshot.paramMap.get('id') || '';
+    
+    const from = this.route.snapshot.queryParamMap.get('from');
+    if (from === 'compare') {
+      this.backLabel = 'Comparison';
+    } else if (from === 'candidates') {
+      this.backLabel = 'Candidates';
+    } else if (from === 'scout' || from === 'dashboard') {
+      this.backLabel = 'Dashboard';
+    } else if (from === 'employees') {
+      this.backLabel = 'Employees';
+    } else {
+      this.backLabel = 'Pipeline';
+    }
+
     this.initDateRestrictions();
     this.loadApplication();
   }
@@ -192,6 +231,7 @@ export class ApplicationDetailComponent implements OnInit {
     if (tab === 'activity') this.loadActivity();
     if (tab === 'interviews') this.loadInterviews();
     if (tab === 'evaluation') this.loadEvaluation();
+    if (tab === 'tasks') this.loadTasks();
     this.cdr.detectChanges();
   }
 
@@ -227,19 +267,42 @@ export class ApplicationDetailComponent implements OnInit {
   }
 
   deleteNote(noteId: string): void {
-    if (!confirm('Delete this note?')) return;
-    this.deletingNoteId = noteId;
-    this.http
-      .delete(`${environment.apiUrl}/applications/${this.applicationId}/notes/${noteId}`)
-      .pipe(finalize(() => { this.deletingNoteId = ''; this.cdr.detectChanges(); }))
-      .subscribe({
-        next: () => {
-          this.notes = this.notes.filter(n => n.id !== noteId);
-          this.toast.success('Note deleted.');
-          this.loadScore();
-        },
-        error: () => { this.toast.error('Failed to delete note.'); },
-      });
+    this.confirmModal = {
+      isOpen: true,
+      title: 'Delete Note',
+      message: 'Are you sure you want to permanently delete this note?',
+      confirmText: 'Delete',
+      isDanger: true,
+      action: () => {
+        this.deletingNoteId = noteId;
+        this.http
+          .delete(`${environment.apiUrl}/applications/${this.applicationId}/notes/${noteId}`)
+          .pipe(finalize(() => { this.deletingNoteId = ''; this.cdr.detectChanges(); }))
+          .subscribe({
+            next: () => {
+              this.notes = this.notes.filter(n => n.id !== noteId);
+              this.toast.success('Note deleted.');
+              this.loadScore();
+            },
+            error: () => { this.toast.error('Failed to delete note.'); },
+          });
+      }
+    };
+    this.cdr.detectChanges();
+  }
+
+  onConfirmModal(): void {
+    if (this.confirmModal.action) {
+      this.confirmModal.action();
+    }
+    this.confirmModal.isOpen = false;
+    this.cdr.detectChanges();
+  }
+
+  onCancelModal(): void {
+    this.confirmModal.isOpen = false;
+    this.confirmModal.action = null;
+    this.cdr.detectChanges();
   }
 
   canDeleteNote(note: any): boolean {
@@ -369,14 +432,19 @@ export class ApplicationDetailComponent implements OnInit {
 
   submitFeedback(): void {
     if (!this.selectedInterview) return;
-    const payload = {
-      technicalScore: this.feedbackForm.technicalScore,
-      communicationScore: this.feedbackForm.communicationScore,
-      comments: this.feedbackForm.feedback,
-      feedback: this.feedbackForm.feedback, // send both to be safe
+    const payload: any = {
       decision: this.feedbackForm.decision,
-      status: 'completed'
+      status: 'completed',
+      comments: this.feedbackForm.feedback
     };
+
+    if (this.feedbackForm.technicalScore > 0) {
+      payload.technicalScore = this.feedbackForm.technicalScore;
+    }
+    if (this.feedbackForm.communicationScore > 0) {
+      payload.communicationScore = this.feedbackForm.communicationScore;
+    }
+
     this.http
       .patch<Interview>(`${environment.apiUrl}/interviews/${this.selectedInterview.id}`, payload)
       .subscribe({
@@ -452,8 +520,15 @@ export class ApplicationDetailComponent implements OnInit {
   }
 
   toggleTask(task: Task): void {
+    if (this.togglingTaskIds.has(task.id)) return;
+    this.togglingTaskIds.add(task.id);
+
     this.http
-      .patch<Task>(`${environment.apiUrl}/tasks/${task.id}`, { completed: !task.completed })
+      .patch<Task>(`${environment.apiUrl}/applications/${this.applicationId}/tasks/${task.id}`, {})
+      .pipe(finalize(() => {
+        this.togglingTaskIds.delete(task.id);
+        this.cdr.detectChanges();
+      }))
       .subscribe({
         next: (t) => {
           const idx = this.tasks.findIndex(it => it.id === t.id);
@@ -466,7 +541,7 @@ export class ApplicationDetailComponent implements OnInit {
   }
 
   deleteTask(id: string): void {
-    this.http.delete(`${environment.apiUrl}/tasks/${id}`).subscribe({
+    this.http.delete(`${environment.apiUrl}/applications/${this.applicationId}/tasks/${id}`).subscribe({
       next: () => { this.tasks = this.tasks.filter(t => t.id !== id); this.cdr.detectChanges(); }
     });
   }
@@ -557,7 +632,7 @@ export class ApplicationDetailComponent implements OnInit {
     if (evaluated === undefined || evaluated === null || evaluated === 0) return null;
     const gap = evaluated - required;
     return {
-      value: gap > 0 ? `+${gap}` : gap === 0 ? '=' : `${gap}`,
+      value: gap > 0 ? `+${gap}` : gap === 0 ? 'Match' : `${gap}`,
       status: gap >= 0 ? 'match' : gap === -1 ? 'near' : 'gap'
     };
   }
@@ -595,22 +670,37 @@ export class ApplicationDetailComponent implements OnInit {
 
   // ── Promote to Employee (modal-based) ──────────────────────────
   openPromoteModal(): void {
+    console.log('openPromoteModal called', { app: this.app });
+    if (!this.app) {
+      this.toast.error('Application data not loaded yet.');
+      return;
+    }
+
+    const departmentId = this.app.departmentId || undefined;
+    const hiringManagerId = this.app.hiringManagerId || '';
+
     this.promoteForm = {
-      employeeId: `EMP-${Math.floor(1000 + Math.random() * 9000)}`,
+      employeeId: '',
       hireDate: new Date().toISOString().split('T')[0],
-      managerId: ''
+      managerId: hiringManagerId
     };
     this.showPromoteModal = true;
+    this.cdr.detectChanges();
     
-    this.employeeService.getManagers().subscribe({
+    this.employeeService.getManagers(departmentId).subscribe({
       next: (m) => {
         this.managers = m;
+        // Fallback: If no managers in this department, load all managers
+        if (this.managers.length === 0) {
+          this.employeeService.getManagers().subscribe(all => {
+            this.managers = all;
+            this.cdr.detectChanges();
+          });
+        }
         this.cdr.detectChanges();
       },
       error: () => this.toast.error('Failed to load manager list.')
     });
-    
-    this.cdr.detectChanges();
   }
 
   confirmPromotion(): void {
@@ -641,7 +731,16 @@ export class ApplicationDetailComponent implements OnInit {
 
   // ── Navigation ─────────────────────────────────────────────────
   goBack(): void {
-    if (this.app?.jobId) {
+    const from = this.route.snapshot.queryParamMap.get('from');
+    if (from === 'compare' && this.app?.jobId) {
+      this.router.navigate(['/job-offers', this.app.jobId, 'compare']);
+    } else if (from === 'candidates') {
+      this.router.navigate(['/candidates']);
+    } else if (from === 'scout' || from === 'dashboard') {
+      this.router.navigate(['/dashboard']);
+    } else if (from === 'employees') {
+      this.router.navigate(['/employees']);
+    } else if (this.app?.jobId) {
       this.router.navigate(['/job-offers', this.app.jobId, 'pipeline']);
     } else {
       this.router.navigate(['/job-offers']);
@@ -649,7 +748,15 @@ export class ApplicationDetailComponent implements OnInit {
   }
 
   viewCandidateProfile(): void {
-    if (this.app?.candidateId) this.router.navigate(['/candidates', this.app.candidateId]);
+    if (this.app?.candidateId) this.router.navigate(['/candidates', this.app.candidateId], { queryParams: { from: 'application' } });
+  }
+
+  viewEmployeeProfile(): void {
+    if (this.app?.linkedEmployeeId) {
+      this.router.navigate(['/employees', this.app.linkedEmployeeId]);
+    } else {
+      this.toast.error('Linked employee profile not found.');
+    }
   }
 
   hasSkill(skill: string): boolean {
@@ -698,6 +805,46 @@ export class ApplicationDetailComponent implements OnInit {
     return (name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
   }
 
+  getShortId(id: string): string {
+    if (!id) return 'N/A';
+    return id.replace(/-/g, '').slice(0, 10).toUpperCase();
+  }
+
+  timeInStage(): string {
+    if (!this.app?.updatedAt) return '—';
+    const ms = Date.now() - new Date(this.app.updatedAt).getTime();
+    const days = Math.floor(ms / 86_400_000);
+    if (days === 0) return 'Today';
+    if (days === 1) return '1 day';
+    return `${days} days`;
+  }
+
+  getPipelineStages(): { value: string; label: string; icon: string }[] {
+    return [
+      { value: 'applied',    label: 'Applied',    icon: '📥' },
+      { value: 'screening',  label: 'Screening',  icon: '🔍' },
+      { value: 'interview',  label: 'Interview',  icon: '💬' },
+      { value: 'assessment', label: 'Assessment', icon: '📋' },
+      { value: 'offer',      label: 'Offer',      icon: '🎁' },
+      { value: 'hired',      label: 'Hired',      icon: '🎊' },
+    ];
+  }
+
+  isStageActive(stageVal: string): boolean {
+    const order = ['applied', 'screening', 'interview', 'assessment', 'offer', 'hired', 'rejected'];
+    const current = order.indexOf(this.app?.stage || 'applied');
+    const target  = order.indexOf(stageVal);
+    return target <= current;
+  }
+
+  isCurrentStage(stageVal: string): boolean {
+    return this.app?.stage === stageVal;
+  }
+
+  isRejected(): boolean {
+    return this.app?.stage === 'rejected';
+  }
+
   noteInitials(name: string): string {
     return (name || '?').split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
   }
@@ -733,6 +880,7 @@ export class ApplicationDetailComponent implements OnInit {
       interview: 'stage--interview',
       assessment: 'stage--assessment',
       offer: 'stage--offer',
+      hired: 'stage--hired',
       rejected: 'stage--rejected',
     };
     return map[stage] ?? '';

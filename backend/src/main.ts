@@ -1,42 +1,68 @@
-import { NestFactory }      from '@nestjs/core';
-import { ValidationPipe }   from '@nestjs/common';
-import { ConfigService }     from '@nestjs/config';
-import { AppModule }         from './app.module';
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const cookieParser = require('cookie-parser');
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { AppModule } from './app.module';
+import cookieParser from 'cookie-parser';
+import { json, urlencoded } from 'express';
 
 async function bootstrap() {
+  const logger = new Logger('Bootstrap');
+  
+  // Maintain original app creation pattern as requested
   const app = await NestFactory.create(AppModule);
 
-  app.use(cookieParser());
-
-  // ✅ FIX 8: CORS origin driven by environment variable.
-  // Set CORS_ORIGIN in .env — supports comma-separated values for multi-origin.
-  // Defaults to http://localhost:4200 for local development.
+  // 1. Dependency Resolution
   const configService = app.get(ConfigService);
+  const port = configService.get<number>('PORT') || 3000;
+
+  // 2. Security & Global Middleware
+  app.use(cookieParser());
+  
+  // Define limits for large CV processing
+  app.use(json({ limit: '50mb' }));
+  app.use(urlencoded({ extended: true, limit: '50mb' }));
+
+  // 3. Robust CORS Configuration
   const corsOriginEnv = configService.get<string>('CORS_ORIGIN') ?? 'http://localhost:4200';
-  const corsOrigins   = corsOriginEnv.split(',').map(o => o.trim()).filter(Boolean);
+  const corsOrigins = corsOriginEnv
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
 
   app.enableCors({
     origin: corsOrigins,
     credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization, x-api-key',
   });
 
-  // Global prefix — all routes become /api/auth/login, /api/auth/signup, etc.
+  // 4. Global API Routing
   app.setGlobalPrefix('api');
 
-  // This makes your DTO validators work globally
+  // 5. Strict Data Validation
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,            // Strip properties not in DTO
-      forbidNonWhitelisted: true, // Throw error on extra properties
-      transform: true,            // Auto-convert types (string -> number, etc.)
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      transformOptions: {
+        enableImplicitConversion: true,
+      },
     }),
   );
 
-  const port = process.env.PORT || 3000;
+  // 6. Graceful Shutdown Support
+  app.enableShutdownHooks();
+
+  // 7. Initialize Server
   await app.listen(port);
-  console.log(`🚀 BIAT CV Platform API running on http://localhost:${port}/api`);
-  console.log(`🌍 CORS enabled for: ${corsOrigins.join(', ')}`);
+
+  logger.log(`🚀 BIAT CV Platform API running on http://localhost:${port}/api`);
+  logger.log(`🌍 CORS enabled for: ${corsOrigins.join(', ')}`);
+  logger.log(`🛡️  Payload protection active (50MB Limit)`);
 }
-bootstrap();
+
+bootstrap().catch((err) => {
+  new Logger('Bootstrap').error(`❌ Critical failure during startup: ${err.message}`);
+  process.exit(1);
+});

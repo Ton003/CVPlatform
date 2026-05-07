@@ -66,7 +66,7 @@ export class InternalMobilityController {
   /**
    * Unified scoring for a specific Job Offer across all eligible employees.
    */
-  @Get('job-offers/:id/internal-candidates')
+  @Get('offer-matches/:id')
   async getOfferMatches(
     @Param('id') offerId: string,
     @Query('minScore') minScore?: number,
@@ -74,5 +74,18 @@ export class InternalMobilityController {
     // Parse minScore or default to 0
     const min = minScore ? parseInt(minScore.toString(), 10) : 0;
     return this.scoringService.getOfferMatches(offerId, min);
+  }
+
+  /**
+   * Nominate an employee for a job role (Internal Kanban integration)
+   */
+  @Post('nominate/:employeeId/:offerId')
+  async nominateEmployee(
+    @Param('employeeId') employeeId: string,
+    @Param('offerId') offerId: string,
+    // Typically you'd get the user from req.user, but we'll default to 'System' for now if not available
+  ) {
+    // Hardcoded 'System' or could pull from JWT if we inject req
+    return this.mobilityService.nominateEmployee(employeeId, offerId, 'HR/Manager');
   }
 }

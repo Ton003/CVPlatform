@@ -83,8 +83,8 @@ export class LlmParserService {
 
   private buildPrompt(text: string, spacy: ExtractionResult): string {
     const excerpt = this.truncateAtSentence(text, 900);
-    const name    = [spacy.first_name, spacy.last_name].filter(Boolean).join(' ') || 'The candidate';
-    const title   = spacy.current_title ? ` (${spacy.current_title})` : '';
+    const name    = [spacy.firstName, spacy.lastName].filter(Boolean).join(' ') || 'The candidate';
+    const title   = spacy.currentTitle ? ` (${spacy.currentTitle})` : '';
 
     return `You are a professional CV analyst. Return ONLY a JSON object. No markdown, no explanation, no notes.
 
@@ -102,7 +102,7 @@ Extract exactly these 2 fields:
    - Describe what this person does professionally and what makes them stand out.
    - Write in third person (e.g. "Mohamed is a...").
 
-2. skills_soft: Max 5 soft skills.
+2. skillsSoft: Max 5 soft skills.
    - Prioritize explicit soft skill keywords found in the CV before inferred ones.
    - Detect leadership and organizational roles as strong signals for skills.
    - Each skill must be 1-3 words maximum.
@@ -110,7 +110,7 @@ Extract exactly these 2 fields:
 Return exactly this JSON, nothing else:
 {
   "summary": "",
-  "skills_soft": []
+  "skillsSoft": []
 }`;
   }
 
@@ -147,23 +147,23 @@ Return exactly this JSON, nothing else:
 
       const summary = typeof parsed.summary === 'string' ? parsed.summary.trim() : '';
 
-      const rawSkills: string[] = Array.isArray(parsed.skills_soft)
-        ? parsed.skills_soft.filter((s: any) => typeof s === 'string')
+      const rawSkills: string[] = Array.isArray(parsed.skillsSoft)
+        ? parsed.skillsSoft.filter((s: any) => typeof s === 'string')
         : [];
 
       const seen       = new Set<string>();
-      const skills_soft: string[] = [];
+      const skillsSoft: string[] = [];
       for (const skill of rawSkills) {
         const clean = skill.trim();
         const key   = clean.toLowerCase();
         if (!clean || clean.split(' ').length > 3 || clean.length < 2) continue;
         if (seen.has(key)) continue;
         seen.add(key);
-        skills_soft.push(clean);
-        if (skills_soft.length >= 5) break;
+        skillsSoft.push(clean);
+        if (skillsSoft.length >= 5) break;
       }
 
-      return { summary, skills_soft };
+      return { summary, skillsSoft };
 
     } catch (err) {
       this.logger.warn(`Failed to parse LLM response: ${err.message}`);
@@ -172,11 +172,11 @@ Return exactly this JSON, nothing else:
   }
 
   private fallback(): LlmResult {
-    return { summary: '', skills_soft: [] };
+    return { summary: '', skillsSoft: [] };
   }
 }
 
 export interface LlmResult {
   summary:     string;
-  skills_soft: string[];
+  skillsSoft: string[];
 }

@@ -25,7 +25,11 @@ export interface UnifiedScoreResult {
     interview:   PillarScore;
     managerial:  PillarScore;
   };
-  suggestedAction: GapAction;
+  matchedCompetencies?: Array<{ competenceId: string, name: string, sfiaCode: string, employeeLevel: number, requiredLevel: number, delta: number }>;
+  gapCompetencies?:     Array<{ competenceId: string, name: string, sfiaCode: string, employeeLevel: number | null, requiredLevel: number, delta: number, impact: string }>;
+  readinessLabel?:      'READY' | 'NEAR_READY' | 'DEVELOPING' | 'NOT_READY';
+  readinessSummary?:    string;
+  suggestedAction?:     'promotion_ready' | 'near_ready' | 'requires_training' | 'not_suitable';
 }
 
 @Injectable()
@@ -121,9 +125,9 @@ export class UnifiedScoringService {
       const score = this.calculateMatch(emp, offer);
       return {
         uuid: emp.id,
-        firstName: emp.firstName,
-        lastName: emp.lastName,
-        currentRank: emp.jobRoleLevel?.title,
+        firstName: emp.firstName || (emp as any).first_name || 'Employee',
+        lastName: emp.lastName || (emp as any).last_name || '',
+        currentRank: emp.jobRoleLevel?.title || (emp as any).current_title || 'Staff',
         ...score
       };
     });
@@ -141,9 +145,73 @@ export class UnifiedScoringService {
     const managerialScore = this.calculateCompetencyScore(employee.competencies, requirements, CompetenceCategory.MANAGERIAL);
     const interviewScore = null;
 
-    return this.calculateFinalComposite(
+    const baseComposite = this.calculateFinalComposite(
       { technical: techScore, behavioral: behavioralScore, interview: interviewScore, managerial: managerialScore }
     );
+
+    const matchedCompetencies: any[] = [];
+    const gapCompetencies: any[] = [];
+
+    for (const req of requirements) {
+      const empComp = employee.competencies.find(c => c.competenceId === req.competenceId);
+      const evalLevel = empComp?.currentLevel ?? null;
+      const reqLevel = req.requiredLevel;
+      const delta = evalLevel !== null ? evalLevel - reqLevel : -(reqLevel);
+      
+      const compInfo = {
+        competenceId: req.competenceId,
+        name: req.competence?.name || '',
+        sfiaCode: (req.competence as any)?.code || req.competence?.name?.substring(0, 4).toUpperCase() || '',
+        employeeLevel: evalLevel,
+        requiredLevel: reqLevel,
+        delta
+      };
+
+      if (evalLevel !== null && delta >= 0) {
+        matchedCompetencies.push(compInfo);
+      } else {
+        let impact = 'MEDIUM';
+        if (delta <= -2) impact = 'CRITICAL';
+        else if (delta === -1) impact = 'HIGH';
+        else if (evalLevel === null) impact = 'CRITICAL';
+
+        gapCompetencies.push({ ...compInfo, impact });
+      }
+    }
+
+    matchedCompetencies.sort((a, b) => b.delta - a.delta);
+    
+    const impactOrder: any = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+    gapCompetencies.sort((a, b) => impactOrder[a.impact] - impactOrder[b.impact] || a.delta - b.delta);
+
+    let readinessLabel: 'READY' | 'NEAR_READY' | 'DEVELOPING' | 'NOT_READY';
+    if (baseComposite.totalScore >= 85) readinessLabel = 'READY';
+    else if (baseComposite.totalScore >= 65) readinessLabel = 'NEAR_READY';
+    else if (baseComposite.totalScore >= 45) readinessLabel = 'DEVELOPING';
+    else readinessLabel = 'NOT_READY';
+
+    const summaryMap = {
+      'READY': 'Fully meets requirements for promotion.',
+      'NEAR_READY': 'Close to being ready, minor gaps to close.',
+      'DEVELOPING': 'Developing towards this role. Needs more experience and training.',
+      'NOT_READY': 'Significant gaps detected. Not suitable at this time.'
+    };
+
+    const suggestedActionMap: Record<string, 'promotion_ready' | 'near_ready' | 'requires_training' | 'not_suitable'> = {
+      'READY': 'promotion_ready',
+      'NEAR_READY': 'near_ready',
+      'DEVELOPING': 'requires_training',
+      'NOT_READY': 'not_suitable'
+    };
+
+    return {
+      ...baseComposite,
+      matchedCompetencies,
+      gapCompetencies,
+      readinessLabel,
+      readinessSummary: summaryMap[readinessLabel],
+      suggestedAction: suggestedActionMap[readinessLabel]
+    };
   }
 
   private calculateCompetencyScore(
@@ -193,16 +261,10 @@ export class UnifiedScoringService {
 
     const totalScore = count > 0 ? Math.round(sum / count) : 0;
 
-    let suggestedAction: GapAction = GapAction.NOT_SUITABLE;
-    if (totalScore >= 80) suggestedAction = GapAction.PROMOTION_READY;
-    else if (totalScore >= 65) suggestedAction = GapAction.NEAR_READY;
-    else if (totalScore >= 40) suggestedAction = GapAction.REQUIRES_TRAINING;
-
     return {
       totalScore,
       isComplete: pillars.interview !== null,
       breakdown,
-      suggestedAction
     };
   }
 }

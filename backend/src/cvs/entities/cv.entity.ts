@@ -5,33 +5,33 @@ export class Cv {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
-  candidate_id: string;
+  @Column({ name: 'candidate_id' })
+  candidateId: string;
 
-  @Column({ length: 255 })
-  file_name: string;
+  @Column({ length: 255, name: 'file_name' })
+  fileName: string;
 
-  @Column()
-  file_path: string;
+  @Column({ name: 'file_path' })
+  filePath: string;
 
-  @Column({ length: 100 })
-  mime_type: string;
+  @Column({ length: 100, name: 'mime_type' })
+  mimeType: string;
 
-  @Column({ length: 64, nullable: true, unique: true })
-  file_hash: string;
+  @Column({ length: 64, nullable: true, unique: true, name: 'file_hash' })
+  fileHash: string;
 
-  @Column({ default: false })
-  is_primary: boolean;
+  @Column({ default: false, name: 'is_primary' })
+  isPrimary: boolean;
 
   @Column({ length: 10, nullable: true, default: 'fr' })
   language: string;
 
-  @Column({ length: 20, default: 'pending' })
-  parsing_status: string;
+  @Column({ length: 20, default: 'pending', name: 'parsing_status' })
+  parsingStatus: string;
 
-  @Column({ nullable: true })
-  uploaded_by: string;
+  @Column({ nullable: true, name: 'uploaded_by' })
+  uploadedBy: string;
 
-  @CreateDateColumn()
-  created_at: Date;
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
 }

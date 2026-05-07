@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Param,
   Body,
   UseGuards,
@@ -63,5 +64,10 @@ export class AssessmentsController {
   @Post('assessments/:id/submit')
   submit(@Param('id') id: string, @Request() req: any) {
     return this.assessmentsService.submit(id, req.user);
+  }
+
+  @Delete('assessments/:id')
+  remove(@Param('id') id: string, @Request() req: any) {
+    return this.assessmentsService.remove(id, req.user);
   }
 }

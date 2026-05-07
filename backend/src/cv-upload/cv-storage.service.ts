@@ -1,6 +1,5 @@
-import { Injectable, Logger }  from '@nestjs/common';
+import { Injectable, Logger, NotFoundException }  from '@nestjs/common';
 import { InjectRepository }    from '@nestjs/typeorm';
-import { ConfigService }       from '@nestjs/config';
 import { Repository }          from 'typeorm';
 import * as crypto             from 'crypto';
 import * as fs                 from 'fs';
@@ -28,7 +27,6 @@ export class CvStorageService {
     @InjectRepository(CandidateCareerEntry)
     private careerEntryRepo: Repository<CandidateCareerEntry>,
     private readonly pdfExtractor: PdfExtractorService,
-    private readonly configService: ConfigService,
   ) {}
 
   async store(
@@ -37,87 +35,202 @@ export class CvStorageService {
     uploadedById: string,
     gdprConsent:  boolean = false,
   ): Promise<any> {
-
-    // ── Step 1: Hash for duplicate detection ─────────────────────────────
-    const fileHash = crypto
-      .createHash('sha256')
-      .update(file.buffer)
-      .digest('hex');
-
+    const fileHash = this.generateFileHash(file.buffer);
     this.logger.log(`💾 STORAGE — file hash: ${fileHash.substring(0, 12)}...`);
 
-    // ── Step 2: Check for exact duplicate ────────────────────────────────
-    const existingCv = await this.cvRepo.findOne({ where: { file_hash: fileHash } });
-    if (existingCv) {
-      this.logger.log(`⚠️  Duplicate CV metadata found — cvId: ${existingCv.id}`);
-      const existingCandidate = await this.candidateRepo.findOne({
-        where: { id: existingCv.candidate_id },
-      });
+    // 1. Duplicate Detection
+    const duplicateResult = await this.checkExistingCv(fileHash);
+    if (duplicateResult) return duplicateResult;
 
-      if (existingCandidate) {
-        this.logger.log(`✅ Associated candidate found: ${existingCandidate.id}`);
-        return {
-          message:     'This CV already exists in the database',
-          duplicate:   true,
-          candidateId: existingCandidate.id,
-          cvId:        existingCv.id,
-        };
-      } else {
-        this.logger.warn(`🛑 Orphaned CV detected (no candidate) — cleaning up...`);
-        // The candidate was deleted but the CV remained. Clean it up and proceed.
-        // Cascade should handle parsed data if defined, but we'll be safe or just let the new save overwrite/conflict if not careful.
-        // Actually, it's better to just delete the old CV record so Step 5 can create a fresh one.
-        await this.cvRepo.remove(existingCv);
-        this.logger.log(`🧹 Orphaned CV record removed. Proceeding with fresh upload.`);
-      }
+    // 2. Candidate Resolution (Create or Update)
+    const candidate = await this.upsertCandidate(parsed, uploadedById, gdprConsent);
+
+    // 3. File Storage
+    const filePath = await this.saveFileToDisk(file.buffer, fileHash);
+
+    // 4. CV Metadata
+    const cv = await this.saveCvRecord(
+      candidate.id,
+      file.originalname,
+      filePath,
+      file.mimetype,
+      fileHash,
+      uploadedById,
+      parsed.language,
+      'done'
+    );
+
+    // 5. Embedding & Parsed Data
+    const embedding = await this.generateEmbedding(parsed);
+    await this.saveParsedData(cv.id, parsed, embedding);
+
+    // 6. Career Timeline
+    await this.saveCareerEntries(candidate.id, parsed.experience || []);
+
+    return this.buildResponse(candidate, cv, parsed);
+  }
+
+  /**
+   * Initial storage for async parsing flow.
+   * Creates candidate (if needed) and CV record in 'parsing' state.
+   */
+  async storeInitial(
+    file: Express.Multer.File,
+    candidateData: Partial<Candidate>,
+    uploadedById: string,
+  ): Promise<{ candidate: Candidate; cv: Cv }> {
+    const fileHash = this.generateFileHash(file.buffer);
+    
+    // Upsert candidate based on provided data (email is key)
+    let candidate = await this.candidateRepo.findOne({ where: { email: candidateData.email! } });
+    if (!candidate) {
+      candidate = this.candidateRepo.create({
+        ...candidateData,
+        source: 'portal',
+        createdBy: uploadedById,
+      });
+    } else {
+      Object.assign(candidate, candidateData);
+    }
+    candidate = await this.candidateRepo.save(candidate);
+
+    // Save file
+    const filePath = await this.saveFileToDisk(file.buffer, fileHash);
+
+    // Create CV record in 'parsing' state
+    const cv = await this.saveCvRecord(
+      candidate.id,
+      file.originalname,
+      filePath,
+      file.mimetype,
+      fileHash,
+      uploadedById,
+      'en',
+      'parsing'
+    );
+
+    return { candidate, cv };
+  }
+
+  /**
+   * Finalize parsing: save parsed data, embedding, and career entries.
+   */
+  async updateParsedData(cvId: string, parsed: ParsedCvDto): Promise<void> {
+    const cv = await this.cvRepo.findOne({ where: { id: cvId } });
+    if (!cv) return;
+
+    // 1. Embedding & Parsed Data
+    const embedding = await this.generateEmbedding(parsed);
+    await this.saveParsedData(cv.id, parsed, embedding);
+
+    // 2. Career Timeline
+    await this.saveCareerEntries(cv.candidateId, parsed.experience || []);
+
+    // 3. Update CV status
+    cv.parsingStatus = 'done';
+    if (parsed.language) cv.language = parsed.language;
+    await this.cvRepo.save(cv);
+
+    this.logger.log(`✅ CV ${cvId} parsing finalized.`);
+  }
+
+  async updateStatus(cvId: string, status: 'parsing' | 'done' | 'failed'): Promise<void> {
+    const cv = await this.cvRepo.findOne({ where: { id: cvId } });
+    if (!cv) return;
+    cv.parsingStatus = status;
+    await this.cvRepo.save(cv);
+  }
+
+  async getParseStatus(cvId: string) {
+    const cv = await this.cvRepo.findOne({
+      where: { id: cvId },
+      relations: ['parsedData']
+    });
+    if (!cv) throw new NotFoundException('CV not found');
+    return {
+      status: cv.parsingStatus,
+      hasData: !!cv['parsedData']
+    };
+  }
+
+  private generateFileHash(buffer: Buffer): string {
+    return crypto.createHash('sha256').update(buffer).digest('hex');
+  }
+
+  private async checkExistingCv(fileHash: string): Promise<any | null> {
+    const existingCv = await this.cvRepo.findOne({ where: { fileHash: fileHash } });
+    if (!existingCv) return null;
+
+    this.logger.log(`⚠️  Duplicate CV metadata found — cvId: ${existingCv.id}`);
+    const existingCandidate = await this.candidateRepo.findOne({
+      where: { id: existingCv.candidateId },
+    });
+
+    if (existingCandidate) {
+      this.logger.log(`✅ Associated candidate found: ${existingCandidate.id} (Status: ${existingCandidate.status})`);
+      
+      // If candidate is hired, block with a duplicate message.
+      // If candidate is NOT hired (e.g. was un-hired by employee deletion), 
+      // we still tell them it exists, but the UI can now offer to "view/reset" it.
+      return {
+        message:     existingCandidate.status === 'hired' 
+          ? 'This candidate is already an active employee.' 
+          : 'This CV already exists in the database.',
+        duplicate:   true,
+        candidateId: existingCandidate.id,
+        cvId:        existingCv.id,
+        status:      existingCandidate.status
+      };
     }
 
-    // ── Step 3: Resolve or create candidate ──────────────────────────────
-    const email = parsed.email?.toLowerCase().trim()
-      || `noemail_${fileHash.substring(0, 12)}@cv.internal`;
+    this.logger.warn(`🛑 Orphaned CV detected (no candidate) — cleaning up...`);
+    await this.cvRepo.remove(existingCv);
+    this.logger.log(`🧹 Orphaned CV record removed. Proceeding with fresh upload.`);
+    return null;
+  }
 
+  private async upsertCandidate(
+    parsed: ParsedCvDto,
+    uploadedById: string,
+    gdprConsent: boolean,
+  ): Promise<Candidate> {
+    const email = parsed.email?.toLowerCase().trim() || `noemail_${crypto.randomBytes(6).toString('hex')}@cv.internal`;
     let candidate = await this.candidateRepo.findOne({ where: { email } });
-    let isUpdate = false;
+
+    const candidateData = {
+      firstName:       parsed.firstName    ?? 'Unknown',
+      lastName:        parsed.lastName     ?? 'Unknown',
+      email,
+      phone:            parsed.phone         ?? null,
+      linkedinUrl:     parsed.linkedinUrl  ?? null,
+      currentTitle:    parsed.currentTitle ?? null,
+      yearsExperience: this.toSmallInt(parsed.yearsExperience),
+      location:         parsed.location      ?? null,
+      source:           'upload',
+      gdprConsent:     gdprConsent,
+      gdprConsentAt:  gdprConsent ? new Date() : null,
+      createdBy:       uploadedById,
+    };
 
     if (!candidate) {
-      this.logger.log(`👤 Creating new candidate — ${parsed.first_name} ${parsed.last_name}`);
-      candidate = this.candidateRepo.create({
-        first_name:       parsed.first_name    ?? 'Unknown',
-        last_name:        parsed.last_name     ?? 'Unknown',
-        email,
-        phone:            parsed.phone         ?? null,
-        linkedin_url:     parsed.linkedin_url  ?? null,
-        current_title:    parsed.current_title ?? null,
-        years_experience: this.toSmallInt(parsed.years_experience),
-        location:         parsed.location      ?? null,
-        source:           'upload',
-        gdpr_consent:     gdprConsent,
-        gdpr_consent_at:  gdprConsent ? new Date() : null,
-        created_by:       uploadedById,
-      });
-      await this.candidateRepo.save(candidate);
+      this.logger.log(`👤 Creating new candidate — ${candidateData.firstName} ${candidateData.lastName}`);
+      candidate = this.candidateRepo.create(candidateData);
     } else {
-      // ✅ FIX 6: Candidate deduplication — always update record with latest
-      // CV parse results so re-uploads keep the profile current.
-      this.logger.log(`👤 Existing candidate found (${email}) — updating with latest CV data`);
-      isUpdate = true;
-
-      candidate.first_name       = parsed.first_name    ?? candidate.first_name;
-      candidate.last_name        = parsed.last_name     ?? candidate.last_name;
-      candidate.phone            = parsed.phone         ?? candidate.phone;
-      candidate.linkedin_url     = parsed.linkedin_url  ?? candidate.linkedin_url;
-      candidate.current_title    = parsed.current_title ?? candidate.current_title;
-      candidate.location         = parsed.location      ?? candidate.location;
-      candidate.years_experience = this.toSmallInt(parsed.years_experience) ?? candidate.years_experience;
-
-      await this.candidateRepo.save(candidate);
-      this.logger.log(`✅ Candidate record updated`);
+      this.logger.log(`👤 Existing candidate found (${email}) — updating record`);
+      Object.assign(candidate, {
+        ...candidateData,
+        // Preserve creation info if updating
+        gdprConsent:    gdprConsent || candidate.gdprConsent,
+        gdprConsentAt: (gdprConsent && !candidate.gdprConsent) ? new Date() : candidate.gdprConsentAt,
+      });
     }
 
-    // ── Step 4: Save PDF to Local Disk ────────────────────────────────────
-    // ✅ Guard against oversized files
-    if (file.buffer.length > MAX_FILE_SIZE) {
-      throw new Error(`File too large: ${file.buffer.length} bytes`);
+    return this.candidateRepo.save(candidate);
+  }
+
+  private async saveFileToDisk(buffer: Buffer, fileHash: string): Promise<string> {
+    if (buffer.length > MAX_FILE_SIZE) {
+      throw new Error(`File too large: ${buffer.length} bytes`);
     }
 
     const fileName = `${fileHash}.pdf`;
@@ -128,99 +241,104 @@ export class CvStorageService {
     }
 
     const fullPath = path.join(uploadDir, fileName);
-    
-    // Write file to disk
-    await fs.promises.writeFile(fullPath, file.buffer);
-    this.logger.log(`💾 PDF saved to disk: ${fullPath}`);
+    await fs.promises.writeFile(fullPath, buffer);
+    this.logger.log(`💾 PDF saved to disk: ${fileName}`);
 
-    // In a real app with local storage, you'd serve the static files or use a proxy.
-    // For now, we store the local relative path.
-    const filePath = `/uploads/${fileName}`;
+    return `/uploads/${fileName}`;
+  }
 
-    // ── Step 5: Save CV record ────────────────────────────────────────────
+  private async saveCvRecord(
+    candidateId: string,
+    fileName: string,
+    filePath: string,
+    mimeType: string,
+    fileHash: string,
+    uploadedById: string,
+    language: string = 'fr',
+    status: 'parsing' | 'done' | 'failed' = 'done',
+  ): Promise<Cv> {
     const cv = this.cvRepo.create({
-      candidate_id:   candidate.id,
-      file_name:      file.originalname,
-      file_path:      filePath,
-      mime_type:      file.mimetype,
-      file_hash:      fileHash,
-      is_primary:     true,
-      language:       parsed.language ?? 'fr', // ✅ use detected language, fallback fr
-      parsing_status: 'done',
-      uploaded_by:    uploadedById,
+      candidateId:   candidateId,
+      fileName:      fileName,
+      filePath:      filePath,
+      mimeType:      mimeType,
+      fileHash:      fileHash,
+      isPrimary:     true,
+      language:       language || 'fr',
+      parsingStatus: status,
+      uploadedBy:    uploadedById,
     });
-    await this.cvRepo.save(cv);
-    this.logger.log(`✅ CV record saved — cvId: ${cv.id}`);
+    const saved = await this.cvRepo.save(cv);
+    this.logger.log(`✅ CV record saved — cvId: ${saved.id}`);
+    return saved;
+  }
 
-    // ── Step 6: Generate embedding ────────────────────────────────────────
+  private async generateEmbedding(parsed: ParsedCvDto): Promise<number[]> {
     this.logger.log(`🔢 Generating CV embedding...`);
-    const cvTextForEmbedding = this.buildEmbeddingText(parsed);
-    const embedding = await this.pdfExtractor.embedText(cvTextForEmbedding);
+    const text = this.buildEmbeddingText(parsed);
+    return this.pdfExtractor.embedText(text);
+  }
 
-    // ── Step 7: Save parsed data + embedding ─────────────────────────────
+  private async saveParsedData(cvId: string, parsed: ParsedCvDto, embedding: number[]): Promise<CvParsedData> {
     const parsedData = this.parsedRepo.create({
-      cv_id:                   cv.id,
-      raw_text:                null,
-      skills_technical:        parsed.skills_technical        ?? [],
-      skills_soft:             parsed.skills_soft             ?? [],
+      cvId:                   cvId,
+      rawText:                null,
+      skillsTechnical:        parsed.skillsTechnical        ?? [],
+      skillsSoft:             parsed.skillsSoft             ?? [],
       languages:               parsed.languages               ?? [],
       education:               parsed.education               ?? [],
       experience:              parsed.experience              ?? [],
-      total_experience_months: this.toSmallInt(parsed.total_experience_months),
-      llm_summary:             parsed.llm_summary             ?? null,
-      parsed_at:               new Date(),
-      embedding:               embedding.length > 0
-                                 ? `[${embedding.join(',')}]`
-                                 : null,
+      totalExperienceMonths: this.toSmallInt(parsed.totalExperienceMonths),
+      llmSummary:             parsed.llmSummary             ?? null,
+      parsedAt:               new Date(),
+      embedding:               embedding.length > 0 ? `[${embedding.join(',')}]` : null,
     });
-    await this.parsedRepo.save(parsedData);
+    const saved = await this.parsedRepo.save(parsedData);
     this.logger.log(`✅ Parsed data + embedding saved`);
+    return saved;
+  }
 
-    // ── Step 8: Save Career Entries ───────────────────────────────────────
-    if (parsed.experience?.length) {
-      this.logger.log(`📜 Saving ${parsed.experience.length} career entries...`);
-      // Delete existing AI entries to avoid duplicates on re-upload if logic dictates
-      // For now, we'll just add new ones or handle deduplication
-      const careerEntries = parsed.experience.map(exp => {
-        // Extract average confidence if available in tags
-        const tags = exp.inferredTags || [];
-        const avgConfidence = tags.length > 0 
-          ? tags.reduce((sum: number, t: any) => sum + (t.confidence || 0), 0) / tags.length 
-          : 0;
+  private async saveCareerEntries(candidateId: string, experience: any[]): Promise<void> {
+    if (!experience.length) return;
 
-        return this.careerEntryRepo.create({
-          candidateId:     candidate.id,
-          roleTitle:       exp.title,
-          company:         exp.company,
-          startDate:       this.normalizeDate(exp.start_date),
-          endDate:         this.normalizeDate(exp.end_date),
-          rawDescription:  exp.description,
-          sfiaTags:        tags,
-          source:          'AI',
-          confidenceScore: avgConfidence,
-        });
+    this.logger.log(`📜 Saving ${experience.length} career entries...`);
+    const careerEntries = experience.map(exp => {
+      const tags = exp.inferredTags || [];
+      const avgConfidence = tags.length > 0 
+        ? tags.reduce((sum: number, t: any) => sum + (t.confidence || 0), 0) / tags.length 
+        : 0;
+
+      return this.careerEntryRepo.create({
+        candidateId,
+        roleTitle:       exp.title,
+        company:         exp.company,
+        startDate:       this.normalizeDate(exp.startDate),
+        endDate:         this.normalizeDate(exp.endDate),
+        rawDescription:  exp.description,
+        sfiaTags:        tags,
+        source:          'AI',
+        confidenceScore: avgConfidence,
       });
-      await this.careerEntryRepo.save(careerEntries);
-      this.logger.log(`✅ Career entries saved`);
-    }
+    });
+    await this.careerEntryRepo.save(careerEntries);
+    this.logger.log(`✅ Career entries saved`);
+  }
 
-    // ── Step 9: Return clean response ─────────────────────────────────────
-
-    // ✅ FIX 6: Return action flag so API consumers know if this was a create or update
+  private buildResponse(candidate: Candidate, cv: Cv, parsed: ParsedCvDto): any {
     return {
-      message:     isUpdate ? 'CV re-parsed and candidate record updated' : 'CV uploaded and parsed successfully',
-      action:      isUpdate ? 'updated' : 'created',
+      message:     'CV processed successfully',
+      action:      'saved',
       duplicate:   false,
       candidateId: candidate.id,
       cvId:        cv.id,
       preview: {
-        name:             `${parsed.first_name ?? ''} ${parsed.last_name ?? ''}`.trim() || 'Unknown',
-        email:            parsed.email,
-        location:         parsed.location,
-        experience_years: parsed.years_experience,
-        current_title:    parsed.current_title,
-        skills:           parsed.skills_technical?.slice(0, 6) ?? [],
-        summary:          parsed.llm_summary,
+        name:             `${candidate.firstName} ${candidate.lastName}`.trim(),
+        email:            candidate.email,
+        location:         candidate.location,
+        experience_years: parsed.yearsExperience,
+        current_title:    candidate.currentTitle,
+        skills:           parsed.skillsTechnical?.slice(0, 6) ?? [],
+        summary:          parsed.llmSummary,
       },
     };
   }
@@ -228,14 +346,14 @@ export class CvStorageService {
   private buildEmbeddingText(parsed: ParsedCvDto): string {
     const parts: string[] = [];
 
-    if (parsed.current_title) parts.push(parsed.current_title);
-    if (parsed.llm_summary)   parts.push(parsed.llm_summary);
+    if (parsed.currentTitle) parts.push(parsed.currentTitle);
+    if (parsed.llmSummary)   parts.push(parsed.llmSummary);
 
-    if (parsed.skills_technical?.length) {
-      parts.push(`Skills: ${parsed.skills_technical.join(', ')}`);
+    if (parsed.skillsTechnical?.length) {
+      parts.push(`Skills: ${parsed.skillsTechnical.join(', ')}`);
     }
-    if (parsed.skills_soft?.length) {
-      parts.push(`Soft skills: ${parsed.skills_soft.join(', ')}`);
+    if (parsed.skillsSoft?.length) {
+      parts.push(`Soft skills: ${parsed.skillsSoft.join(', ')}`);
     }
     if (parsed.experience?.length) {
       const expText = parsed.experience
@@ -257,8 +375,7 @@ export class CvStorageService {
     if (value === null || value === undefined) return null;
     const num = Number(value);
     if (isNaN(num))  return null;
-    if (num > 1900)  return null;
-    if (num >= 0 && num <= 50) return Math.round(num);
+    if (num >= 0 && num <= 1200) return Math.round(num); // Max 100 years experience in months
     return null;
   }
 

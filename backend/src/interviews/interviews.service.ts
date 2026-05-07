@@ -1,86 +1,80 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
-import { Repository, DataSource }             from 'typeorm';
-import { Interview }                          from './interview.entity';
-import { CreateInterviewDto }                 from './dto/create-interview.dto';
-import { UpdateFeedbackDto }                 from './dto/update-feedback.dto';
-import { ActivityLog }                        from '../applications/activity-log.entity';
-import { Candidate }                          from '../candidates/entities/candidates.entity';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Interview } from './interview.entity';
+import { CreateInterviewDto } from './dto/create-interview.dto';
+import { UpdateFeedbackDto } from './dto/update-feedback.dto';
+import { ActivityLog } from '../applications/activity-log.entity';
 
 @Injectable()
 export class InterviewsService {
+  private readonly logger = new Logger(InterviewsService.name);
+
   constructor(
     @InjectRepository(Interview)
     private readonly interviewRepo: Repository<Interview>,
 
     @InjectRepository(ActivityLog)
-    private readonly logRepo:       Repository<ActivityLog>,
-
-    @InjectRepository(Candidate)
-    private readonly candidateRepo: Repository<Candidate>,
-
-
-    @InjectDataSource()
-    private readonly dataSource:    DataSource,
+    private readonly logRepo: Repository<ActivityLog>,
   ) {}
 
-  async create(dto: CreateInterviewDto, userId: string) {
+  /**
+   * ✅ Schedule a new interview and log the activity
+   */
+  async create(dto: CreateInterviewDto, userId: string): Promise<Interview> {
     const interview = this.interviewRepo.create({
-      applicationId:   dto.applicationId,
-      scheduledAt:     new Date(dto.scheduledAt),
-      type:            dto.type,
+      applicationId: dto.applicationId,
+      scheduledAt: new Date(dto.scheduledAt),
+      type: dto.type,
       interviewerName: dto.interviewerName,
-      meetingUrl:      dto.meetingUrl,
-      status:          'scheduled',
+      meetingUrl: dto.meetingUrl,
+      status: 'scheduled',
     });
+
     const saved = await this.interviewRepo.save(interview);
 
-    // Log activity
     await this.logRepo.save(this.logRepo.create({
       applicationId: dto.applicationId,
       userId,
-      action:      'interview_scheduled',
+      action: 'interview_scheduled',
       description: `${dto.type} interview scheduled with ${dto.interviewerName}`,
-      metadata:    { type: dto.type, scheduledAt: dto.scheduledAt },
+      metadata: { type: dto.type, scheduledAt: dto.scheduledAt },
     }));
-
 
     return saved;
   }
 
-  async findByApplication(applicationId: string) {
+  /**
+   * ✅ Fetch all interviews associated with an application
+   */
+  async findByApplication(applicationId: string): Promise<Interview[]> {
     return this.interviewRepo.find({
       where: { applicationId },
       order: { scheduledAt: 'DESC' },
     });
   }
 
-  async updateFeedback(id: string, dto: UpdateFeedbackDto, userId: string) {
-    const interview = await this.interviewRepo.findOne({
-      where: { id },
-    });
+  /**
+   * ✅ Update feedback, scores, and status of an interview
+   */
+  async updateFeedback(id: string, dto: UpdateFeedbackDto, userId: string): Promise<Interview> {
+    const interview = await this.interviewRepo.findOne({ where: { id } });
     if (!interview) throw new NotFoundException(`Interview ${id} not found`);
 
-    if (dto.technicalScore !== undefined)     interview.technicalScore = dto.technicalScore;
-    if (dto.communicationScore !== undefined) interview.communicationScore = dto.communicationScore;
-    if (dto.comments !== undefined)           interview.comments = dto.comments;
-    if (dto.decision !== undefined)           interview.decision = dto.decision;
-    if (dto.status !== undefined)             interview.status   = dto.status;
-
+    // Dynamic partial update
+    Object.assign(interview, dto);
     const saved = await this.interviewRepo.save(interview);
 
-    // Log activity if completed
+    // Audit trail for completed interviews
     if (dto.status === 'completed') {
       await this.logRepo.save(this.logRepo.create({
         applicationId: interview.applicationId,
         userId,
-        action:      'interview_completed',
-        description: `${interview.type} interview completed (Decision: ${dto.decision ?? 'N/A'})`,
+        action: 'interview_completed',
+        description: `${interview.type} interview feedback recorded (Decision: ${dto.decision ?? 'N/A'})`,
         metadata: {
-          type:      interview.type,
-          decision:  dto.decision,
-          techScore: dto.technicalScore,
-          commScore: dto.communicationScore,
+          decision: dto.decision,
+          scores: { tech: dto.technicalScore, comm: dto.communicationScore },
         },
       }));
     }
@@ -88,7 +82,10 @@ export class InterviewsService {
     return saved;
   }
 
-  async remove(id: string) {
+  /**
+   * ✅ Remove an interview record
+   */
+  async remove(id: string): Promise<void> {
     const interview = await this.interviewRepo.findOne({ where: { id } });
     if (!interview) throw new NotFoundException(`Interview ${id} not found`);
     await this.interviewRepo.remove(interview);

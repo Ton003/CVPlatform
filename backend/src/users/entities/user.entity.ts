@@ -4,8 +4,12 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
+import type { Relation } from 'typeorm';
 
+// Forward-reference avoids circular import between User ↔ Employee
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -15,13 +19,13 @@ export class User {
   email: string;
 
   @Column({ type: 'varchar', length: 255, name: 'password_hash' })
-  password_hash: string;
+  passwordHash: string;
 
   @Column({ type: 'varchar', length: 100, name: 'first_name' })
-  first_name: string;
+  firstName: string;
 
   @Column({ type: 'varchar', length: 100, name: 'last_name' })
-  last_name: string;
+  lastName: string;
 
   @Column({
     type: 'varchar',
@@ -34,11 +38,19 @@ export class User {
   department: string;
 
   @Column({ type: 'boolean', default: true, name: 'is_active' })
-  is_active: boolean;
+  isActive: boolean;
+
+  /**
+   * Hard link to the Employee record that represents this user's organisational identity.
+   * departmentId is DERIVED from here at JWT generation — never trusted from requests.
+   * Mandatory for role = 'manager'. Optional for role = 'hr' / 'admin'.
+   */
+  @Column({ name: 'employee_id', type: 'uuid', nullable: true, unique: true })
+  employeeId: string | null;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
-  updated_at: Date;
+  updatedAt: Date;
 }

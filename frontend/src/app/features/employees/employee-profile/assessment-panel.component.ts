@@ -2,40 +2,42 @@ import { Component, Input, Output, EventEmitter, OnInit, ChangeDetectorRef } fro
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { EmployeeService } from '../../../core/services/employee.service';
+import { ConfirmModalComponent } from '../../../shared/confirm-modal/confirm-modal.component';
 
 @Component({
   selector: 'app-assessment-panel',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ConfirmModalComponent],
   template: `
     <div class="assessment-overlay" (click)="onClose()">
-      <div class="assessment-panel" (click)="$event.stopPropagation()">
-
+      <div class="assessment-panel card" (click)="$event.stopPropagation()">
+ 
         <header class="panel-header">
           <div class="panel-title-group">
             <h2>{{ type === 'employee' ? 'Performance Assessment' : 'Candidate Evaluation' }}</h2>
             <p class="panel-subtitle">Rate each competency from 1 (novice) to 5 (expert)</p>
           </div>
-          <button class="close-btn" (click)="onClose()" aria-label="Close panel">&times;</button>
+          <button class="modal-close" (click)="onClose()" aria-label="Close panel">&times;</button>
         </header>
-
+ 
         <ng-container *ngIf="assessment; else loadingTpl">
           <div class="panel-body">
-
+ 
             <!-- Meta -->
             <div class="assessment-meta">
               <div class="meta-field">
                 <label>Review Cycle</label>
-                <input type="text" [(ngModel)]="assessment.cycleLabel" placeholder="e.g. Q2 2026 Review">
+                <input type="text" class="field-input" [(ngModel)]="assessment.cycleLabel" placeholder="e.g. Q2 2026 Review">
               </div>
               <div class="meta-field">
                 <label>Overall Notes</label>
-                <textarea [(ngModel)]="assessment.notes" rows="2" placeholder="Add general observations..."></textarea>
+                <textarea class="field-textarea" [(ngModel)]="assessment.notes" rows="2" placeholder="Add general observations..."></textarea>
               </div>
             </div>
-
+ 
             <!-- Progress Bar -->
             <div class="completion-bar">
               <div class="bar-label-row">
@@ -46,16 +48,16 @@ import { EmployeeService } from '../../../core/services/employee.service';
                 <div class="bar-inner" [style.width.%]="getCompletionRate()"></div>
               </div>
             </div>
-
+ 
             <!-- Competency Items -->
             <div class="competency-list">
               <div class="comp-item" *ngFor="let item of assessment.items"
                    [class.comp-item--rated]="item.level !== null">
                 <div class="comp-info">
                   <span class="comp-name">{{ item.competence?.name }}</span>
-                  <span class="target-badge">Target: {{ getTargetLevel(item.competenceId) }}</span>
+                  <span class="meta-chip">Target: {{ getTargetLevel(item.competenceId) }}</span>
                 </div>
-
+ 
                 <div class="rating-row">
                   <div class="stars">
                     <button
@@ -64,10 +66,14 @@ import { EmployeeService } from '../../../core/services/employee.service';
                       (click)="item.level = star"
                       [class.active]="item.level !== null && item.level >= star"
                       [attr.aria-label]="'Rate ' + star + ' out of 5'"
+                      [title]="getLevelDescription(star)"
                     >★</button>
                   </div>
-                  <span class="current-label" *ngIf="item.level !== null">Level {{ item.level }}</span>
-                  <span class="current-label unrated" *ngIf="item.level === null">Not rated</span>
+                  <div class="rating-meta">
+                    <span class="current-label" *ngIf="item.level !== null">Level {{ item.level }}: {{ getLevelLabel(item.level) }}</span>
+                    <span class="current-label unrated" *ngIf="item.level === null">Not rated</span>
+                    <p class="level-hint" *ngIf="item.level !== null">{{ getLevelDescription(item.level) }}</p>
+                  </div>
                   <button
                     *ngIf="item.level !== null"
                     type="button"
@@ -75,37 +81,51 @@ import { EmployeeService } from '../../../core/services/employee.service';
                     (click)="item.level = null"
                   >Clear</button>
                 </div>
-
+ 
                 <input
                   type="text"
-                  class="item-notes"
+                  class="field-input"
                   [(ngModel)]="item.notes"
                   placeholder="Add specific feedback..."
                 >
               </div>
             </div>
           </div>
-
+ 
           <footer class="panel-footer">
-            <button class="btn btn-outline" type="button" (click)="saveDraft()" [disabled]="saving">
+            <button class="btn-action btn-action--outline" type="button" (click)="saveDraft()" [disabled]="saving">
               {{ saving ? 'Saving...' : 'Save Draft' }}
             </button>
-            <button class="btn btn-primary" type="button" (click)="submit()" [disabled]="saving || !isComplete()">
-              <span *ngIf="saving" class="spinner-inline"></span>
+            <button *ngIf="assessment.id" class="btn-action btn-action--danger" type="button" (click)="deleteDraft()" [disabled]="saving">
+              Delete Draft
+            </button>
+            <button class="btn-action btn-action--primary" type="button" (click)="submit()" [disabled]="saving || !isComplete()">
+              <span *ngIf="saving" class="spinner-sm"></span>
               Submit Assessment
             </button>
           </footer>
         </ng-container>
-
+ 
         <ng-template #loadingTpl>
-          <div class="loading-state">
-            <div class="spinner"></div>
+          <div class="state-center">
+            <div class="loader-ring"></div>
             <span>Preparing assessment form...</span>
           </div>
         </ng-template>
-
+ 
       </div>
     </div>
+
+    <!-- ── Confirmation Modal ── -->
+    <app-confirm-modal
+      [open]="confirmModal.isOpen"
+      [title]="confirmModal.title"
+      [message]="confirmModal.message"
+      [confirmText]="confirmModal.confirmText"
+      [isDanger]="confirmModal.isDanger"
+      (confirmed)="onConfirmModal()"
+      (cancelled)="onCancelModal()"
+    ></app-confirm-modal>
   `,
   styles: [`
     .assessment-overlay {
@@ -121,60 +141,41 @@ import { EmployeeService } from '../../../core/services/employee.service';
       width: 520px;
       max-width: 100vw;
       height: 100%;
-      background: var(--color-background-primary, #fff);
-      border-left: 0.5px solid var(--color-border-tertiary, #e2e8f0);
+      border-radius: 0 !important;
+      border-left: 1px solid var(--border-default) !important;
       display: flex;
       flex-direction: column;
       animation: slideIn 0.25s ease;
     }
-
+ 
     @keyframes slideIn {
       from { transform: translateX(100%); }
       to   { transform: translateX(0); }
     }
-
+ 
     .panel-header {
       padding: 1.5rem;
-      border-bottom: 0.5px solid var(--color-border-tertiary, #e2e8f0);
+      border-bottom: 1px solid var(--border-subtle);
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
       gap: 1rem;
       flex-shrink: 0;
     }
-
+ 
     .panel-title-group h2 {
       margin: 0 0 0.25rem;
       font-size: 1.1rem;
       font-weight: 700;
-      color: var(--color-text-primary, #1e293b);
+      color: var(--text-primary);
     }
-
+ 
     .panel-subtitle {
       margin: 0;
       font-size: 0.82rem;
-      color: var(--color-text-secondary, #64748b);
+      color: var(--text-muted);
     }
-
-    .close-btn {
-      width: 30px;
-      height: 30px;
-      background: var(--color-background-secondary, #f1f5f9);
-      border: none;
-      border-radius: 50%;
-      font-size: 1.25rem;
-      line-height: 1;
-      cursor: pointer;
-      color: var(--color-text-secondary, #64748b);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: background 0.12s;
-    }
-
-    .close-btn:hover { background: var(--color-border-tertiary, #e2e8f0); }
-
+ 
     .panel-body {
       flex: 1;
       overflow-y: auto;
@@ -183,250 +184,164 @@ import { EmployeeService } from '../../../core/services/employee.service';
       flex-direction: column;
       gap: 1.5rem;
     }
-
+ 
     .assessment-meta { display: flex; flex-direction: column; gap: 1rem; }
-
+ 
     .meta-field label {
       display: block;
-      font-size: 0.78rem;
-      font-weight: 700;
+      font-size: 0.7rem;
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--color-text-secondary, #64748b);
+      color: var(--text-muted);
       margin-bottom: 0.4rem;
     }
-
-    .meta-field input,
-    .meta-field textarea {
-      width: 100%;
-      padding: 0.55rem 0.75rem;
-      border: 0.5px solid var(--color-border-secondary, #cbd5e1);
-      border-radius: 0.5rem;
-      font-family: inherit;
-      font-size: 0.9rem;
-      background: var(--color-background-primary, #fff);
-      color: var(--color-text-primary, #1e293b);
-      resize: vertical;
-      box-sizing: border-box;
-      transition: border-color 0.15s;
-    }
-
-    .meta-field input:focus,
-    .meta-field textarea:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-
+ 
     .completion-bar { }
-
+ 
     .bar-label-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 0.4rem;
     }
-
+ 
     .bar-label {
-      font-size: 0.78rem;
-      font-weight: 700;
+      font-size: 0.7rem;
+      font-weight: 800;
       text-transform: uppercase;
       letter-spacing: 0.05em;
-      color: var(--color-text-secondary, #64748b);
+      color: var(--text-muted);
     }
-
+ 
     .bar-pct {
       font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--color-text-primary, #1e293b);
+      font-weight: 800;
+      color: var(--text-primary);
     }
-
+ 
     .bar-outer {
       height: 6px;
-      background: var(--color-border-tertiary, #e2e8f0);
+      background: var(--bg-raised);
       border-radius: 3px;
       overflow: hidden;
     }
-
+ 
     .bar-inner {
       height: 100%;
-      background: #10b981;
+      background: var(--success);
       border-radius: 3px;
       transition: width 0.3s ease;
     }
-
+ 
     .competency-list { display: flex; flex-direction: column; gap: 1rem; }
-
+ 
     .comp-item {
-      padding: 1rem 1.1rem;
-      background: var(--color-background-secondary, #f8fafc);
-      border-radius: 0.75rem;
-      border: 0.5px solid var(--color-border-tertiary, #e2e8f0);
+      padding: 1.15rem;
+      background: var(--bg-raised);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
       transition: border-color 0.15s;
     }
-
+ 
     .comp-item--rated {
-      border-color: #a7f3d0;
-      background: #f0fdf4;
+      border-color: var(--success-dim);
+      background: var(--bg-surface);
     }
-
+ 
     .comp-info {
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
+      align-items: center;
       gap: 0.75rem;
-      margin-bottom: 0.75rem;
+      margin-bottom: 1rem;
     }
-
+ 
     .comp-name {
-      font-weight: 600;
+      font-weight: 700;
       font-size: 0.9rem;
-      color: var(--color-text-primary, #1e293b);
+      color: var(--text-primary);
       flex: 1;
     }
-
-    .target-badge {
-      font-size: 0.72rem;
-      background: #dbeafe;
-      color: #1d4ed8;
-      padding: 0.2rem 0.5rem;
-      border-radius: 99px;
-      white-space: nowrap;
-      font-weight: 600;
-      flex-shrink: 0;
-    }
-
+ 
     .rating-row {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      margin-bottom: 0.75rem;
+      margin-bottom: 1rem;
       flex-wrap: wrap;
     }
-
+ 
     .stars { display: flex; gap: 2px; }
-
+ 
     .stars button {
       background: none;
       border: none;
       font-size: 1.35rem;
-      color: var(--color-border-secondary, #cbd5e1);
+      color: var(--border-default);
       cursor: pointer;
       transition: color 0.1s, transform 0.1s;
       padding: 0;
       line-height: 1;
     }
-
-    .stars button:hover { transform: scale(1.15); }
+ 
+    .stars button:hover { transform: scale(1.2); }
     .stars button.active { color: #f59e0b; }
-
+ 
     .current-label {
-      font-size: 0.82rem;
-      color: var(--color-text-secondary, #64748b);
-      font-weight: 500;
+      font-size: .82rem;
+      color: var(--text-muted);
+      font-weight: 600;
     }
-
-    .current-label.unrated { font-style: italic; }
-
+ 
+    .current-label.unrated { font-style: italic; opacity: .7; }
+ 
     .clear-btn {
       background: none;
       border: none;
       font-size: 0.75rem;
-      color: #ef4444;
+      color: var(--danger);
       cursor: pointer;
       text-decoration: underline;
       padding: 0;
       margin-left: auto;
+      font-weight: 600;
     }
-
-    .item-notes {
-      width: 100%;
-      padding: 0.5rem 0.625rem;
-      border: 0.5px solid var(--color-border-tertiary, #e2e8f0);
-      border-radius: 0.375rem;
-      font-size: 0.85rem;
-      background: var(--color-background-primary, #fff);
-      color: var(--color-text-primary, #1e293b);
-      box-sizing: border-box;
-      font-family: inherit;
-      transition: border-color 0.15s;
-    }
-
-    .item-notes:focus {
-      outline: none;
-      border-color: #3b82f6;
-    }
-
+ 
     .panel-footer {
       padding: 1.25rem 1.5rem;
-      border-top: 0.5px solid var(--color-border-tertiary, #e2e8f0);
+      border-top: 1px solid var(--border-subtle);
       display: flex;
       gap: 0.75rem;
       flex-shrink: 0;
     }
-
-    .btn {
-      flex: 1;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.4rem;
-      padding: 0.7rem 1rem;
-      border-radius: 0.625rem;
-      font-weight: 600;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: all 0.15s;
+ 
+    .btn-action--danger {
+      background: var(--danger);
+      color: white;
+      border: 1px solid var(--danger);
+    }
+    .btn-action--danger:hover {
+      background: var(--danger-hover, #dc2626);
+    }
+    .btn-action--danger:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
-    .btn-outline {
-      background: var(--color-background-primary, #fff);
-      border: 0.5px solid var(--color-border-secondary, #cbd5e1);
-      color: var(--color-text-secondary, #64748b);
-    }
-
-    .btn-outline:hover { background: var(--color-background-secondary, #f8fafc); }
-    .btn-outline:disabled { opacity: 0.4; cursor: not-allowed; }
-
-    .btn-primary {
-      background: #2563eb;
-      border: none;
-      color: #fff;
-    }
-
-    .btn-primary:hover { background: #1d4ed8; }
-    .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; }
-
-    .loading-state {
+    .rating-meta {
       flex: 1;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 1rem;
-      color: var(--color-text-secondary, #64748b);
-      font-size: 0.9rem;
+      gap: 0.25rem;
     }
 
-    .spinner {
-      width: 28px;
-      height: 28px;
-      border: 3px solid var(--color-border-tertiary, #e2e8f0);
-      border-top-color: #3b82f6;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .spinner-inline {
-      display: inline-block;
-      width: 14px;
-      height: 14px;
-      border: 2px solid rgba(255, 255, 255, 0.35);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+    .level-hint {
+      margin: 0;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-style: italic;
+      line-height: 1.4;
     }
   `]
 })
@@ -439,6 +354,16 @@ export class AssessmentPanelComponent implements OnInit {
 
   assessment: any = null;
   saving = false;
+
+  // Modern Confirmation Modal
+  confirmModal = {
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    isDanger: true,
+    action: null as (() => void) | null
+  };
 
   constructor(
     private readonly employeeService: EmployeeService,
@@ -508,7 +433,7 @@ export class AssessmentPanelComponent implements OnInit {
   }
 
   loadAssessment(id: string) {
-    const obs = this.type === 'employee'
+    const obs: Observable<any> = this.type === 'employee'
       ? this.employeeService.getAssessment(id)
       : this.http.get<any>(`${environment.apiUrl}/applications/assessments/${id}`);
 
@@ -565,7 +490,7 @@ export class AssessmentPanelComponent implements OnInit {
     this.cdr.markForCheck();
 
     const items = this.buildItemsPayload();
-    const obs = this.type === 'employee'
+    const obs: Observable<any> = this.type === 'employee'
       ? this.employeeService.updateAssessmentItems(this.assessment.id, items)
       : this.http.patch(`${environment.apiUrl}/applications/assessments/${this.assessment.id}/items`, items);
 
@@ -582,13 +507,13 @@ export class AssessmentPanelComponent implements OnInit {
 
     const items = this.buildItemsPayload();
 
-    const patchObs = this.type === 'employee'
+    const patchObs: Observable<any> = this.type === 'employee'
       ? this.employeeService.updateAssessmentItems(this.assessment.id, items)
       : this.http.patch(`${environment.apiUrl}/applications/assessments/${this.assessment.id}/items`, items);
 
     patchObs.subscribe({
       next: () => {
-        const submitObs = this.type === 'employee'
+        const submitObs: Observable<any> = this.type === 'employee'
           ? this.employeeService.submitAssessment(this.assessment.id)
           : this.http.post(`${environment.apiUrl}/applications/assessments/${this.assessment.id}/submit`, {});
 
@@ -603,6 +528,75 @@ export class AssessmentPanelComponent implements OnInit {
       },
       error: () => { this.saving = false; this.cdr.markForCheck(); }
     });
+  }
+
+  deleteDraft() {
+    if (!this.assessment?.id) return;
+    this.confirmModal = {
+      isOpen: true,
+      title: 'Delete Draft',
+      message: 'Are you sure you want to delete this assessment draft? All current ratings will be lost.',
+      confirmText: 'Delete Draft',
+      isDanger: true,
+      action: () => {
+        this.saving = true;
+        this.cdr.markForCheck();
+
+        const obs: Observable<any> = this.type === 'employee'
+          ? this.employeeService.deleteAssessment(this.assessment.id)
+          : this.http.delete(`${environment.apiUrl}/applications/assessments/${this.assessment.id}`);
+
+        obs.subscribe({
+          next: () => {
+            this.saving = false;
+            this.assessment = null;
+            this.close.emit();
+            this.cdr.markForCheck();
+          },
+          error: () => {
+            this.saving = false;
+            this.cdr.markForCheck();
+          }
+        });
+      }
+    };
+    this.cdr.markForCheck();
+  }
+
+  onConfirmModal(): void {
+    if (this.confirmModal.action) {
+      this.confirmModal.action();
+    }
+    this.confirmModal.isOpen = false;
+    this.cdr.detectChanges();
+  }
+
+  onCancelModal(): void {
+    this.confirmModal.isOpen = false;
+    this.confirmModal.action = null;
+    this.cdr.detectChanges();
+  }
+
+  getLevelLabel(level: number): string {
+    const labels: Record<number, string> = {
+      1: 'Follow',
+      2: 'Assist',
+      3: 'Apply',
+      4: 'Enable',
+      5: 'Ensure, Advise'
+    };
+    return labels[level] || '';
+  }
+
+  getLevelDescription(level: number): string {
+    const desc: Record<number, string> = {
+      1: 'Works under close supervision. Uses little discretion. Is expected to seek guidance in unexpected situations.',
+      2: 'Works under routine supervision. Uses minor discretion in resolving problems or enquiries. Works without frequent reference to others.',
+      3: 'Works under general supervision. Uses discretion in identifying and resolving complex problems and assignments. Usually receives specific instructions.',
+      4: 'Works under general direction within a clear framework of accountability. Exercises substantial personal responsibility and autonomy. Plans own work.',
+      5: 'Works under broad direction. Is fully accountable for own work and/or project/managerial responsibilities. Receives assignments in the form of objectives.'
+    };
+    return desc[level] || '';
   }
 
   onClose() {

@@ -77,6 +77,10 @@ export class RecommendDto {
   @IsOptional()
   @IsIn(['all', 'candidate', 'employee'])
   personType?: 'all' | 'candidate' | 'employee';
+
+  @IsOptional()
+  @IsNumber()
+  limit?: number;
 }
 
 // Aliases for compatibility

@@ -9,11 +9,14 @@ import { ApplicationsModule } from '../applications/applications.module';
 
 
 
+import { AuthModule }         from '../auth/auth.module';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([JobOffer]),
     ChatbotModule,
     ApplicationsModule,
+    AuthModule,
   ],
   controllers: [JobOffersController],
   providers:   [JobOffersService],

@@ -12,7 +12,7 @@
     <!-- Profile Header Card -->
     <div class="profile-header card">
       <div class="profile-main-info">
-        <div class="profile-avatar">{{ getInitials() }}</div>
+        <div class="avatar profile-avatar">{{ getInitials() }}</div>
         <div class="profile-title-group">
           <h1 class="emp-name" *ngIf="!isEditing">{{ employee!.firstName }} {{ employee!.lastName }}</h1>
           <div class="edit-name-group" *ngIf="isEditing">
@@ -20,10 +20,15 @@
             <input type="text" [(ngModel)]="editForm.lastName" class="edit-input" placeholder="Last name">
           </div>
           <div class="emp-tags">
-            <span class="emp-id-chip">#{{ employee!.employeeId }}</span>
-            <span class="status-badge" [attr.data-status]="employee!.status" *ngIf="!isEditing">
+            <span class="id-chip">#{{ employee!.employeeId }}</span>
+            <span class="chip status-badge" [attr.data-status]="employee!.status" *ngIf="!isEditing">
               {{ employee!.status | titlecase }}
             </span>
+            <span class="chip mgr-badge" *ngIf="employee!.isManager">Hiring Manager</span>
+            
+            <button *ngIf="userRole !== 'manager' && !isEditing" class="btn-toggle-mgr" (click)="toggleManager()" [disabled]="saving">
+              {{ employee!.isManager ? 'Remove Manager Designation' : 'Designate as Manager' }}
+            </button>
             <!-- FIX: all status options present in select -->
             <select [(ngModel)]="editForm.status" class="edit-select" *ngIf="isEditing">
               <option value="active">Active</option>
@@ -53,7 +58,7 @@
           <span class="stat-val">{{ getTenure() }}</span>
         </div>
         <div class="stat-item" *ngIf="deltas.length > 0">
-          <label>Readiness</label>
+          <label>Role Proficiency</label>
           <div class="readiness-pill" [style.background]="readinessColor + '22'" [style.color]="readinessColor">
             {{ readinessScore }}% — {{ readinessLabel }}
           </div>
@@ -61,13 +66,13 @@
       </div>
 
       <div class="profile-actions" *ngIf="!isEditing">
-        <button class="emp-btn emp-btn--outline" (click)="toggleEdit()">Edit Profile</button>
-        <button class="emp-btn emp-btn--primary" (click)="startAssessment()">Start Assessment</button>
+        <button *ngIf="userRole !== 'manager'" class="btn-action btn-action--outline" (click)="toggleEdit()">Edit Profile</button>
+        <button class="btn-action btn-action--primary" (click)="startAssessment()">Start Assessment</button>
       </div>
 
       <div class="profile-actions" *ngIf="isEditing">
-        <button class="emp-btn emp-btn--outline" (click)="cancelEdit()" [disabled]="saving">Cancel</button>
-        <button class="emp-btn emp-btn--primary" (click)="saveProfile()" [disabled]="saving">
+        <button class="btn-action btn-action--outline" (click)="cancelEdit()" [disabled]="saving">Cancel</button>
+        <button class="btn-action btn-action--primary" (click)="saveProfile()" [disabled]="saving">
           <span *ngIf="saving" class="spinner-inline"></span>
           {{ saving ? 'Saving...' : 'Save Changes' }}
         </button>
@@ -90,7 +95,7 @@
 
         <!-- Left: Employment + Personal details -->
         <div class="grid-left">
-          <section class="info-section card">
+          <section class="card info-section">
             <h3>Employment Details</h3>
             <div class="info-list">
               <div class="info-item">
@@ -114,9 +119,75 @@
                 <span class="info-val">{{ employee!.department?.name || 'N/A' }}</span>
               </div>
             </div>
+
+            <!-- Succession & Risk (read-only in overview, editable below) -->
+            <div class="info-list" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-subtle)" *ngIf="!isEditing">
+              <div class="info-item">
+                <span class="info-label">Succession Readiness</span>
+                <span class="risk-pill" *ngIf="employee!.successionReadiness" 
+                      [style.background]="(successionColors[employee!.successionReadiness] || '#6b7280') + '18'"
+                      [style.color]="successionColors[employee!.successionReadiness] || '#6b7280'"
+                      [style.borderColor]="(successionColors[employee!.successionReadiness] || '#6b7280') + '40'">
+                  {{ successionLabels[employee!.successionReadiness] || 'Not Set' }}
+                </span>
+                <span class="no-val" *ngIf="!employee!.successionReadiness">Not assessed</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Retention Risk</span>
+                <span class="risk-pill" *ngIf="employee!.retentionRisk"
+                      [style.background]="(riskColors[employee!.retentionRisk] || '#6b7280') + '18'"
+                      [style.color]="riskColors[employee!.retentionRisk] || '#6b7280'"
+                      [style.borderColor]="(riskColors[employee!.retentionRisk] || '#6b7280') + '40'">
+                  {{ riskLabels[employee!.retentionRisk] || 'Not Set' }}
+                </span>
+                <span class="no-val" *ngIf="!employee!.retentionRisk">Not assessed</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Impact of Loss</span>
+                <span class="risk-pill" *ngIf="employee!.impactOfLoss"
+                      [style.background]="(riskColors[employee!.impactOfLoss] || '#6b7280') + '18'"
+                      [style.color]="riskColors[employee!.impactOfLoss] || '#6b7280'"
+                      [style.borderColor]="(riskColors[employee!.impactOfLoss] || '#6b7280') + '40'">
+                  {{ riskLabels[employee!.impactOfLoss] || 'Not Set' }}
+                </span>
+                <span class="no-val" *ngIf="!employee!.impactOfLoss">Not assessed</span>
+              </div>
+            </div>
+
+            <!-- Editable Succession & Risk -->
+            <div class="info-list" style="margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-subtle)" *ngIf="isEditing">
+              <div class="info-item">
+                <span class="info-label">Succession Readiness</span>
+                <select class="edit-select" [(ngModel)]="editForm.successionReadiness">
+                  <option value="">-- Not assessed --</option>
+                  <option value="ready_now">Ready Now</option>
+                  <option value="ready_1_yr">Ready in 1 Year</option>
+                  <option value="ready_2_yrs">Ready in 2 Years</option>
+                  <option value="not_ready">Not Ready</option>
+                </select>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Retention Risk</span>
+                <select class="edit-select" [(ngModel)]="editForm.retentionRisk">
+                  <option value="">-- Not assessed --</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div class="info-item">
+                <span class="info-label">Impact of Loss</span>
+                <select class="edit-select" [(ngModel)]="editForm.impactOfLoss">
+                  <option value="">-- Not assessed --</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+            </div>
           </section>
 
-          <section class="info-section card">
+          <section class="card info-section">
             <h3>Personal Information</h3>
             <div class="info-list">
               <div class="info-item">
@@ -141,14 +212,26 @@
               </div>
             </div>
           </section>
+
+          <section class="card info-section">
+            <h3>Skills & Expertise</h3>
+            <div class="skills-cloud" *ngIf="!isEditing">
+              <span class="skill-tag" *ngFor="let s of skills">{{ s }}</span>
+              <span class="no-val" *ngIf="skills.length === 0">No skills listed</span>
+            </div>
+            <div class="edit-group" *ngIf="isEditing">
+              <label class="info-label">Skills (comma separated)</label>
+              <textarea [(ngModel)]="editForm.skills" class="edit-textarea" placeholder="e.g. Python, AWS, Team Leadership"></textarea>
+            </div>
+          </section>
         </div>
 
         <!-- Right: Competency Heatmap -->
         <div class="grid-right">
-          <section class="heatmap-section card">
+          <section class="card heatmap-card">
             <div class="section-header">
               <h3>Current Competency Status</h3>
-              <span class="target-label">
+              <span class="target-pill">
                 Rank {{ employee!.jobRoleLevel?.levelNumber }}: {{ employee!.jobRoleLevel?.title }}
               </span>
             </div>
@@ -156,7 +239,7 @@
 
             <div class="heatmap-table" *ngIf="deltas.length > 0">
               <!-- FIX: header had 4 spans but grid has 5 columns — added missing Status header -->
-              <div class="heatmap-row-header">
+              <div class="heatmap-head">
                 <span>Competency</span>
                 <span>Target</span>
                 <span>Actual</span>
@@ -168,7 +251,7 @@
                 <div class="comp-name">
                   <span class="name">{{ delta.name }}</span>
                   <div class="comp-meta">
-                    <span class="category" *ngIf="delta.category">{{ delta.category | uppercase }}</span>
+                    <span class="cat" *ngIf="delta.category">{{ delta.category | uppercase }}</span>
                     <span class="source-badge" *ngIf="delta.source">{{ delta.source | titlecase }}</span>
                     <span class="unassessed-tag" *ngIf="!delta.lastEvaluatedAt">UNASSESSED</span>
                   </div>
@@ -180,12 +263,12 @@
                 <div class="val-circle target">{{ delta.target }}</div>
                 <div class="val-circle actual">{{ delta.current }}</div>
 
-                <div class="delta-indicator" [attr.data-status]="delta.status">
-                  <div class="delta-bar">
-                    <div class="delta-fill" [style.width.%]="(delta.current / 5) * 100"></div>
+                <div class="delta-wrap" [attr.data-status]="delta.status">
+                  <div class="bar">
+                    <div class="fill" [style.width.%]="(delta.current / 5) * 100"></div>
                     <div class="delta-marker" [style.left.%]="(delta.target / 5) * 100"></div>
                   </div>
-                  <span class="delta-text">
+                  <span class="val">
                     {{ delta.delta > 0 ? '+' + delta.delta : delta.delta }}
                   </span>
                 </div>
@@ -226,10 +309,148 @@
 
       <!-- ══ DEVELOPMENT TAB ═══════════════════════════════════════ -->
       <div class="development-content" *ngIf="activeTab === 'development'">
+
+        <!-- ── Career Path Progression Stepper ── -->
+        <section class="card career-stepper-card" *ngIf="employee!.jobRoleLevel">
+          <div class="stepper-header">
+            <h3>Career Path Progression</h3>
+          </div>
+          <div class="career-stepper">
+            <div class="stepper-node current">
+              <div class="node-badge">R{{ employee!.jobRoleLevel?.levelNumber }}</div>
+              <div class="node-info">
+                <span class="node-title">{{ employee!.jobRoleLevel?.title }}</span>
+                <span class="node-subtitle">Current Level</span>
+              </div>
+            </div>
+            <div class="stepper-connector" [class.active]="!!nextLevel">
+              <div class="connector-line"></div>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+            </div>
+            <div class="stepper-node target" [class.locked]="!nextLevel">
+              <div class="node-badge" *ngIf="nextLevel">R{{ nextLevel.levelNumber }}</div>
+              <div class="node-badge" *ngIf="!nextLevel">✦</div>
+              <div class="node-info">
+                <span class="node-title">{{ nextLevel ? nextLevel.title : 'Maximum Reached' }}</span>
+                <span class="node-subtitle">{{ nextLevel ? 'Target Level' : 'No higher level defined' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Readiness progress bar -->
+          <div class="readiness-bar-section" *ngIf="nextLevel && deltas.length > 0">
+            <div class="readiness-bar-label">
+              <span>Promotion Readiness</span>
+              <span class="readiness-pct" [style.color]="readinessColor">{{ readinessScore }}%</span>
+            </div>
+            <div class="readiness-track">
+              <div class="readiness-fill" [style.width.%]="readinessScore" [style.background]="readinessColor"></div>
+            </div>
+          </div>
+
+          <!-- Assess for Next Level action -->
+          <div class="stepper-actions">
+            <button class="btn-action btn-action--primary btn-assess-next" 
+                    *ngIf="nextLevel"
+                    (click)="startNextLevelAssessment()" 
+                    [disabled]="loadingNextReqs || promoting">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+                <rect x="9" y="3" width="6" height="4" rx="1" />
+                <path d="M9 14l2 2 4-4" />
+              </svg>
+              <span *ngIf="!loadingNextReqs">Assess for Rank {{ nextLevel.levelNumber }}: {{ nextLevel.title }}</span>
+              <span *ngIf="loadingNextReqs">Loading requirements...</span>
+            </button>
+            <button class="btn-action btn-action--primary" 
+                    *ngIf="nextLevel && readinessScore === 100 && userRole !== 'manager'"
+                    (click)="openPromoteModal()" 
+                    [disabled]="promoting">
+              <span *ngIf="promoting" class="spinner-sm"></span>
+              {{ promoting ? 'Promoting...' : 'Promote to Rank ' + nextLevel.levelNumber }}
+            </button>
+            <button class="btn-action btn-action--outline" (click)="startAssessment()" [disabled]="promoting">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+                <rect x="9" y="3" width="6" height="4" rx="1" />
+              </svg>
+              Assess Current Level
+            </button>
+          </div>
+        </section>
+
+        <!-- ── Succession & Risk Assessment Card ── -->
+        <section class="card risk-assessment-card">
+          <div class="section-header">
+            <h3>Succession & Risk Assessment</h3>
+          </div>
+          <div class="risk-grid">
+            <div class="risk-metric">
+              <div class="risk-metric-icon" 
+                   [style.background]="(successionColors[employee!.successionReadiness!] || '#6b7280') + '15'"
+                   [style.color]="successionColors[employee!.successionReadiness!] || '#6b7280'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                </svg>
+              </div>
+              <div class="risk-metric-body">
+                <span class="risk-metric-label">Succession Readiness</span>
+                <span class="risk-metric-value" 
+                      [style.color]="successionColors[employee!.successionReadiness!] || 'var(--text-muted)'">
+                  {{ successionLabels[employee!.successionReadiness!] || 'Not Assessed' }}
+                </span>
+                <span class="risk-metric-hint">How ready is this person for promotion?</span>
+              </div>
+            </div>
+
+            <div class="risk-metric">
+              <div class="risk-metric-icon"
+                   [style.background]="(riskColors[employee!.retentionRisk!] || '#6b7280') + '15'"
+                   [style.color]="riskColors[employee!.retentionRisk!] || '#6b7280'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <div class="risk-metric-body">
+                <span class="risk-metric-label">Retention Risk</span>
+                <span class="risk-metric-value"
+                      [style.color]="riskColors[employee!.retentionRisk!] || 'var(--text-muted)'">
+                  {{ riskLabels[employee!.retentionRisk!] || 'Not Assessed' }}
+                </span>
+                <span class="risk-metric-hint">Likelihood this person may leave</span>
+              </div>
+            </div>
+
+            <div class="risk-metric">
+              <div class="risk-metric-icon"
+                   [style.background]="(riskColors[employee!.impactOfLoss!] || '#6b7280') + '15'"
+                   [style.color]="riskColors[employee!.impactOfLoss!] || '#6b7280'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+              </div>
+              <div class="risk-metric-body">
+                <span class="risk-metric-label">Impact of Loss</span>
+                <span class="risk-metric-value"
+                      [style.color]="riskColors[employee!.impactOfLoss!] || 'var(--text-muted)'">
+                  {{ riskLabels[employee!.impactOfLoss!] || 'Not Assessed' }}
+                </span>
+                <span class="risk-metric-hint">Business impact if this person leaves</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section class="card dev-card">
           <div class="section-header">
             <h3>Career Development Plan</h3>
-            <span class="target-label dev-target" *ngIf="nextLevel">
+            <span class="target-pill dev-target" *ngIf="nextLevel">
               Target: Rank {{ nextLevel.levelNumber }} — {{ nextLevel.title }}
             </span>
           </div>
@@ -245,7 +466,7 @@
             </svg>
             <h4>Maximum Level Reached</h4>
             <p>This employee is already at the highest defined rank for their current job role.</p>
-            <button class="emp-btn emp-btn--outline">Explore Lateral Moves</button>
+            <button class="btn-action btn-action--outline">Explore Lateral Moves</button>
           </div>
 
           <!-- Loading -->
@@ -268,6 +489,43 @@
             <button class="retry-link" (click)="nextLevel && loadTargetGap(employee!.id, nextLevel.id)">Retry</button>
           </div>
         </section>
+
+        <!-- ── Career History Timeline ── -->
+        <section class="card history-card" style="grid-column: 1 / -1; margin-top: 1rem;">
+          <div class="section-header">
+            <h3>Career Progression History</h3>
+          </div>
+          <div class="history-content">
+            <div *ngIf="historyLoading" class="loading-state">
+              <div class="spinner-sm"></div>
+              <span>Loading career history...</span>
+            </div>
+            
+            <div *ngIf="!historyLoading && careerHistory.length === 0" class="no-data-msg">
+              No historical career progression data available.
+            </div>
+
+            <div class="timeline" *ngIf="!historyLoading && careerHistory.length > 0">
+              <div class="timeline-item" *ngFor="let item of careerHistory">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                  <div class="timeline-header">
+                    <span class="timeline-date">{{ item.effectiveDate | date:'mediumDate' }}</span>
+                    <span class="timeline-badge" [attr.data-type]="item.eventType">{{ item.eventType | titlecase }}</span>
+                  </div>
+                  <div class="timeline-body">
+                    <p class="timeline-desc">{{ item.notes || 'Status changed' }}</p>
+                    <div class="timeline-details" *ngIf="item.oldRoleLevel || item.newRoleLevel">
+                      <span class="old-val" *ngIf="item.oldRoleLevel">{{ item.oldRoleLevel.title }}</span>
+                      <span class="arrow" *ngIf="item.oldRoleLevel && item.newRoleLevel">➔</span>
+                      <span class="new-val" *ngIf="item.newRoleLevel">{{ item.newRoleLevel.title }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
     </div>
@@ -278,6 +536,54 @@
   <app-assessment-panel *ngIf="showAssessmentPanel && employee" [targetId]="employee.id"
     [requirements]="assessmentRequirements" (close)="showAssessmentPanel = false" (submitted)="onAssessmentSubmitted()">
   </app-assessment-panel>
+
+  <!-- Promotion Modal -->
+  <div class="modal-overlay" *ngIf="showPromoteModal">
+    <div class="modal promote-modal">
+      <div class="modal-header">
+        <h2>Promote Employee</h2>
+        <button class="modal-close" (click)="cancelPromotion()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <p class="text-muted" style="margin-bottom: 1rem;">Confirm promotion to the next job role level.</p>
+
+        <div class="promote-summary">
+          <div class="rank-box">
+            <span class="rank-label">Current</span>
+            <span class="rank-val">R{{ employee!.jobRoleLevel?.levelNumber }}: {{ employee!.jobRoleLevel?.title }}</span>
+          </div>
+          <div class="arrow">➔</div>
+          <div class="rank-box new-rank">
+            <span class="rank-label">New</span>
+            <span class="rank-val">R{{ nextLevel?.levelNumber }}: {{ nextLevel?.title }}</span>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 1.5rem">
+          <label>Effective Date</label>
+          <input type="date" [(ngModel)]="promoteForm.effectiveDate" class="edit-input" style="width: 100%" />
+        </div>
+
+        <div class="form-group" style="margin-top: 1rem">
+          <label>Promotion Note</label>
+          <textarea [(ngModel)]="promoteForm.notes" class="edit-input" style="width: 100%" rows="3" placeholder="Reason for promotion..."></textarea>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-action btn-action--outline" (click)="cancelPromotion()" [disabled]="promoting">Cancel</button>
+        <button class="btn-action btn-action--primary" (click)="confirmPromotion()" [disabled]="promoting">
+          <span *ngIf="promoting" class="spinner-inline"></span>
+          {{ promoting ? 'Processing...' : 'Confirm Promotion' }}
+        </button>
+      </div>
+    </div>
+  </div>
 </ng-container>
 
 <!-- Loading State -->
@@ -295,5 +601,5 @@
     <line x1="12" y1="16" x2="12.01" y2="16" />
   </svg>
   <p>{{ error }}</p>
-  <button class="emp-btn emp-btn--primary" (click)="retryLoad()">Retry</button>
+  <button class="btn-action btn-action--primary" (click)="retryLoad()">Retry</button>
 </div>

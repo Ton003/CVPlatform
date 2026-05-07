@@ -163,7 +163,8 @@ export class CandidatesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   initials(name: string): string {
-    return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
+    if (!name) return '?';
+    return name.split(' ').slice(0, 2).map(n => n[0] || '').join('').toUpperCase();
   }
 
   formatDate(d: string | null): string {
