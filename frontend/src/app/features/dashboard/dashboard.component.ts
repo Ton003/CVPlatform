@@ -9,17 +9,14 @@ import { environment }       from '../../../environments/environment';
 
 interface DashboardStats {
   totalCandidates: number;
-  addedThisWeek:   number;
-  stages: {
-    applied: number; screening: number; interview: number;
-    assessment: number; offer: number; rejected: number;
-    [key: string]: number;
-  };
-  recentCandidates: Array<{
-    candidateId: string; name: string;
-    currentTitle: string | null; createdAt: string;
-  }>;
+  addedThisWeek: number;
+  stages: Record<string, number>;
   topSkills: Array<{ skill: string; count: number }>;
+  pendingScreenings: number;
+  upcomingInterviews: Array<{
+    id: string; scheduledAt: string; type: string;
+    interviewerName: string; candidateName: string; jobTitle: string;
+  }>;
 }
 
 interface JobSummary {
@@ -27,12 +24,12 @@ interface JobSummary {
   location: string | null; createdAt: string;
 }
 
-import { ScoutAgentComponent } from './scout-agent/scout-agent.component';
+
 
 @Component({
   selector:    'app-dashboard',
   standalone:  true,
-  imports:     [CommonModule, RouterLink, ScoutAgentComponent],
+  imports:     [CommonModule, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrls:   ['./dashboard.component.scss'],
 })
@@ -149,5 +146,22 @@ export class DashboardComponent implements OnInit {
   getStageBadgeStyle(stage: string): string {
     const s = this.stages.find(s => s.id === stage);
     return s ? s.color : 'var(--text-muted)';
+  }
+
+  // --- Quick Actions ---
+  createJob() {
+    this.router.navigate(['/job-offers/new']);
+  }
+
+  uploadCv() {
+    this.router.navigate(['/cv-upload']);
+  }
+
+  searchTalent() {
+    this.router.navigate(['/chatbot']); // Using chatbot route for talent search
+  }
+
+  startScreening() {
+    this.router.navigate(['/candidates'], { queryParams: { stage: 'applied' } });
   }
 }

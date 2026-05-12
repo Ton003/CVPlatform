@@ -7,7 +7,7 @@ import { json, urlencoded } from 'express';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
-  
+
   // Maintain original app creation pattern as requested
   const app = await NestFactory.create(AppModule);
 
@@ -17,13 +17,14 @@ async function bootstrap() {
 
   // 2. Security & Global Middleware
   app.use(cookieParser());
-  
+
   // Define limits for large CV processing
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ extended: true, limit: '50mb' }));
 
   // 3. Robust CORS Configuration
-  const corsOriginEnv = configService.get<string>('CORS_ORIGIN') ?? 'http://localhost:4200';
+  const corsOriginEnv =
+    configService.get<string>('CORS_ORIGIN') ?? 'http://localhost:4200';
   const corsOrigins = corsOriginEnv
     .split(',')
     .map((o) => o.trim())
@@ -57,12 +58,14 @@ async function bootstrap() {
   // 7. Initialize Server
   await app.listen(port);
 
-  logger.log(`🚀 BIAT CV Platform API running on http://localhost:${port}/api`);
+  logger.log(`🚀 BIAT TalentOS API running on http://localhost:${port}/api`);
   logger.log(`🌍 CORS enabled for: ${corsOrigins.join(', ')}`);
   logger.log(`🛡️  Payload protection active (50MB Limit)`);
 }
 
 bootstrap().catch((err) => {
-  new Logger('Bootstrap').error(`❌ Critical failure during startup: ${err.message}`);
+  new Logger('Bootstrap').error(
+    `❌ Critical failure during startup: ${err.message}`,
+  );
   process.exit(1);
 });

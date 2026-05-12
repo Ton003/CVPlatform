@@ -18,6 +18,8 @@ import { EmployeeAssessment } from './entities/employee-assessment.entity';
 import { EmployeeAssessmentItem } from './entities/employee-assessment-item.entity';
 import { AssessmentsController } from './assessments.controller';
 import { AssessmentsService } from './assessments.service';
+import { DevelopmentAdvisorService } from './development-advisor.service';
+import { ChatbotModule } from '../chatbot/chatbot.module';
 
 import { EmployeeHistory } from './entities/employee-history.entity';
 
@@ -34,12 +36,28 @@ import { EmployeeHistory } from './entities/employee-history.entity';
       JobRoleLevel,
       EmployeeAssessment,
       EmployeeAssessmentItem,
-      EmployeeHistory
+      EmployeeHistory,
     ]),
     AuthModule,
+    ChatbotModule,
   ],
-  controllers: [EmployeesController, InternalMobilityController, AssessmentsController],
-  providers: [EmployeesService, InternalMobilityService, UnifiedScoringService, AssessmentsService],
-  exports: [EmployeesService, InternalMobilityService, UnifiedScoringService, AssessmentsService],
+  controllers: [
+    EmployeesController,
+    InternalMobilityController,
+    AssessmentsController,
+  ],
+  providers: [
+    EmployeesService,
+    InternalMobilityService,
+    UnifiedScoringService,
+    AssessmentsService,
+    DevelopmentAdvisorService,
+  ],
+  exports: [
+    EmployeesService,
+    InternalMobilityService,
+    UnifiedScoringService,
+    AssessmentsService,
+  ],
 })
 export class EmployeesModule {}

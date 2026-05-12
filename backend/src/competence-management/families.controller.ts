@@ -1,7 +1,15 @@
 import {
-  Controller, Get, Post, Patch, Delete,
-  Body, Param, Query, ParseUUIDPipe,
-  HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  ParseUUIDPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { FamiliesService } from './families.service';
 import { CompetenceCategory } from './entities/family.entity';
@@ -10,7 +18,7 @@ import { UpdateFamilyDto } from './dto/update-family.dto';
 
 @Controller('families')
 export class FamiliesController {
-  constructor(private readonly svc: FamiliesService) { }
+  constructor(private readonly svc: FamiliesService) {}
 
   /**
    * GET /families
@@ -35,10 +43,7 @@ export class FamiliesController {
 
   /** PATCH /families/:id */
   @Patch(':id')
-  update(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body() dto: UpdateFamilyDto,
-  ) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateFamilyDto) {
     return this.svc.update(id, dto);
   }
 

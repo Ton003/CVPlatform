@@ -14,14 +14,16 @@ import { UsersModule } from '../users/users.module';
   imports: [
     UsersModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    
+
     // 1. Configurable Rate Limiting
     ThrottlerModule.forRootAsync({
       inject: [ConfigService],
-      useFactory: (cfg: ConfigService) => [{
-        ttl: cfg.get<number>('THROTTLE_TTL', 60000),
-        limit: cfg.get<number>('THROTTLE_LIMIT', 100),
-      }],
+      useFactory: (cfg: ConfigService) => [
+        {
+          ttl: cfg.get<number>('THROTTLE_TTL', 60000),
+          limit: cfg.get<number>('THROTTLE_LIMIT', 100),
+        },
+      ],
     }),
 
     // 2. Dynamic JWT Configuration

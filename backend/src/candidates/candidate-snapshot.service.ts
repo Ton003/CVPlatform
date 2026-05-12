@@ -29,11 +29,14 @@ export class CandidateSnapshotService {
   async rebuildSnapshot(candidateId: string, activeApplicationId?: string) {
     this.logger.log(`🔄 Rebuilding snapshot for candidate ${candidateId}`);
 
-    const candidate = await this.candidateRepo.findOne({ where: { id: candidateId } });
+    const candidate = await this.candidateRepo.findOne({
+      where: { id: candidateId },
+    });
     if (!candidate) throw new NotFoundException('Candidate not found');
 
     // 1. Get all manual scores across all applications
-    const manualScores = await this.dataSource.query(`
+    const manualScores = await this.dataSource.query(
+      `
       SELECT 
         acs.competence_id AS "competenceId", 
         acs.evaluated_level AS "evaluatedLevel", 
@@ -43,19 +46,24 @@ export class CandidateSnapshotService {
       JOIN applications a ON a.id = acs.application_id
       WHERE a.candidate_id = $1
       ORDER BY acs.updated_at DESC
-    `, [candidateId]);
+    `,
+      [candidateId],
+    );
 
     // 2. Get all AI inferred scores from career entries
-    const careerEntries = await this.dataSource.query(`
+    const careerEntries = await this.dataSource.query(
+      `
       SELECT sfia_tags
       FROM candidate_career_entries
       WHERE candidate_id = $1
-    `, [candidateId]);
+    `,
+      [candidateId],
+    );
 
     const snapshot: Record<string, any> = {};
 
     // Process AI tags first (lower priority)
-    careerEntries.forEach(entry => {
+    careerEntries.forEach((entry) => {
       const tags = Array.isArray(entry.sfia_tags) ? entry.sfia_tags : [];
       tags.forEach((tag: any) => {
         const compId = tag.competency_id || tag.competencyId;
@@ -77,7 +85,7 @@ export class CandidateSnapshotService {
     manualScores.forEach((score: any) => {
       const compId = score.competenceId;
       const level = score.evaluatedLevel;
-      
+
       // If manual score exists, it takes precedence over AI.
       // We only set it if it hasn't been set yet (to keep the LATEST one)
       if (!snapshot[compId] || snapshot[compId].source === 'AI') {
@@ -85,7 +93,7 @@ export class CandidateSnapshotService {
           level,
           source_application_id: score.applicationId,
           rated_at: score.updatedAt,
-          source: 'MANUAL'
+          source: 'MANUAL',
         };
       }
     });
@@ -94,18 +102,18 @@ export class CandidateSnapshotService {
     if (activeApplicationId) {
       const beforeSnapshot = candidate.competencySnapshot || {};
       const delta: Record<string, any> = {};
-      
-      Object.keys(snapshot).forEach(compId => {
-          const before = beforeSnapshot[compId]?.level || null;
-          const after = snapshot[compId].level;
-          if (before !== after) {
-            delta[compId] = { before, after };
-          }
+
+      Object.keys(snapshot).forEach((compId) => {
+        const before = beforeSnapshot[compId]?.level || null;
+        const after = snapshot[compId].level;
+        if (before !== after) {
+          delta[compId] = { before, after };
+        }
       });
 
       if (Object.keys(delta).length > 0) {
         await this.applicationRepo.update(activeApplicationId, {
-          competencyGap: delta
+          competencyGap: delta,
         });
       }
     }
@@ -121,18 +129,24 @@ export class CandidateSnapshotService {
       // We perform an upset to keep the latest level for each competency
       for (const compId of Object.keys(snapshot)) {
         const item = snapshot[compId];
-        await manager.upsert(CandidateCompetency, {
-          candidateId: candidateId,
-          competenceId: compId,
-          level: item.level,
-          source: item.source,
-          sourceApplicationId: item.source_application_id || null,
-          ratedAt: item.rated_at || new Date(),
-        }, ['candidateId', 'competenceId']);
+        await manager.upsert(
+          CandidateCompetency,
+          {
+            candidateId: candidateId,
+            competenceId: compId,
+            level: item.level,
+            source: item.source,
+            sourceApplicationId: item.source_application_id || null,
+            ratedAt: item.rated_at || new Date(),
+          },
+          ['candidateId', 'competenceId'],
+        );
       }
     });
 
-    this.logger.log(`✅ Snapshot updated and synchronized for candidate ${candidateId}`);
+    this.logger.log(
+      `✅ Snapshot updated and synchronized for candidate ${candidateId}`,
+    );
     return snapshot;
   }
 }

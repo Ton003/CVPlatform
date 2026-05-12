@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsInt, IsIn, MaxLength, Min } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsInt,
+  IsIn,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class UpdateJobOfferDto {
   @IsOptional() @IsString() jobRoleLevelId?: string;

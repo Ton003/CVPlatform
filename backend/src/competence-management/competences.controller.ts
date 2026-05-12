@@ -1,12 +1,21 @@
 import {
-  Controller, Get, Post, Patch, Delete, Put,
-  Body, Param, Query, ParseUUIDPipe,
-  HttpCode, HttpStatus,
+  Controller,
+  Get,
+  Post,
+  Patch,
+  Delete,
+  Put,
+  Body,
+  Param,
+  Query,
+  ParseUUIDPipe,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
-import { CompetencesService }   from './competences.service';
-import { CreateCompetenceDto }  from './dto/create-competence.dto';
-import { UpdateCompetenceDto }  from './dto/update-competence.dto';
-import { UpdateLevelsDto }      from './dto/update-levels.dto';
+import { CompetencesService } from './competences.service';
+import { CreateCompetenceDto } from './dto/create-competence.dto';
+import { UpdateCompetenceDto } from './dto/update-competence.dto';
+import { UpdateLevelsDto } from './dto/update-levels.dto';
 
 @Controller('competences')
 export class CompetencesController {

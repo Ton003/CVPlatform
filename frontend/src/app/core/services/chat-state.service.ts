@@ -6,8 +6,7 @@ export class ChatStateService {
   chatMessages:        ChatMessage[]         = [];
   conversationHistory: ConversationMessage[] = [];
   lastCandidates:      LastCandidate[]       = [];
-  groqApiKey:          string                = '';
-  mode:                'local' | 'groq'      = 'groq';
+  aiApiKey:            string                = '';
 
   clear() {
     this.chatMessages        = [];

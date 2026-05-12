@@ -1,4 +1,4 @@
-import { Component, ViewChild, ElementRef, AfterViewChecked, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, ViewChild, ElementRef, AfterViewChecked, OnInit, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule }           from '@angular/common';
 import { FormsModule }            from '@angular/forms';
 import { HttpClient }             from '@angular/common/http';
@@ -18,20 +18,13 @@ import {
 @Component({
   selector:    'app-chatbot',
   standalone:  true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports:     [CommonModule, FormsModule],
   templateUrl: './chatbot.component.html',
   styleUrls:   ['./chatbot.component.scss'],
 })
 export class ChatbotComponent implements OnInit, AfterViewChecked {
   @ViewChild('chatEnd') chatEnd!: ElementRef;
-
-  mode: 'local' | 'groq' = 'groq';
-  personTypeFilter: 'candidate' = 'candidate';
-
-  jobDescription = '';
-  loading        = false;
-  result:  SearchResult | null = null;
-  error:   string | null       = null;
 
   chatInput     = '';
   chatMessages: ChatMessage[] = [];
@@ -41,36 +34,7 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
   private lastCandidates: LastCandidate[] = [];
   private shouldScroll = false;
 
-  /** Maximum number of most-recent turns sent in each API call. */
   private readonly HISTORY_WINDOW = 10;
-
-  /**
-   * Returns the payload-safe history slice.
-   * If the full history exceeds HISTORY_WINDOW, a synthetic summary message
-   * is prepended so the LLM retains context of earlier candidates discussed.
-   */
-  private buildHistoryPayload(): ConversationMessage[] {
-    const full  = this.conversationHistory;
-    const limit = this.HISTORY_WINDOW;
-
-    if (full.length <= limit) return full;
-
-    // Derive a brief summary from the oldest candidate names seen
-    const olderCandidateNames = this.lastCandidates
-      .slice(0, 5)
-      .map(c => c.name)
-      .filter(Boolean)
-      .join(', ');
-
-    const summary: ConversationMessage = {
-      role: 'system',
-      content: `Earlier in this conversation, the following candidates were discussed: ${
-        olderCandidateNames || 'various candidates'
-      }. Only the last ${limit} turns are shown below.`,
-    };
-
-    return [summary, ...full.slice(-limit)];
-  }
 
   constructor(
     private readonly http:        HttpClient,
@@ -86,7 +50,6 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
     this.chatMessages        = [...this.chatState.chatMessages];
     this.conversationHistory = [...this.chatState.conversationHistory];
     this.lastCandidates      = [...this.chatState.lastCandidates];
-    this.mode                = this.chatState.mode;
   }
 
   ngAfterViewChecked() {
@@ -97,48 +60,32 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
   }
 
   openProfile(candidateId: string): void {
-    this.chatState.mode       = this.mode;
     this.router.navigate(['/candidates', candidateId], { queryParams: { from: 'chatbot' } });
-  }
-
-  toggleMode(m: 'local' | 'groq') {
-    this.mode = m;
-    this.chatState.mode = m;
-    this.result = null;
-    this.error  = null;
   }
 
   logout(): void { this.authService.logout(); }
 
-  get canSearch(): boolean { return !!this.jobDescription.trim() && !this.loading; }
   get canChat(): boolean {
-    if (this.mode === 'groq' && !this.apiKey.has()) return false;
+    if (!this.apiKey.has()) return false;
     return !!this.chatInput.trim() && !this.chatLoading;
   }
 
-  search() {
-    if (!this.canSearch) return;
-    this.loading = true;
-    this.result  = null;
-    this.error   = null;
-
-    this.http.post<SearchResult>(
-      `${environment.apiUrl}/chatbot/recommend`,
-      { message: this.jobDescription, mode: 'local', personType: this.personTypeFilter }
-    ).pipe(
-      finalize(() => { this.loading = false; this.cdr.detectChanges(); })
-    ).subscribe({
-      next:  r => { this.result = r; },
-      error: e => { this.error  = e.error?.message ?? 'Search failed.'; },
-    });
+  private buildHistoryPayload(): ConversationMessage[] {
+    const full  = this.conversationHistory;
+    const limit = this.HISTORY_WINDOW;
+    if (full.length <= limit) return full;
+    const olderCandidateNames = this.lastCandidates.slice(0, 5).map(c => c.name).filter(Boolean).join(', ');
+    const summary: ConversationMessage = {
+      role: 'system',
+      content: `Earlier in this conversation, the following candidates were discussed: ${olderCandidateNames || 'various candidates'}.`,
+    };
+    return [summary, ...full.slice(-limit)];
   }
-
-  clearSearch() { this.jobDescription = ''; this.result = null; this.error = null; }
 
   sendChat() {
     if (!this.canChat) {
-      if (this.mode === 'groq' && !this.apiKey.has()) {
-        this.toast.error('AI Mode requires a Groq API key. Please add it in the sidebar settings.');
+      if (!this.apiKey.has()) {
+        this.toast.error('Search requires an AI API key. Please add it in the sidebar settings.');
       }
       return;
     }
@@ -158,9 +105,7 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
       `${environment.apiUrl}/chatbot/recommend`,
       {
         message:        userMessage,
-        mode:           'groq',
         apiKey:         this.apiKey.get(),
-        // ✅ FIX 7: Send sliding window slice, not the full unbounded history
         history:        this.buildHistoryPayload(),
         lastCandidates: this.lastCandidates,
         personType:     'candidate',
@@ -178,7 +123,6 @@ export class ChatbotComponent implements OnInit, AfterViewChecked {
           { role: 'user',      content: userMessage   },
           { role: 'assistant', content: assistantText },
         ];
-        // Keep full history in memory; the API payload is capped by buildHistoryPayload()
 
         if (res.candidates?.length > 0) {
           this.lastCandidates = res.candidates.map((c: CandidateMatch) => ({

@@ -1,17 +1,28 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn,
-  ManyToOne, JoinColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Application } from '../applications/application.entity';
 
-export type InterviewType = 'HR' | 'Technical' | 'Final';
+export type InterviewType =
+  | 'Screening'
+  | 'Technical'
+  | 'Culture Fit'
+  | 'Technical Deep Dive'
+  | 'Leadership'
+  | 'Final'
+  | 'Offer Discussion'
+  | 'HR';
 export type InterviewStatus = 'scheduled' | 'completed' | 'cancelled';
 export type InterviewDecision = 'pass' | 'fail' | 'maybe';
 
 @Entity('interviews')
 export class Interview {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

@@ -19,7 +19,9 @@ export class ApplicationAssessmentItem {
   @Column({ name: 'assessment_id' })
   assessmentId: string;
 
-  @ManyToOne(() => ApplicationAssessment, (a) => a.items, { onDelete: 'CASCADE' })
+  @ManyToOne(() => ApplicationAssessment, (a) => a.items, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'assessment_id' })
   assessment: Relation<ApplicationAssessment>;
 

@@ -1,16 +1,17 @@
 import {
-  Injectable, NotFoundException, ConflictException,
+  Injectable,
+  NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository }       from 'typeorm';
+import { Repository } from 'typeorm';
 
 import { CompetenceFamily, CompetenceCategory } from './entities/family.entity';
-import { CreateFamilyDto }  from './dto/create-family.dto';
-import { UpdateFamilyDto }  from './dto/update-family.dto';
+import { CreateFamilyDto } from './dto/create-family.dto';
+import { UpdateFamilyDto } from './dto/update-family.dto';
 
 @Injectable()
 export class FamiliesService {
-
   constructor(
     @InjectRepository(CompetenceFamily)
     private readonly familyRepo: Repository<CompetenceFamily>,
@@ -18,7 +19,8 @@ export class FamiliesService {
 
   /** Return all families; optionally filter by category */
   async findAll(category?: CompetenceCategory): Promise<any[]> {
-    const qb = this.familyRepo.createQueryBuilder('family')
+    const qb = this.familyRepo
+      .createQueryBuilder('family')
       .orderBy('family.name', 'ASC');
 
     if (category) {
@@ -43,7 +45,7 @@ export class FamiliesService {
     }
 
     const family = this.familyRepo.create({
-      name:     dto.name.trim(),
+      name: dto.name.trim(),
       category: dto.category,
     });
     return this.familyRepo.save(family);
@@ -51,7 +53,7 @@ export class FamiliesService {
 
   async update(id: string, dto: UpdateFamilyDto): Promise<CompetenceFamily> {
     const family = await this.findOrFail(id);
-    if (dto.name     !== undefined) family.name     = dto.name.trim();
+    if (dto.name !== undefined) family.name = dto.name.trim();
     if (dto.category !== undefined) family.category = dto.category;
     return this.familyRepo.save(family);
   }

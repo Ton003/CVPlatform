@@ -9,10 +9,19 @@ import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource, TreeRepository } from 'typeorm';
 
 import { Employee } from './entities/employee.entity';
-import { EmployeeCompetency, CompetencySource } from './entities/employee-competency.entity';
-import { EmployeeAssessment, AssessmentStatus } from './entities/employee-assessment.entity';
+import {
+  EmployeeCompetency,
+  CompetencySource,
+} from './entities/employee-competency.entity';
+import {
+  EmployeeAssessment,
+  AssessmentStatus,
+} from './entities/employee-assessment.entity';
 import { EmployeeAssessmentItem } from './entities/employee-assessment-item.entity';
-import { CreateAssessmentDto, UpdateAssessmentItemsDto } from './dto/assessment.dto';
+import {
+  CreateAssessmentDto,
+  UpdateAssessmentItemsDto,
+} from './dto/assessment.dto';
 
 /** Shape of the JWT-validated user injected by JwtAuthGuard */
 export interface RequestUser {
@@ -51,7 +60,10 @@ export class AssessmentsService {
    *  - manager → ONLY if the employee is a descendant of the manager's own Employee record
    *  - others → denied
    */
-  async canEvaluate(evaluatorUser: RequestUser, employeeId: string): Promise<void> {
+  async canEvaluate(
+    evaluatorUser: RequestUser,
+    employeeId: string,
+  ): Promise<void> {
     if (evaluatorUser.role === 'admin' || evaluatorUser.role === 'hr') return;
 
     if (evaluatorUser.role === 'manager') {
@@ -67,7 +79,8 @@ export class AssessmentsService {
       }
 
       // Get all descendants (subtree) of the manager
-      const descendants = await this.employeeRepo.findDescendants(managerEmployee);
+      const descendants =
+        await this.employeeRepo.findDescendants(managerEmployee);
       const isSubordinate = descendants.some((d) => d.id === employeeId);
 
       if (!isSubordinate) {
@@ -78,7 +91,9 @@ export class AssessmentsService {
       return;
     }
 
-    throw new ForbiddenException('You do not have permission to submit assessments.');
+    throw new ForbiddenException(
+      'You do not have permission to submit assessments.',
+    );
   }
 
   // ─── 1. Create Draft ─────────────────────────────────────────────────────────
@@ -90,8 +105,11 @@ export class AssessmentsService {
   ): Promise<EmployeeAssessment> {
     await this.canEvaluate(evaluatorUser, employeeId);
 
-    const employee = await this.employeeRepo.findOne({ where: { id: employeeId } });
-    if (!employee) throw new NotFoundException(`Employee ${employeeId} not found`);
+    const employee = await this.employeeRepo.findOne({
+      where: { id: employeeId },
+    });
+    if (!employee)
+      throw new NotFoundException(`Employee ${employeeId} not found`);
 
     const assessment = this.assessRepo.create({
       employeeId,
@@ -116,7 +134,8 @@ export class AssessmentsService {
       relations: ['items'],
     });
 
-    if (!assessment) throw new NotFoundException(`Assessment ${assessmentId} not found`);
+    if (!assessment)
+      throw new NotFoundException(`Assessment ${assessmentId} not found`);
     if (assessment.status === AssessmentStatus.SUBMITTED) {
       throw new ConflictException('Cannot edit a submitted assessment.');
     }
@@ -154,7 +173,10 @@ export class AssessmentsService {
 
   // ─── 3. Submit Assessment ────────────────────────────────────────────────────
 
-  async submit(assessmentId: string, evaluatorUser: RequestUser): Promise<EmployeeAssessment> {
+  async submit(
+    assessmentId: string,
+    evaluatorUser: RequestUser,
+  ): Promise<EmployeeAssessment> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -163,12 +185,20 @@ export class AssessmentsService {
       // Load the assessment with all items
       const assessment = await queryRunner.manager.findOne(EmployeeAssessment, {
         where: { id: assessmentId },
-        relations: ['items', 'employee', 'employee.jobRoleLevel', 'employee.jobRoleLevel.competencyRequirements'],
+        relations: [
+          'items',
+          'employee',
+          'employee.jobRoleLevel',
+          'employee.jobRoleLevel.competencyRequirements',
+        ],
       });
 
-      if (!assessment) throw new NotFoundException(`Assessment ${assessmentId} not found`);
+      if (!assessment)
+        throw new NotFoundException(`Assessment ${assessmentId} not found`);
       if (assessment.status === AssessmentStatus.SUBMITTED) {
-        throw new ConflictException('This assessment has already been submitted.');
+        throw new ConflictException(
+          'This assessment has already been submitted.',
+        );
       }
 
       await this.canEvaluate(evaluatorUser, assessment.employeeId);
@@ -182,7 +212,9 @@ export class AssessmentsService {
           [assessment.employee.jobRoleLevelId],
         );
 
-      const reqMap = new Map(requirements.map((r) => [r.competenceId, r.requiredLevel]));
+      const reqMap = new Map(
+        requirements.map((r) => [r.competenceId, r.requiredLevel]),
+      );
       const now = new Date();
 
       // Update employee_competencies for each assessed item ONLY
@@ -191,7 +223,9 @@ export class AssessmentsService {
         const targetLevel = reqMap.get(item.competenceId) ?? null;
 
         const gap =
-          targetLevel !== null && targetLevel > 0 ? targetLevel - currentLevel : null;
+          targetLevel !== null && targetLevel > 0
+            ? targetLevel - currentLevel
+            : null;
         const gapPercentage =
           gap !== null && targetLevel ? gap / targetLevel : null;
 
@@ -204,26 +238,26 @@ export class AssessmentsService {
         });
 
         if (empComp) {
-          empComp.currentLevel     = currentLevel;
-          empComp.targetLevel      = targetLevel;
-          empComp.gap              = gap;
-          empComp.gapPercentage    = gapPercentage;
-          empComp.lastEvaluatedAt  = now;
-          empComp.source           = CompetencySource.PERFORMANCE_REVIEW;
+          empComp.currentLevel = currentLevel;
+          empComp.targetLevel = targetLevel;
+          empComp.gap = gap;
+          empComp.gapPercentage = gapPercentage;
+          empComp.lastEvaluatedAt = now;
+          empComp.source = CompetencySource.PERFORMANCE_REVIEW;
           empComp.lastAssessmentId = assessmentId;
         } else {
           // Competency not yet in employee matrix — create it
           empComp = queryRunner.manager.create(EmployeeCompetency, {
-            employeeId:      assessment.employeeId,
-            competenceId:    item.competenceId,
+            employeeId: assessment.employeeId,
+            competenceId: item.competenceId,
             currentLevel,
             targetLevel,
             gap,
             gapPercentage,
             lastEvaluatedAt: now,
-            source:          CompetencySource.PERFORMANCE_REVIEW,
+            source: CompetencySource.PERFORMANCE_REVIEW,
             lastAssessmentId: assessmentId,
-            isRequired:      reqMap.has(item.competenceId),
+            isRequired: reqMap.has(item.competenceId),
           });
         }
 
@@ -231,15 +265,20 @@ export class AssessmentsService {
       }
 
       // Calculate totalScore (average of all rated items)
-      const ratedItems = assessment.items.filter(i => i.level !== null);
-      const totalScore = ratedItems.length > 0 
-        ? Math.round((ratedItems.reduce((sum, i) => sum + (i.level ?? 0), 0) / ratedItems.length) * 10) / 10
-        : null;
+      const ratedItems = assessment.items.filter((i) => i.level !== null);
+      const totalScore =
+        ratedItems.length > 0
+          ? Math.round(
+              (ratedItems.reduce((sum, i) => sum + (i.level ?? 0), 0) /
+                ratedItems.length) *
+                10,
+            ) / 10
+          : null;
 
       // Mark the assessment as submitted
-      assessment.status      = AssessmentStatus.SUBMITTED;
+      assessment.status = AssessmentStatus.SUBMITTED;
       assessment.submittedAt = now;
-      assessment.totalScore  = totalScore;
+      assessment.totalScore = totalScore;
       await queryRunner.manager.save(EmployeeAssessment, assessment);
 
       await queryRunner.commitTransaction();
@@ -256,13 +295,21 @@ export class AssessmentsService {
     }
   }
 
-  async remove(assessmentId: string, evaluatorUser: RequestUser): Promise<void> {
-    const assessment = await this.assessRepo.findOne({ where: { id: assessmentId } });
-    if (!assessment) throw new NotFoundException(`Assessment ${assessmentId} not found`);
+  async remove(
+    assessmentId: string,
+    evaluatorUser: RequestUser,
+  ): Promise<void> {
+    const assessment = await this.assessRepo.findOne({
+      where: { id: assessmentId },
+    });
+    if (!assessment)
+      throw new NotFoundException(`Assessment ${assessmentId} not found`);
 
     if (evaluatorUser.role !== 'admin' && evaluatorUser.role !== 'hr') {
       if (assessment.evaluatorId !== evaluatorUser.id) {
-        throw new ForbiddenException('Only the evaluator can delete this assessment.');
+        throw new ForbiddenException(
+          'Only the evaluator can delete this assessment.',
+        );
       }
     }
 
@@ -281,7 +328,8 @@ export class AssessmentsService {
       relations: ['items', 'items.competence', 'items.competence.family'],
     });
 
-    if (!assessment) throw new NotFoundException(`Assessment ${assessmentId} not found`);
+    if (!assessment)
+      throw new NotFoundException(`Assessment ${assessmentId} not found`);
 
     return this.withSummary(assessment);
   }
@@ -293,7 +341,15 @@ export class AssessmentsService {
       where: { employeeId },
       order: { createdAt: 'DESC' },
       // Intentionally NOT loading items (performance)
-      select: ['id', 'cycleLabel', 'status', 'submittedAt', 'evaluatorId', 'createdAt', 'totalScore'],
+      select: [
+        'id',
+        'cycleLabel',
+        'status',
+        'submittedAt',
+        'evaluatorId',
+        'createdAt',
+        'totalScore',
+      ],
     });
 
     return assessments;
@@ -306,13 +362,15 @@ export class AssessmentsService {
     const assessedItems = items.filter((i) => i.level !== null);
     const totalCompetencies = items.length;
     const assessedCount = assessedItems.length;
-    const averageScore = assessment.totalScore ?? (
-      assessedCount > 0
+    const averageScore =
+      assessment.totalScore ??
+      (assessedCount > 0
         ? Math.round(
-            assessedItems.reduce((s, i) => s + (i.level ?? 0), 0) / assessedCount * 10,
+            (assessedItems.reduce((s, i) => s + (i.level ?? 0), 0) /
+              assessedCount) *
+              10,
           ) / 10
-        : null
-    );
+        : null);
     const completionRate =
       totalCompetencies > 0
         ? Math.round((assessedCount / totalCompetencies) * 100)
@@ -320,7 +378,12 @@ export class AssessmentsService {
 
     return {
       ...assessment,
-      summary: { totalCompetencies, assessedCount, averageScore, completionRate },
+      summary: {
+        totalCompetencies,
+        assessedCount,
+        averageScore,
+        completionRate,
+      },
     };
   }
 }

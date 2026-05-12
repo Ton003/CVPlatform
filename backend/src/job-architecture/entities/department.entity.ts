@@ -1,4 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+} from 'typeorm';
 import { BusinessUnit } from './business-unit.entity';
 import { JobRole } from './job-role.entity';
 
@@ -16,11 +25,13 @@ export class Department {
   @Column({ name: 'business_unit_id' })
   businessUnitId: string;
 
-  @ManyToOne(() => BusinessUnit, bu => bu.departments, { onDelete: 'CASCADE' })
+  @ManyToOne(() => BusinessUnit, (bu) => bu.departments, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'business_unit_id' })
   businessUnit: BusinessUnit;
 
-  @OneToMany(() => JobRole, role => role.department)
+  @OneToMany(() => JobRole, (role) => role.department)
   jobRoles: JobRole[];
 
   @CreateDateColumn({ name: 'created_at' })

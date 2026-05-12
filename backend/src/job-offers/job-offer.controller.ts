@@ -16,7 +16,15 @@ import {
   ParseUUIDPipe,
   Logger,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiHeader, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiHeader,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -44,9 +52,16 @@ export class JobOffersController {
   @Get()
   @SkipThrottle()
   @ApiOperation({ summary: 'List all job offers with optional status filter' })
-  @ApiQuery({ name: 'status', required: false, enum: ['open', 'closed', 'draft'] })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: ['open', 'closed', 'draft'],
+  })
   @ApiResponse({ status: 200, description: 'List of job offers retrieved.' })
-  async findAll(@Query('status') status?: string, @Request() req?: { user: UserContext }) {
+  async findAll(
+    @Query('status') status?: string,
+    @Request() req?: { user: UserContext },
+  ) {
     let scopedIds: string[] = [];
     if (req?.user && this.policyService.isManager(req.user)) {
       scopedIds = await this.policyService.getManagedJobIds(req.user);
@@ -62,7 +77,10 @@ export class JobOffersController {
   @ApiParam({ name: 'id', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Job offer details.' })
   @ApiResponse({ status: 404, description: 'Job offer not found.' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req?: { user: UserContext }) {
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req?: { user: UserContext },
+  ) {
     if (req?.user) {
       await this.policyService.assertJobAccess(req.user, id);
     }
@@ -73,7 +91,10 @@ export class JobOffersController {
   @Roles('admin', 'hr')
   @ApiOperation({ summary: 'Create a new job offer' })
   @ApiResponse({ status: 201, description: 'Job offer created.' })
-  create(@Body() dto: CreateJobOfferDto, @Request() req: { user: UserContext }) {
+  create(
+    @Body() dto: CreateJobOfferDto,
+    @Request() req: { user: UserContext },
+  ) {
     return this.jobOffersService.create(dto, req.user.id);
   }
 
@@ -103,28 +124,37 @@ export class JobOffersController {
   @Get(':id/matches')
   @SkipThrottle()
   @ApiOperation({ summary: 'Run AI-powered candidate matching for this offer' })
-  @ApiHeader({ name: 'x-api-key', description: 'Groq API Key for AI Mode', required: false })
-  @ApiResponse({ status: 200, description: 'Unranked matching results returned.' })
+  @ApiHeader({
+    name: 'x-api-key',
+    description: 'AI API Key for matching',
+    required: false,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Unranked matching results returned.',
+  })
   matchCandidates(
     @Param('id', ParseUUIDPipe) id: string,
-    @Query('mode') mode = 'groq',
     @Headers('x-api-key') apiKey?: string,
   ) {
-    return this.jobOffersService.matchCandidates(id, apiKey, mode);
+    return this.jobOffersService.matchCandidates(id, apiKey);
   }
 
   @Post(':jobId/applications/from-candidate')
   @ApiOperation({ summary: 'Move a candidate into the pipeline for this job' })
-  @ApiResponse({ status: 201, description: 'Application created successfully.' })
+  @ApiResponse({
+    status: 201,
+    description: 'Application created successfully.',
+  })
   createApplicationFromCandidate(
     @Param('jobId', ParseUUIDPipe) jobId: string,
     @Body('candidateId', ParseUUIDPipe) candidateId: string,
     @Request() req: { user: UserContext },
   ) {
     return this.applicationsService.createApplicationFromExistingCandidate(
-      candidateId, 
-      jobId, 
-      req.user.id
+      candidateId,
+      jobId,
+      req.user.id,
     );
   }
 
@@ -142,7 +172,10 @@ export class JobOffersController {
 
   @Get(':id/requirements')
   @ApiOperation({ summary: 'Get competency requirements for this job' })
-  async getRequirements(@Param('id', ParseUUIDPipe) id: string, @Request() req?: { user: UserContext }) {
+  async getRequirements(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req?: { user: UserContext },
+  ) {
     if (req?.user) await this.policyService.assertJobAccess(req.user, id);
     return this.jobOffersService.getRequirements(id);
   }

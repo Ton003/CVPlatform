@@ -1,15 +1,20 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn,
-  ManyToOne, OneToMany, JoinColumn, Index,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+  Index,
 } from 'typeorm';
 import { CompetenceFamily } from './family.entity';
-import { CompetenceLevel }  from './competence-level.entity';
+import { CompetenceLevel } from './competence-level.entity';
 
 @Entity('competences')
 @Index('idx_competence_family', ['familyId'])
 export class Competence {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -22,11 +27,16 @@ export class Competence {
   @Column({ name: 'family_id', type: 'uuid' })
   familyId: string;
 
-  @ManyToOne(() => CompetenceFamily, (f) => f.competences, { onDelete: 'CASCADE' })
+  @ManyToOne(() => CompetenceFamily, (f) => f.competences, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'family_id' })
   family: CompetenceFamily;
 
-  @OneToMany(() => CompetenceLevel, (l) => l.competence, { cascade: true, eager: true })
+  @OneToMany(() => CompetenceLevel, (l) => l.competence, {
+    cascade: true,
+    eager: true,
+  })
   levels: CompetenceLevel[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })

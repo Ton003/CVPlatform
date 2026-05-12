@@ -6,7 +6,6 @@ import { ScheduleModule } from '@nestjs/schedule';
 // Infrastructure Modules
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { IntelligenceModule } from './intelligence/intelligence.module';
 
 // Domain Feature Modules
 import { CvUploadModule } from './cv-upload/cv-upload.module';
@@ -19,6 +18,7 @@ import { CompetenceManagementModule } from './competence-management/competence-m
 import { JobArchitectureModule } from './job-architecture/job-architecture.module';
 import { EmployeesModule } from './employees/employees.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -37,7 +37,7 @@ import { AppService } from './app.service';
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
         const logger = new Logger('Database');
-        
+
         return {
           type: 'postgres',
           host: cfg.get<string>('DB_HOST'),
@@ -45,16 +45,22 @@ import { AppService } from './app.service';
           username: cfg.get<string>('DB_USERNAME'),
           password: cfg.get<string>('DB_PASSWORD'),
           database: cfg.get<string>('DB_DATABASE'),
-          
+
           // ✅ STRATEGY: Automate entity discovery to eliminate manual imports
           autoLoadEntities: true,
-          
+
           // ✅ SAFETY: Keep synchronize for dev, should be false in prod
           synchronize: cfg.get<string>('NODE_ENV') !== 'production',
-          
+
           // ✅ PERFORMANCE: Logging and optimization
-          logging: cfg.get<string>('NODE_ENV') === 'development' ? ['error', 'warn'] : ['error'],
-          ssl: cfg.get<string>('DB_SSL') === 'true' ? { rejectUnauthorized: false } : false,
+          logging:
+            cfg.get<string>('NODE_ENV') === 'development'
+              ? ['error', 'warn']
+              : ['error'],
+          ssl:
+            cfg.get<string>('DB_SSL') === 'true'
+              ? { rejectUnauthorized: false }
+              : false,
         };
       },
     }),
@@ -72,7 +78,7 @@ import { AppService } from './app.service';
     JobArchitectureModule,
     EmployeesModule,
     DashboardModule,
-    IntelligenceModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

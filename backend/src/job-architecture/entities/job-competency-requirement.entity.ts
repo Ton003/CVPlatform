@@ -1,5 +1,11 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, Unique, CreateDateColumn
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  Unique,
+  CreateDateColumn,
 } from 'typeorm';
 import { JobRoleLevel } from './job-role-level.entity';
 import { Competence } from '../../competence-management/entities/competence.entity';
@@ -13,7 +19,9 @@ export class JobCompetencyRequirement {
   @Column()
   jobRoleLevelId: string;
 
-  @ManyToOne(() => JobRoleLevel, level => level.competencyRequirements, { onDelete: 'CASCADE' })
+  @ManyToOne(() => JobRoleLevel, (level) => level.competencyRequirements, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'jobRoleLevelId' })
   jobRoleLevel: JobRoleLevel;
 
@@ -28,13 +36,13 @@ export class JobCompetencyRequirement {
   requiredLevel: number; // 1-5 (assigned proficiency level)
 
   @Column({ name: 'is_required', type: 'boolean', default: true })
-  isRequired: boolean;  // must-have vs nice-to-have
+  isRequired: boolean; // must-have vs nice-to-have
 
   @Column({ name: 'is_critical', type: 'boolean', default: false })
-  isCritical: boolean;  // deal-breaker if missing
+  isCritical: boolean; // deal-breaker if missing
 
   @Column({ type: 'float', default: 1.0 })
-  weight: number;       // relative importance multiplier (0.5–2.0)
+  weight: number; // relative importance multiplier (0.5–2.0)
 
   @CreateDateColumn()
   createdAt: Date;

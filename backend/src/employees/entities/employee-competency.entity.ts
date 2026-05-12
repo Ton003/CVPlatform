@@ -5,7 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  JoinColumn
+  JoinColumn,
 } from 'typeorm';
 import type { Relation } from 'typeorm';
 import { EmployeeAssessment } from './employee-assessment.entity';
@@ -15,7 +15,7 @@ import { Competence } from '../../competence-management/entities/competence.enti
 export enum CompetencySource {
   ASSESSMENT_IMPORT = 'assessment_import',
   MANUAL = 'manual',
-  PERFORMANCE_REVIEW = 'performance_review'
+  PERFORMANCE_REVIEW = 'performance_review',
 }
 
 @Entity('employee_competencies')
@@ -38,19 +38,19 @@ export class EmployeeCompetency {
   competence: Relation<Competence>;
 
   @Column({ name: 'current_level', type: 'int', default: 1 })
-  currentLevel: number;  // 1-5, current assessed proficiency
+  currentLevel: number; // 1-5, current assessed proficiency
 
   @Column({ name: 'target_level', type: 'int', nullable: true })
-  targetLevel: number | null;  // 1-5, target for role/development
+  targetLevel: number | null; // 1-5, target for role/development
 
   @Column({ type: 'int', nullable: true })
-  gap: number | null;  // targetLevel - currentLevel (negative = deficit)
+  gap: number | null; // targetLevel - currentLevel (negative = deficit)
 
   @Column({ name: 'gap_percentage', type: 'float', nullable: true })
-  gapPercentage: number | null;  // gap as % of targetLevel
+  gapPercentage: number | null; // gap as % of targetLevel
 
   @Column({ name: 'is_required', type: 'boolean', default: false })
-  isRequired: boolean;  // is this competency mandatory for the role
+  isRequired: boolean; // is this competency mandatory for the role
 
   @Column({ name: 'last_evaluated_at', type: 'timestamptz', nullable: true })
   lastEvaluatedAt: Date | null;
@@ -58,7 +58,7 @@ export class EmployeeCompetency {
   @Column({
     type: 'enum',
     enum: CompetencySource,
-    default: CompetencySource.MANUAL
+    default: CompetencySource.MANUAL,
   })
   source: CompetencySource;
 

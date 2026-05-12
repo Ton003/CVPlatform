@@ -640,7 +640,7 @@
 
 @keyframes modalIn {
   from { opacity: 0; transform: translateY(30px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 1; transform: none scale(1); }
 }
 
 /* Header */
@@ -1365,7 +1365,7 @@ optgroup {
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
@@ -1376,7 +1376,7 @@ optgroup {
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: none scale(1);
   }
 }
 

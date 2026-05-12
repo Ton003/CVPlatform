@@ -65,6 +65,31 @@
         </div>
       </div>
 
+      <!-- Management Stats Bar (Managers Only) -->
+      <div class="management-stats-bar" *ngIf="employee!.isManager && managementStats">
+        <div class="m-stat">
+          <span class="m-stat-icon">👥</span>
+          <div class="m-stat-info">
+            <span class="m-stat-label">Direct Reports</span>
+            <span class="m-stat-val">{{ managementStats.teamSize }}</span>
+          </div>
+        </div>
+        <div class="m-stat">
+          <span class="m-stat-icon">📈</span>
+          <div class="m-stat-info">
+            <span class="m-stat-label">Avg Team Perf</span>
+            <span class="m-stat-val">{{ managementStats.avgTeamPerformance }} / 5</span>
+          </div>
+        </div>
+        <div class="m-stat">
+          <span class="m-stat-icon">🏢</span>
+          <div class="m-stat-info">
+            <span class="m-stat-label">Cumulative Tenure</span>
+            <span class="m-stat-val">{{ managementStats.totalTeamExperience }} Yrs</span>
+          </div>
+        </div>
+      </div>
+
       <div class="profile-actions" *ngIf="!isEditing">
         <button *ngIf="userRole !== 'manager'" class="btn-action btn-action--outline" (click)="toggleEdit()">Edit Profile</button>
         <button class="btn-action btn-action--primary" (click)="startAssessment()">Start Assessment</button>
@@ -183,6 +208,27 @@
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
                 </select>
+              </div>
+            </div>
+          </section>
+
+          <!-- Potential Successors Card -->
+          <section class="card info-section successors-card" *ngIf="potentialSuccessors.length > 0">
+            <div class="section-header">
+              <h3>Potential Successors</h3>
+              <span class="count-pill">{{ potentialSuccessors.length }}</span>
+            </div>
+            <p class="section-desc">Recommended candidates ready for this role.</p>
+            <div class="successors-list">
+              <div class="successor-item" *ngFor="let succ of potentialSuccessors" [routerLink]="['/employees', succ.id]">
+                <div class="avatar-sm">{{ succ.firstName[0] }}{{ succ.lastName[0] }}</div>
+                <div class="succ-info">
+                  <span class="succ-name">{{ succ.firstName }} {{ succ.lastName }}</span>
+                  <span class="succ-status">Ready Now</span>
+                </div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="chevron">
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
               </div>
             </div>
           </section>
@@ -447,46 +493,177 @@
           </div>
         </section>
 
-        <section class="card dev-card">
-          <div class="section-header">
-            <h3>Career Development Plan</h3>
-            <span class="target-pill dev-target" *ngIf="nextLevel">
-              Target: Rank {{ nextLevel.levelNumber }} — {{ nextLevel.title }}
-            </span>
+        <!-- ══ AI DEVELOPMENT ADVISOR ═══════════════════════════════ -->
+        <section class="card ai-advisor-card">
+          <div class="ai-advisor-header">
+            <div class="ai-title-group">
+              <div class="ai-icon-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+                <span class="ai-sparkle">✦</span>
+              </div>
+              <div>
+                <h3>AI Development Advisor</h3>
+                <p class="ai-subtitle">Personalized recommendations powered by AI to accelerate career growth</p>
+              </div>
+            </div>
+            <div class="ai-actions">
+              <button class="btn-api-key" (click)="toggleApiKeyInput()" [class.has-key]="aiApiKey">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                  <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+                </svg>
+                {{ aiApiKey ? 'API Key Set' : 'Set API Key' }}
+              </button>
+              <button class="btn-action btn-action--primary btn-generate-ai"
+                      (click)="generateAiRecommendations()"
+                      [disabled]="aiLoading">
+                <svg *ngIf="!aiLoading" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+                </svg>
+                <span *ngIf="aiLoading" class="spinner-inline"></span>
+                {{ aiLoading ? 'Analyzing gaps...' : (aiRecommendations ? 'Regenerate Plan' : 'Generate Development Plan') }}
+              </button>
+            </div>
           </div>
 
-          <p class="section-desc" *ngIf="nextLevel">
-            Detailed gap analysis focusing on upcoming role requirements and promotion readiness.
-          </p>
-
-          <!-- No Next Level -->
-          <div class="no-next-level" *ngIf="!nextLevel && !devLoading">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-            </svg>
-            <h4>Maximum Level Reached</h4>
-            <p>This employee is already at the highest defined rank for their current job role.</p>
-            <button class="btn-action btn-action--outline">Explore Lateral Moves</button>
+          <!-- API Key Input -->
+          <div class="api-key-input-wrap" *ngIf="showApiKeyInput">
+            <div class="api-key-input-row">
+              <input type="password" [(ngModel)]="aiApiKey" class="edit-input api-key-field"
+                     placeholder="Enter your AI API Key (e.g. Groq API key)" />
+              <button class="btn-action btn-action--primary btn-sm" (click)="saveApiKey()">Save</button>
+            </div>
+            <p class="api-key-hint">Your key is stored locally in the browser and never saved on the server.</p>
           </div>
 
-          <!-- Loading -->
-          <div class="loading-container dev-loading" *ngIf="devLoading">
-            <div class="spinner-sm"></div>
-            <span>Compiling readiness data...</span>
+          <!-- Loading Skeleton -->
+          <div class="ai-loading-skeleton" *ngIf="aiLoading">
+            <div class="skeleton-header">
+              <div class="skeleton-sparkle">✦</div>
+              <span>Analyzing competency gaps and generating personalized recommendations...</span>
+            </div>
+            <div class="skeleton-grid">
+              <div class="skeleton-card" *ngFor="let i of [1,2,3,4]">
+                <div class="skeleton-line wide"></div>
+                <div class="skeleton-line medium"></div>
+                <div class="skeleton-line short"></div>
+              </div>
+            </div>
           </div>
 
-          <!-- Heatmap Results -->
-          <app-gap-analysis-heatmap *ngIf="targetReport && !devLoading" [report]="targetReport">
-          </app-gap-analysis-heatmap>
-
-          <div class="error-msg" *ngIf="devError && !devLoading">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <!-- Error -->
+          <div class="ai-error" *ngIf="aiError && !aiLoading">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
               <circle cx="12" cy="12" r="10" />
               <line x1="12" y1="8" x2="12" y2="12" />
               <line x1="12" y1="16" x2="12.01" y2="16" />
             </svg>
-            {{ devError }}
-            <button class="retry-link" (click)="nextLevel && loadTargetGap(employee!.id, nextLevel.id)">Retry</button>
+            <span>{{ aiError }}</span>
+            <button class="retry-link" (click)="generateAiRecommendations()">Retry</button>
+          </div>
+
+          <!-- Results -->
+          <div class="ai-results" *ngIf="aiRecommendations && !aiLoading">
+            <!-- Summary -->
+            <div class="ai-summary-block">
+              <div class="ai-summary-icon">✦</div>
+              <p>{{ aiRecommendations.summary }}</p>
+            </div>
+
+            <!-- Gaps Analyzed -->
+            <div class="ai-gaps-bar" *ngIf="aiRecommendations.gapsAnalyzed?.length > 0">
+              <span class="gaps-label">Gaps Analyzed</span>
+              <div class="gap-chips">
+                <span class="gap-chip" *ngFor="let g of aiRecommendations.gapsAnalyzed">
+                  {{ g.name }}
+                  <span class="gap-val">{{ g.current }}→{{ g.target }}</span>
+                </span>
+              </div>
+            </div>
+
+            <!-- Courses -->
+            <div class="rec-section" *ngIf="aiRecommendations.courses?.length > 0">
+              <h4 class="rec-section-title">
+                <span class="rec-icon">📚</span> Recommended Courses
+              </h4>
+              <div class="rec-grid">
+                <div class="rec-card rec-card--course" *ngFor="let course of aiRecommendations.courses">
+                  <div class="rec-card-header">
+                    <span class="platform-badge">{{ getPlatformIcon(course.platform) }} {{ course.platform }}</span>
+                  </div>
+                  <h5 class="rec-card-title">{{ course.title }}</h5>
+                  <p class="rec-card-reason">{{ course.reason }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Books -->
+            <div class="rec-section" *ngIf="aiRecommendations.books?.length > 0">
+              <h4 class="rec-section-title">
+                <span class="rec-icon">📖</span> Recommended Books
+              </h4>
+              <div class="rec-grid">
+                <div class="rec-card rec-card--book" *ngFor="let book of aiRecommendations.books">
+                  <h5 class="rec-card-title">{{ book.title }}</h5>
+                  <span class="book-author">by {{ book.author }}</span>
+                  <p class="rec-card-reason">{{ book.reason }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Projects -->
+            <div class="rec-section" *ngIf="aiRecommendations.projects?.length > 0">
+              <h4 class="rec-section-title">
+                <span class="rec-icon">🛠️</span> Hands-On Projects
+              </h4>
+              <div class="rec-grid">
+                <div class="rec-card rec-card--project" *ngFor="let project of aiRecommendations.projects">
+                  <h5 class="rec-card-title">{{ project.title }}</h5>
+                  <p class="rec-card-reason">{{ project.description }}</p>
+                  <div class="project-skills">
+                    <span class="project-skill-tag" *ngFor="let skill of project.skills">{{ skill }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Skills to Sharpen -->
+            <div class="rec-section" *ngIf="aiRecommendations.skillsToSharpen?.length > 0">
+              <h4 class="rec-section-title">
+                <span class="rec-icon">🎯</span> Skills to Sharpen
+              </h4>
+              <div class="skills-sharpen-list">
+                <div class="skill-sharpen-item" *ngFor="let skill of aiRecommendations.skillsToSharpen">
+                  <div class="skill-sharpen-left">
+                    <span class="priority-dot" [style.background]="getPriorityColor(skill.priority)"></span>
+                    <span class="skill-sharpen-name">{{ skill.name }}</span>
+                    <span class="priority-badge" 
+                          [style.background]="getPriorityColor(skill.priority) + '18'"
+                          [style.color]="getPriorityColor(skill.priority)"
+                          [style.borderColor]="getPriorityColor(skill.priority) + '40'">
+                      {{ skill.priority | uppercase }}
+                    </span>
+                  </div>
+                  <p class="skill-sharpen-action">{{ skill.action }}</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="ai-footer">
+              <span class="ai-generated-at">Generated {{ aiRecommendations.generatedAt | date:'medium' }}</span>
+              <span class="ai-disclaimer">Recommendations are AI-generated. Review with your manager for a personalized plan.</span>
+            </div>
+          </div>
+
+          <!-- Empty State (no results yet, not loading) -->
+          <div class="ai-empty" *ngIf="!aiRecommendations && !aiLoading && !aiError">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" width="48" height="48">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            <h4>Ready to Analyze</h4>
+            <p>Click <strong>"Generate Development Plan"</strong> to get AI-powered recommendations based on competency gaps.</p>
           </div>
         </section>
 

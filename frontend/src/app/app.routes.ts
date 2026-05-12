@@ -90,7 +90,16 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/employees/employee-list/employee-list.component').then(m => m.EmployeeListComponent),
       },
-
+      {
+        path: 'employees/talent-matrix',
+        loadComponent: () =>
+          import('./features/employees/talent-matrix/talent-matrix.component').then(m => m.TalentMatrixComponent),
+      },
+      {
+        path: 'employees/org-chart',
+        loadComponent: () =>
+          import('./features/employees/org-chart/org-chart.component').then(m => m.OrgChartComponent),
+      },
       {
         path: 'employees/:id',
         loadComponent: () =>

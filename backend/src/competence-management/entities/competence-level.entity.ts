@@ -1,6 +1,11 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  ManyToOne, JoinColumn, Index, Check,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+  Index,
+  Check,
 } from 'typeorm';
 import { Competence } from './competence.entity';
 
@@ -8,7 +13,6 @@ import { Competence } from './competence.entity';
 @Index('idx_level_competence', ['competenceId'])
 @Check('chk_level_range', '"level" BETWEEN 1 AND 5')
 export class CompetenceLevel {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

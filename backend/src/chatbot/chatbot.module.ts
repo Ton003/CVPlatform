@@ -1,15 +1,14 @@
-import { Module }         from '@nestjs/common';
-import { HttpModule }     from '@nestjs/axios';
-import { ConfigModule }   from '@nestjs/config';
+import { Module } from '@nestjs/common';
+import { HttpModule } from '@nestjs/axios';
+import { ConfigModule } from '@nestjs/config';
 import { CvUploadModule } from '../cv-upload/cv-upload.module';
 import { AuthModule } from '../auth/auth.module';
 
-import { ChatbotController }       from './chatbot.controller';
-import { ChatbotService }          from './chatbot.service';
+import { ChatbotController } from './chatbot.controller';
+import { ChatbotService } from './chatbot.service';
 import { KeywordExtractorService } from './keyword-extractor.service';
-import { CvSearchService }         from './cv-search.service';
-import { Phi3IntentService }       from './phi3-intent.service';
-import { GroqService }             from './groq.service';
+import { CvSearchService } from './cv-search.service';
+import { AiService } from './ai.service';
 
 @Module({
   imports: [
@@ -23,9 +22,8 @@ import { GroqService }             from './groq.service';
     ChatbotService,
     KeywordExtractorService,
     CvSearchService,
-    Phi3IntentService,
-    GroqService,
+    AiService,
   ],
-  exports: [ChatbotService, GroqService], // ✅ allows other modules to use AI logic
+  exports: [ChatbotService, AiService], // ✅ allows other modules to use AI logic
 })
 export class ChatbotModule {}

@@ -13,7 +13,7 @@ import { User } from '../../users/entities/user.entity';
 import { EmployeeAssessmentItem } from './employee-assessment-item.entity';
 
 export enum AssessmentStatus {
-  DRAFT     = 'DRAFT',
+  DRAFT = 'DRAFT',
   SUBMITTED = 'SUBMITTED',
 }
 
@@ -36,7 +36,11 @@ export class EmployeeAssessment {
   @JoinColumn({ name: 'evaluator_id' })
   evaluator: Relation<User> | null;
 
-  @Column({ type: 'enum', enum: AssessmentStatus, default: AssessmentStatus.DRAFT })
+  @Column({
+    type: 'enum',
+    enum: AssessmentStatus,
+    default: AssessmentStatus.DRAFT,
+  })
   status: AssessmentStatus;
 
   @Column({ name: 'submitted_at', type: 'timestamptz', nullable: true })
@@ -48,7 +52,9 @@ export class EmployeeAssessment {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
-  @OneToMany(() => EmployeeAssessmentItem, (item) => item.assessment, { cascade: true })
+  @OneToMany(() => EmployeeAssessmentItem, (item) => item.assessment, {
+    cascade: true,
+  })
   items: Relation<EmployeeAssessmentItem[]>;
 
   @Column({ name: 'total_score', type: 'float', nullable: true })

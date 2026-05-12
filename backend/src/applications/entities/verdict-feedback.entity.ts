@@ -1,9 +1,13 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, ManyToOne, JoinColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { ApplicationVerdict } from './application-verdict.entity';
-import { User }               from '../../users/entities/user.entity';
+import { User } from '../../users/entities/user.entity';
 
 /**
  * Structured human feedback on the quality of an AI verdict.
@@ -11,7 +15,6 @@ import { User }               from '../../users/entities/user.entity';
  */
 @Entity('verdict_feedback')
 export class VerdictFeedback {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -26,7 +29,12 @@ export class VerdictFeedback {
   agreed: boolean;
 
   /** If disagreed, why? */
-  @Column({ name: 'override_reason', type: 'varchar', length: 300, nullable: true })
+  @Column({
+    name: 'override_reason',
+    type: 'varchar',
+    length: 300,
+    nullable: true,
+  })
   overrideReason: string | null;
 
   /** How useful was the verdict panel? 1–5 */

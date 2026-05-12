@@ -1,96 +1,96 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { HttpService }        from '@nestjs/axios';
-import { firstValueFrom }     from 'rxjs';
+import { HttpService } from '@nestjs/axios';
+import { firstValueFrom } from 'rxjs';
 
-const GROQ_URL   = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_MODEL = 'llama-3.3-70b-versatile';
+const AI_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
+const AI_API_MODEL = 'llama-3.3-70b-versatile';
 
 // ── Output types ──────────────────────────────────────────────────────────────
 
 export interface ExperienceEntry {
-  title:       string;
-  company:     string | null;
-  start_date:  string | null;
-  end_date:    string | null;
+  title: string;
+  company: string | null;
+  start_date: string | null;
+  end_date: string | null;
   description: string | null;
 }
 
 export interface EducationEntry {
-  degree:      string | null;
+  degree: string | null;
   institution: string | null;
-  date:        string | null;
+  date: string | null;
 }
 
 export interface LanguageEntry {
-  name:  string;
+  name: string;
   level: string;
 }
 
-export interface GroqParsedCv {
+export interface AiParsedCv {
   // Personal info
-  first_name:              string | null;
-  last_name:               string | null;
-  location:                string | null;
-  current_title:           string | null;
+  first_name: string | null;
+  last_name: string | null;
+  location: string | null;
+  current_title: string | null;
 
   // Skills
-  skills_technical:        string[];
-  skills_soft:             string[];
+  skills_technical: string[];
+  skills_soft: string[];
 
   // Structured sections
-  languages:               LanguageEntry[];
-  education:               EducationEntry[];
-  experience:              ExperienceEntry[];
+  languages: LanguageEntry[];
+  education: EducationEntry[];
+  experience: ExperienceEntry[];
 
   // Computed
-  years_experience:        number | null;
+  years_experience: number | null;
   total_experience_months: number | null;
 
   // AI-generated
-  llm_summary:             string;
+  llm_summary: string;
 }
 
-export interface GroqParseOptions {
+export interface AiParseOptions {
   apiKey: string;
 }
 
 // ── Validation limits ─────────────────────────────────────────────────────────
 // Sanity-check values before saving to DB
 
-const MAX_YEARS_EXPERIENCE  = 50;
+const MAX_YEARS_EXPERIENCE = 50;
 const MAX_EXPERIENCE_ENTRIES = 10;
-const MAX_EDUCATION_ENTRIES  = 6;
-const MAX_SKILLS             = 30;
-const MAX_SOFT_SKILLS        = 8;
-const MAX_LANGUAGES          = 6;
+const MAX_EDUCATION_ENTRIES = 6;
+const MAX_SKILLS = 30;
+const MAX_SOFT_SKILLS = 8;
+const MAX_LANGUAGES = 6;
 
 @Injectable()
-export class GroqCvParserService {
-  private readonly logger = new Logger(GroqCvParserService.name);
+export class AiCvParserService {
+  private readonly logger = new Logger(AiCvParserService.name);
 
   constructor(private readonly httpService: HttpService) {}
 
   // ── Main entry point ──────────────────────────────────────────────────────
 
-  async parse(rawText: string, options: GroqParseOptions): Promise<GroqParsedCv> {
-    this.logger.log(`🤖 Groq CV parsing — ${rawText.length} chars`);
+  async parse(rawText: string, options: AiParseOptions): Promise<AiParsedCv> {
+    this.logger.log(`🤖 AI CV parsing — ${rawText.length} chars`);
 
     const prompt = this.buildPrompt(rawText);
 
     try {
       const response = await firstValueFrom(
         this.httpService.post(
-          GROQ_URL,
+          AI_API_URL,
           {
-            model:       GROQ_MODEL,
-            messages:    [{ role: 'user', content: prompt }],
-            temperature: 0.0,   // deterministic — we want structured data
-            max_tokens:  2000,
+            model: AI_API_MODEL,
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.0, // deterministic — we want structured data
+            max_tokens: 2000,
           },
           {
             timeout: 30_000,
             headers: {
-              Authorization:  `Bearer ${options.apiKey}`,
+              Authorization: `Bearer ${options.apiKey}`,
               'Content-Type': 'application/json',
             },
           },
@@ -98,12 +98,11 @@ export class GroqCvParserService {
       );
 
       const raw = response.data?.choices?.[0]?.message?.content ?? '';
-      this.logger.log(`✅ Groq responded — ${raw.length} chars`);
+      this.logger.log(`✅ AI responded — ${raw.length} chars`);
 
       return this.parseAndValidate(raw, rawText);
-
     } catch (err) {
-      this.logger.error(`❌ Groq CV parsing failed: ${err.message}`);
+      this.logger.error(`❌ AI CV parsing failed: ${err.message}`);
       return this.emptyResult();
     }
   }
@@ -112,7 +111,10 @@ export class GroqCvParserService {
    * INFERENCE PIPELINE
    * Takes a job description and extracts SFIA competencies with inferred levels (1-5).
    */
-  async inferProficiencyLevels(description: string, options: GroqParseOptions): Promise<any[]> {
+  async inferProficiencyLevels(
+    description: string,
+    options: AiParseOptions,
+  ): Promise<any[]> {
     if (!description || description.length < 20) return [];
 
     const prompt = `Identify SFIA-compliant competencies mentioned in the following job description.
@@ -136,17 +138,17 @@ Return ONLY a JSON array of objects:
     try {
       const response = await firstValueFrom(
         this.httpService.post(
-          GROQ_URL,
+          AI_API_URL,
           {
-            model:       GROQ_MODEL,
-            messages:    [{ role: 'user', content: prompt }],
+            model: AI_API_MODEL,
+            messages: [{ role: 'user', content: prompt }],
             temperature: 0.0,
-            max_tokens:  500,
+            max_tokens: 500,
           },
           {
             timeout: 15_000,
             headers: {
-              Authorization:  `Bearer ${options.apiKey}`,
+              Authorization: `Bearer ${options.apiKey}`,
               'Content-Type': 'application/json',
             },
           },
@@ -155,21 +157,19 @@ Return ONLY a JSON array of objects:
 
       const raw = response.data?.choices?.[0]?.message?.content ?? '[]';
       const start = raw.indexOf('[');
-      const end   = raw.lastIndexOf(']');
+      const end = raw.lastIndexOf(']');
       if (start === -1 || end === -1) return [];
-      
-      return JSON.parse(raw.substring(start, end + 1)).map(item => ({
+
+      return JSON.parse(raw.substring(start, end + 1)).map((item) => ({
         skill: item.skill,
         level: Math.min(5, Math.max(1, item.level || 1)),
-        confidence: Math.min(1.0, Math.max(0.0, item.confidence || 0.5))
+        confidence: Math.min(1.0, Math.max(0.0, item.confidence || 0.5)),
       }));
-
     } catch (err) {
       this.logger.warn(`Inference failed: ${err.message}`);
       return [];
     }
   }
-
 
   // ── Prompt ────────────────────────────────────────────────────────────────
   // Single prompt that extracts EVERYTHING in one call.
@@ -182,9 +182,8 @@ Return ONLY a JSON array of objects:
 
   private buildPrompt(rawText: string): string {
     // Use up to 5000 chars — covers most CVs fully
-    const excerpt = rawText.length > 5000
-      ? rawText.substring(0, 5000)
-      : rawText;
+    const excerpt =
+      rawText.length > 5000 ? rawText.substring(0, 5000) : rawText;
 
     return `You are an expert CV parser for a recruitment platform. Extract ALL information from this CV and return ONE JSON object.
 
@@ -287,7 +286,7 @@ Return ONLY this JSON, no markdown, no explanation:
 
   // ── Parse + validate response ─────────────────────────────────────────────
 
-  private parseAndValidate(raw: string, originalText: string): GroqParsedCv {
+  private parseAndValidate(raw: string, originalText: string): AiParsedCv {
     let parsed: any = null;
 
     // Step 1: clean and extract JSON
@@ -295,17 +294,18 @@ Return ONLY this JSON, no markdown, no explanation:
       const cleaned = raw
         .replace(/```json\s*/gi, '')
         .replace(/```\s*/gi, '')
-        .replace(/\/\/.*$/gm, '')   // remove JS-style comments Groq sometimes adds
+        .replace(/\/\/.*$/gm, '') // remove JS-style comments AI sometimes adds
         .trim();
 
       const start = cleaned.indexOf('{');
-      const end   = cleaned.lastIndexOf('}');
+      const end = cleaned.lastIndexOf('}');
 
       if (start === -1 || end === -1) throw new Error('No JSON object found');
       parsed = JSON.parse(cleaned.substring(start, end + 1));
-
     } catch (err) {
-      this.logger.warn(`JSON parse failed: ${err.message} — trying robust extraction`);
+      this.logger.warn(
+        `JSON parse failed: ${err.message} — trying robust extraction`,
+      );
       parsed = this.robustExtract(raw);
     }
 
@@ -318,17 +318,19 @@ Return ONLY this JSON, no markdown, no explanation:
     return this.sanitize(parsed, originalText);
   }
 
-  // ── Sanitize / validate ───────────────────────────────────────────────────
+  // ── Sanitize / validate ─────────────────────────────────────────────
 
-  private sanitize(p: any, originalText: string): GroqParsedCv {
-
+  private sanitize(p: any, originalText: string): AiParsedCv {
     // Names — Title Case, never null for both
     const firstName = this.cleanName(p.first_name);
-    const lastName  = this.cleanName(p.last_name);
+    const lastName = this.cleanName(p.last_name);
 
     // Skills — deduplicated, length-validated, max count enforced
-    const skillsTechnical = this.cleanSkillArray(p.skills_technical, MAX_SKILLS);
-    const skillsSoft      = this.cleanSkillArray(p.skills_soft,      MAX_SOFT_SKILLS);
+    const skillsTechnical = this.cleanSkillArray(
+      p.skills_technical,
+      MAX_SKILLS,
+    );
+    const skillsSoft = this.cleanSkillArray(p.skills_soft, MAX_SOFT_SKILLS);
 
     // Languages
     const languages = this.cleanLanguages(p.languages);
@@ -341,54 +343,70 @@ Return ONLY this JSON, no markdown, no explanation:
 
     // Years experience — sanity check
     let yearsExp: number | null = null;
-    if (typeof p.years_experience === 'number' && p.years_experience >= 0 && p.years_experience <= MAX_YEARS_EXPERIENCE) {
+    if (
+      typeof p.years_experience === 'number' &&
+      p.years_experience >= 0 &&
+      p.years_experience <= MAX_YEARS_EXPERIENCE
+    ) {
       yearsExp = Math.round(p.years_experience);
     }
 
     // Recalculate months from experience entries (more reliable than LLM estimate)
     const totalMonths = this.calculateMonths(experience);
     // If LLM gave us years but we couldn't calculate, trust LLM
-    const finalYears = totalMonths !== null
-      ? Math.floor(totalMonths / 12)
-      : yearsExp;
+    const finalYears =
+      totalMonths !== null ? Math.floor(totalMonths / 12) : yearsExp;
 
     // Summary — must be non-empty string, max 500 chars
-    const summary = typeof p.summary === 'string' && p.summary.trim().length > 20
-      ? p.summary.trim().substring(0, 500)
-      : '';
+    const summary =
+      typeof p.summary === 'string' && p.summary.trim().length > 20
+        ? p.summary.trim().substring(0, 500)
+        : '';
 
     // Current title — max 60 chars
-    const currentTitle = typeof p.current_title === 'string' && p.current_title.trim()
-      ? p.current_title.trim().substring(0, 60)
-      : null;
+    const currentTitle =
+      typeof p.current_title === 'string' && p.current_title.trim()
+        ? p.current_title.trim().substring(0, 60)
+        : null;
 
-    const result: GroqParsedCv = {
-      first_name:              firstName,
-      last_name:               lastName,
-      location:                typeof p.location === 'string' ? p.location.trim().substring(0, 100) : null,
-      current_title:           currentTitle,
-      skills_technical:        skillsTechnical,
-      skills_soft:             skillsSoft,
+    const result: AiParsedCv = {
+      first_name: firstName,
+      last_name: lastName,
+      location:
+        typeof p.location === 'string'
+          ? p.location.trim().substring(0, 100)
+          : null,
+      current_title: currentTitle,
+      skills_technical: skillsTechnical,
+      skills_soft: skillsSoft,
       languages,
       education,
       experience,
-      years_experience:        finalYears,
+      years_experience: finalYears,
       total_experience_months: totalMonths,
-      llm_summary:             summary,
+      llm_summary: summary,
     };
 
     // Log what we got
     this.logger.log(`✅ Parsed & validated:`);
-    this.logger.log(`   Name          : ${result.first_name ?? '?'} ${result.last_name ?? ''}`);
-    this.logger.log(`   Title         : ${result.current_title ?? 'NOT FOUND'}`);
+    this.logger.log(
+      `   Name          : ${result.first_name ?? '?'} ${result.last_name ?? ''}`,
+    );
+    this.logger.log(
+      `   Title         : ${result.current_title ?? 'NOT FOUND'}`,
+    );
     this.logger.log(`   Location      : ${result.location ?? 'NOT FOUND'}`);
-    this.logger.log(`   Skills        : ${result.skills_technical.length} → [${result.skills_technical.slice(0, 8).join(', ')}...]`);
+    this.logger.log(
+      `   Skills        : ${result.skills_technical.length} → [${result.skills_technical.slice(0, 8).join(', ')}...]`,
+    );
     this.logger.log(`   Soft skills   : [${result.skills_soft.join(', ')}]`);
     this.logger.log(`   Languages     : ${result.languages.length}`);
     this.logger.log(`   Education     : ${result.education.length} entries`);
     this.logger.log(`   Experience    : ${result.experience.length} entries`);
     this.logger.log(`   Years exp     : ${result.years_experience ?? 'N/A'}`);
-    this.logger.log(`   Summary       : ${result.llm_summary ? result.llm_summary.substring(0, 80) + '...' : 'EMPTY'}`);
+    this.logger.log(
+      `   Summary       : ${result.llm_summary ? result.llm_summary.substring(0, 80) + '...' : 'EMPTY'}`,
+    );
 
     return result;
   }
@@ -397,15 +415,16 @@ Return ONLY this JSON, no markdown, no explanation:
 
   private cleanName(val: any): string | null {
     if (typeof val !== 'string' || !val.trim()) return null;
-    return val.trim()
+    return val
+      .trim()
       .split(' ')
-      .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
       .join(' ');
   }
 
   private cleanSkillArray(val: any, maxCount: number): string[] {
     if (!Array.isArray(val)) return [];
-    const seen  = new Set<string>();
+    const seen = new Set<string>();
     const clean: string[] = [];
 
     for (const item of val) {
@@ -424,57 +443,87 @@ Return ONLY this JSON, no markdown, no explanation:
 
   private cleanLanguages(val: any): LanguageEntry[] {
     if (!Array.isArray(val)) return [];
-    const validLevels = new Set(['native', 'fluent', 'advanced', 'intermediate', 'beginner']);
+    const validLevels = new Set([
+      'native',
+      'fluent',
+      'advanced',
+      'intermediate',
+      'beginner',
+    ]);
 
     return val
-      .filter(l => l && typeof (l.name ?? l.language) === 'string')
+      .filter((l) => l && typeof (l.name ?? l.language) === 'string')
       .slice(0, MAX_LANGUAGES)
-      .map(l => {
-        const name  = (l.name ?? l.language ?? '').trim();
-        const raw   = (l.level ?? '').toLowerCase();
+      .map((l) => {
+        const name = (l.name ?? l.language ?? '').trim();
+        const raw = (l.level ?? '').toLowerCase();
         const level = validLevels.has(raw) ? raw : 'intermediate';
         return { name, level };
       })
-      .filter(l => l.name.length > 0);
+      .filter((l) => l.name.length > 0);
   }
 
   private cleanEducation(val: any): EducationEntry[] {
     if (!Array.isArray(val)) return [];
     return val
-      .filter(e => e && (e.degree || e.institution))
+      .filter((e) => e && (e.degree || e.institution))
       .slice(0, MAX_EDUCATION_ENTRIES)
-      .map(e => ({
-        degree:      typeof e.degree      === 'string' ? e.degree.trim().substring(0, 100)      : null,
-        institution: typeof e.institution === 'string' ? e.institution.trim().substring(0, 100) : null,
-        date:        typeof e.date        === 'string' ? e.date.trim().substring(0, 30)         :
-                     typeof e.date_range  === 'string' ? e.date_range.trim().substring(0, 30)   : null,
+      .map((e) => ({
+        degree:
+          typeof e.degree === 'string'
+            ? e.degree.trim().substring(0, 100)
+            : null,
+        institution:
+          typeof e.institution === 'string'
+            ? e.institution.trim().substring(0, 100)
+            : null,
+        date:
+          typeof e.date === 'string'
+            ? e.date.trim().substring(0, 30)
+            : typeof e.date_range === 'string'
+              ? e.date_range.trim().substring(0, 30)
+              : null,
       }));
   }
 
   private cleanExperience(val: any): ExperienceEntry[] {
     if (!Array.isArray(val)) return [];
     return val
-      .filter(e => e && e.title)
+      .filter((e) => e && e.title)
       .slice(0, MAX_EXPERIENCE_ENTRIES)
-      .map(e => ({
-        title:      typeof e.title      === 'string' ? e.title.trim().substring(0, 100)      : '',
-        company:    typeof e.company    === 'string' ? e.company.trim().substring(0, 100)    : null,
-        start_date: typeof e.start_date === 'string' ? e.start_date.trim().substring(0, 30)  : null,
-        end_date:   typeof e.end_date   === 'string' ? e.end_date.trim().substring(0, 30)    : null,
-        description: typeof e.description === 'string' ? e.description.trim().substring(0, 1000) : null,
+      .map((e) => ({
+        title:
+          typeof e.title === 'string' ? e.title.trim().substring(0, 100) : '',
+        company:
+          typeof e.company === 'string'
+            ? e.company.trim().substring(0, 100)
+            : null,
+        start_date:
+          typeof e.start_date === 'string'
+            ? e.start_date.trim().substring(0, 30)
+            : null,
+        end_date:
+          typeof e.end_date === 'string'
+            ? e.end_date.trim().substring(0, 30)
+            : null,
+        description:
+          typeof e.description === 'string'
+            ? e.description.trim().substring(0, 1000)
+            : null,
       }))
-      .filter(e => e.title.length > 0);
+      .filter((e) => e.title.length > 0);
   }
 
   // ── Experience months calculator ──────────────────────────────────────────
 
   private calculateMonths(experience: ExperienceEntry[]): number | null {
     if (!experience.length) return null;
-    let total = 0, counted = 0;
+    let total = 0,
+      counted = 0;
 
     for (const entry of experience) {
       const start = this.parseDate(entry.start_date);
-      const end   = this.isPresent(entry.end_date)
+      const end = this.isPresent(entry.end_date)
         ? new Date()
         : this.parseDate(entry.end_date);
 
@@ -482,9 +531,10 @@ Return ONLY this JSON, no markdown, no explanation:
 
       const months =
         (end.getFullYear() - start.getFullYear()) * 12 +
-        (end.getMonth()    - start.getMonth());
+        (end.getMonth() - start.getMonth());
 
-      if (months > 0 && months < 600) { // sanity: max 50 years
+      if (months > 0 && months < 600) {
+        // sanity: max 50 years
         total += months;
         counted++;
       }
@@ -496,9 +546,13 @@ Return ONLY this JSON, no markdown, no explanation:
   private isPresent(val: string | null): boolean {
     if (!val) return false;
     const lower = val.toLowerCase();
-    return lower.includes('present') || lower.includes('aujourd') ||
-           lower.includes('actuel')  || lower.includes('current') ||
-           lower.includes('en cours');
+    return (
+      lower.includes('present') ||
+      lower.includes('aujourd') ||
+      lower.includes('actuel') ||
+      lower.includes('current') ||
+      lower.includes('en cours')
+    );
   }
 
   private parseDate(raw: string | null): Date | null {
@@ -511,17 +565,36 @@ Return ONLY this JSON, no markdown, no explanation:
 
     // Handle "Month YYYY" in French or English
     const monthMap: Record<string, number> = {
-      jan: 0, fév: 1, feb: 1, mar: 2, avr: 3, apr: 3,
-      mai: 4, may: 4, jun: 5, jui: 5, jul: 6, aoû: 7,
-      aug: 7, sep: 8, oct: 9, nov: 10, déc: 11, dec: 11,
+      jan: 0,
+      fév: 1,
+      feb: 1,
+      mar: 2,
+      avr: 3,
+      apr: 3,
+      mai: 4,
+      may: 4,
+      jun: 5,
+      jui: 5,
+      jul: 6,
+      aoû: 7,
+      aug: 7,
+      sep: 8,
+      oct: 9,
+      nov: 10,
+      déc: 11,
+      dec: 11,
     };
 
     const match = raw.toLowerCase().match(/([a-zéûô]+)[\s./-]+(\d{4})/);
     if (match) {
       const monthKey = match[1].substring(0, 3);
-      const year     = parseInt(match[2]);
-      const month    = monthMap[monthKey];
-      if (month !== undefined && year > 1950 && year <= new Date().getFullYear() + 1) {
+      const year = parseInt(match[2]);
+      const month = monthMap[monthKey];
+      if (
+        month !== undefined &&
+        year > 1950 &&
+        year <= new Date().getFullYear() + 1
+      ) {
         return new Date(year, month, 1);
       }
     }
@@ -546,48 +619,73 @@ Return ONLY this JSON, no markdown, no explanation:
       const bracketStart = raw.indexOf('[', fieldIdx);
       if (bracketStart === -1) return [];
 
-      let depth = 0, end = -1, inStr = false, escape = false;
+      let depth = 0,
+        end = -1,
+        inStr = false,
+        escape = false;
       for (let i = bracketStart; i < raw.length; i++) {
         const ch = raw[i];
-        if (escape)      { escape = false; continue; }
-        if (ch === '\\') { escape = true;  continue; }
-        if (ch === '"')  { inStr = !inStr; continue; }
-        if (inStr)       continue;
+        if (escape) {
+          escape = false;
+          continue;
+        }
+        if (ch === '\\') {
+          escape = true;
+          continue;
+        }
+        if (ch === '"') {
+          inStr = !inStr;
+          continue;
+        }
+        if (inStr) continue;
         if (ch === '[' || ch === '{') depth++;
         if (ch === ']' || ch === '}') {
           depth--;
-          if (depth === 0 && ch === ']') { end = i; break; }
+          if (depth === 0 && ch === ']') {
+            end = i;
+            break;
+          }
         }
       }
 
       if (end === -1) return [];
-      try { return JSON.parse(raw.substring(bracketStart, end + 1)); }
-      catch { return []; }
+      try {
+        return JSON.parse(raw.substring(bracketStart, end + 1));
+      } catch {
+        return [];
+      }
     };
 
     return {
-      first_name:       extractString('first_name'),
-      last_name:        extractString('last_name'),
-      location:         extractString('location'),
-      current_title:    extractString('current_title'),
-      summary:          extractString('summary'),
+      first_name: extractString('first_name'),
+      last_name: extractString('last_name'),
+      location: extractString('location'),
+      current_title: extractString('current_title'),
+      summary: extractString('summary'),
       years_experience: null,
       skills_technical: extractArray('skills_technical'),
-      skills_soft:      extractArray('skills_soft'),
-      languages:        extractArray('languages'),
-      education:        extractArray('education'),
-      experience:       extractArray('experience'),
+      skills_soft: extractArray('skills_soft'),
+      languages: extractArray('languages'),
+      education: extractArray('education'),
+      experience: extractArray('experience'),
     };
   }
 
   // ── Empty result fallback ─────────────────────────────────────────────────
 
-  private emptyResult(): GroqParsedCv {
+  private emptyResult(): AiParsedCv {
     return {
-      first_name: null, last_name: null, location: null, current_title: null,
-      skills_technical: [], skills_soft: [], languages: [],
-      education: [], experience: [],
-      years_experience: null, total_experience_months: null,
+      first_name: null,
+      last_name: null,
+      location: null,
+      current_title: null,
+      skills_technical: [],
+      skills_soft: [],
+      languages: [],
+      education: [],
+      experience: [],
+      years_experience: null,
+      total_experience_months: null,
       llm_summary: '',
     };
   }

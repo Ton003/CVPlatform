@@ -11,11 +11,15 @@ import { JobCompetencyRequirement } from './entities/job-competency-requirement.
 @Injectable()
 export class JobArchitectureService {
   constructor(
-    @InjectRepository(BusinessUnit) private readonly buRepo: Repository<BusinessUnit>,
-    @InjectRepository(Department) private readonly departmentRepo: Repository<Department>,
+    @InjectRepository(BusinessUnit)
+    private readonly buRepo: Repository<BusinessUnit>,
+    @InjectRepository(Department)
+    private readonly departmentRepo: Repository<Department>,
     @InjectRepository(JobRole) private readonly roleRepo: Repository<JobRole>,
-    @InjectRepository(JobRoleLevel) private readonly levelRepo: Repository<JobRoleLevel>,
-    @InjectRepository(JobCompetencyRequirement) private readonly reqRepo: Repository<JobCompetencyRequirement>,
+    @InjectRepository(JobRoleLevel)
+    private readonly levelRepo: Repository<JobRoleLevel>,
+    @InjectRepository(JobCompetencyRequirement)
+    private readonly reqRepo: Repository<JobCompetencyRequirement>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -24,7 +28,11 @@ export class JobArchitectureService {
    */
   async getTree(): Promise<BusinessUnit[]> {
     return this.buRepo.find({
-      relations: ['departments', 'departments.jobRoles', 'departments.jobRoles.levels'],
+      relations: [
+        'departments',
+        'departments.jobRoles',
+        'departments.jobRoles.levels',
+      ],
       order: {
         name: 'ASC',
       },
@@ -68,7 +76,7 @@ export class JobArchitectureService {
   async successionCandidates(levelId: string): Promise<any[]> {
     const level = await this.getJobRoleLevel(levelId);
     const requirements = level.competencyRequirements || [];
-    
+
     if (requirements.length === 0) return [];
 
     // Query all employees who have a candidate link (so they have snapshots/skills)
@@ -86,7 +94,7 @@ export class JobArchitectureService {
       WHERE c.competency_snapshot IS NOT NULL
     `);
 
-    const matches = employees.map(e => {
+    const matches = employees.map((e) => {
       const snap = e.snapshot || {};
       let totalReq = 0;
       let matchSum = 0;
@@ -97,34 +105,44 @@ export class JobArchitectureService {
         matchSum += Math.min(candLvl, req.requiredLevel);
       }
 
-      const matchScore = totalReq > 0 ? Math.round((matchSum / totalReq) * 100) : 0;
+      const matchScore =
+        totalReq > 0 ? Math.round((matchSum / totalReq) * 100) : 0;
 
       return {
         id: e.id,
         name: e.name,
         email: e.email,
         current_title: e.current_title,
-        match_score: matchScore
+        match_score: matchScore,
       };
     });
 
     // Return top 5 potential successors with > 40% match
     return matches
-      .filter(m => m.match_score >= 40)
+      .filter((m) => m.match_score >= 40)
       .sort((a, b) => b.match_score - a.match_score)
       .slice(0, 5);
   }
 
   // --- CRUD Operations ---
 
-  async createBusinessUnit(name: string, description?: string): Promise<BusinessUnit> {
+  async createBusinessUnit(
+    name: string,
+    description?: string,
+  ): Promise<BusinessUnit> {
     return this.buRepo.save(this.buRepo.create({ name, description }));
   }
 
-  async createDepartment(businessUnitId: string, name: string, description?: string): Promise<Department> {
+  async createDepartment(
+    businessUnitId: string,
+    name: string,
+    description?: string,
+  ): Promise<Department> {
     const bu = await this.buRepo.findOne({ where: { id: businessUnitId } });
     if (!bu) throw new NotFoundException('Business Unit not found');
-    return this.departmentRepo.save(this.departmentRepo.create({ name, description, businessUnitId }));
+    return this.departmentRepo.save(
+      this.departmentRepo.create({ name, description, businessUnitId }),
+    );
   }
 
   /**
@@ -139,31 +157,35 @@ export class JobArchitectureService {
       sfiaRequirements?: any[];
       successorRoleIds?: string[];
       levelCount?: number;
-    } & { status?: string }
+    } & { status?: string },
   ): Promise<JobRole> {
-    const d = await this.departmentRepo.findOne({ where: { id: data.departmentId } });
+    const d = await this.departmentRepo.findOne({
+      where: { id: data.departmentId },
+    });
     if (!d) throw new NotFoundException('Department not found');
 
-    const role = await this.roleRepo.save(this.roleRepo.create({ 
-      name: data.name, 
-      departmentId: data.departmentId,
-      familyId: data.familyId,
-      level: data.level ?? 1,
-      sfiaRequirements: data.sfiaRequirements ?? [],
-      successorRoleIds: data.successorRoleIds ?? [],
-      status: data.status || 'DRAFT',
-    }));
+    const role = await this.roleRepo.save(
+      this.roleRepo.create({
+        name: data.name,
+        departmentId: data.departmentId,
+        familyId: data.familyId,
+        level: data.level ?? 1,
+        sfiaRequirements: data.sfiaRequirements ?? [],
+        successorRoleIds: data.successorRoleIds ?? [],
+        status: data.status || 'DRAFT',
+      }),
+    );
 
     // Generate Levels
     const levelCount = data.levelCount ?? 5;
-    const levels = Array.from({ length: levelCount }, (_, i) => 
+    const levels = Array.from({ length: levelCount }, (_, i) =>
       this.levelRepo.create({
         jobRoleId: role.id,
         levelNumber: i + 1,
         title: `Level ${i + 1}`,
         mission: '',
         responsibilities: [],
-      })
+      }),
     );
     await this.levelRepo.save(levels);
 
@@ -171,7 +193,11 @@ export class JobArchitectureService {
   }
 
   // UPDATES
-  async updateBusinessUnit(id: string, name?: string, description?: string): Promise<BusinessUnit> {
+  async updateBusinessUnit(
+    id: string,
+    name?: string,
+    description?: string,
+  ): Promise<BusinessUnit> {
     const bu = await this.buRepo.findOne({ where: { id } });
     if (!bu) throw new NotFoundException('Business Unit not found');
     if (name) bu.name = name;
@@ -179,7 +205,11 @@ export class JobArchitectureService {
     return this.buRepo.save(bu);
   }
 
-  async updateDepartment(id: string, name?: string, description?: string): Promise<Department> {
+  async updateDepartment(
+    id: string,
+    name?: string,
+    description?: string,
+  ): Promise<Department> {
     const dept = await this.departmentRepo.findOne({ where: { id } });
     if (!dept) throw new NotFoundException('Department not found');
     if (name) dept.name = name;
@@ -188,47 +218,49 @@ export class JobArchitectureService {
   }
 
   async updateJobRole(
-    id: string, 
+    id: string,
     data: {
-      name?: string; 
+      name?: string;
       status?: string;
       familyId?: string;
       level?: number;
       sfiaRequirements?: any[];
       successorRoleIds?: string[];
-    }
+    },
   ): Promise<JobRole> {
     const role = await this.roleRepo.findOne({ where: { id } });
     if (!role) throw new NotFoundException('Job Role not found');
-    
+
     if (data.name) role.name = data.name;
     if (data.status !== undefined) role.status = data.status;
     if (data.familyId !== undefined) role.familyId = data.familyId;
     if (data.level !== undefined) role.level = data.level;
-    if (data.sfiaRequirements !== undefined) role.sfiaRequirements = data.sfiaRequirements;
-    if (data.successorRoleIds !== undefined) role.successorRoleIds = data.successorRoleIds;
+    if (data.sfiaRequirements !== undefined)
+      role.sfiaRequirements = data.sfiaRequirements;
+    if (data.successorRoleIds !== undefined)
+      role.successorRoleIds = data.successorRoleIds;
 
     return this.roleRepo.save(role);
   }
-
 
   /**
    * Updates level-specific details (mission, responsibilities, etc)
    */
   async updateJobRoleLevel(
     id: string,
-    data: { 
-      mission?: string; 
-      responsibilities?: string[]; 
+    data: {
+      mission?: string;
+      responsibilities?: string[];
       description?: string;
       title?: string;
-    }
+    },
   ): Promise<JobRoleLevel> {
     const level = await this.levelRepo.findOne({ where: { id } });
     if (!level) throw new NotFoundException('Job Role Level not found');
 
     if (data.mission !== undefined) level.mission = data.mission;
-    if (data.responsibilities !== undefined) level.responsibilities = data.responsibilities;
+    if (data.responsibilities !== undefined)
+      level.responsibilities = data.responsibilities;
     if (data.description !== undefined) level.description = data.description;
     if (data.title !== undefined) level.title = data.title;
 
@@ -238,17 +270,20 @@ export class JobArchitectureService {
   // DELETES
   async deleteBusinessUnit(id: string): Promise<void> {
     const result = await this.buRepo.delete(id);
-    if (result.affected === 0) throw new NotFoundException('Business Unit not found');
+    if (result.affected === 0)
+      throw new NotFoundException('Business Unit not found');
   }
 
   async deleteDepartment(id: string): Promise<void> {
     const result = await this.departmentRepo.delete(id);
-    if (result.affected === 0) throw new NotFoundException('Department not found');
+    if (result.affected === 0)
+      throw new NotFoundException('Department not found');
   }
 
   async deleteJobRole(id: string): Promise<void> {
     const result = await this.roleRepo.delete(id);
-    if (result.affected === 0) throw new NotFoundException('Job Role not found');
+    if (result.affected === 0)
+      throw new NotFoundException('Job Role not found');
   }
 
   /**
@@ -265,17 +300,22 @@ export class JobArchitectureService {
     await queryRunner.startTransaction();
 
     try {
-      await queryRunner.manager.delete(JobCompetencyRequirement, { jobRoleLevelId: levelId });
+      await queryRunner.manager.delete(JobCompetencyRequirement, {
+        jobRoleLevelId: levelId,
+      });
 
       if (requirements.length > 0) {
-        const insertEntities = requirements.map((req) => 
+        const insertEntities = requirements.map((req) =>
           queryRunner.manager.create(JobCompetencyRequirement, {
             jobRoleLevelId: levelId,
             competenceId: req.competenceId,
             requiredLevel: req.requiredLevel,
           }),
         );
-        await queryRunner.manager.save(JobCompetencyRequirement, insertEntities);
+        await queryRunner.manager.save(
+          JobCompetencyRequirement,
+          insertEntities,
+        );
       }
 
       await queryRunner.commitTransaction();

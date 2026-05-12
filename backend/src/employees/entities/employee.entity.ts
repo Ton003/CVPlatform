@@ -22,7 +22,7 @@ export enum EmployeeStatus {
   ACTIVE = 'active',
   NOTICE = 'notice',
   RETIRED = 'retired',
-  TERMINATED = 'terminated'
+  TERMINATED = 'terminated',
 }
 
 export enum SuccessionReadiness {
@@ -75,7 +75,7 @@ export class Employee {
   @Column({
     type: 'enum',
     enum: EmployeeStatus,
-    default: EmployeeStatus.PROBATION
+    default: EmployeeStatus.PROBATION,
   })
   status: EmployeeStatus;
 
@@ -100,9 +100,15 @@ export class Employee {
   @JoinColumn({ name: 'department_id' })
   department: Department;
 
-  @ManyToOne(() => Employee, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => Employee, (emp) => emp.subordinates, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'manager_id' })
   manager: Employee | null;
+
+  @Column({ name: 'manager_id', nullable: true })
+  managerId: string | null;
+
+  @OneToMany(() => Employee, (emp) => emp.manager)
+  subordinates: Employee[];
 
   @Column({ name: 'is_manager', default: false })
   isManager: boolean;

@@ -35,23 +35,10 @@ interface MatchResponse {
   mode:             string;
 }
 
-import { InternalMobilityService, UnifiedScoreResult } from '../employees/services/internal-mobility.service';
-import { EmployeeGapPanelComponent } from './employee-gap-panel/employee-gap-panel.component';
-
-interface InternalCandidateMatch extends UnifiedScoreResult {
-  uuid: string;
-  firstName: string;
-  lastName: string;
-  currentRank?: string;
-  readinessLabel?: string;
-  matchedComps?: any[];
-  gapComps?: any[];
-}
-
 @Component({
   selector:    'app-job-offer-matches',
   standalone:  true,
-  imports:     [CommonModule, FormsModule, RouterLink, EmployeeGapPanelComponent],
+  imports:     [CommonModule, FormsModule, RouterLink],
   templateUrl: './job-offer-matches.component.html',
   styleUrls:   ['./job-offer-matches.component.scss'],
 })
@@ -59,23 +46,12 @@ export class JobOfferMatchesComponent implements OnInit {
 
   offer:      JobOffer | null = null;
   candidates: CandidateMatch[] = [];
-  internalCandidates: InternalCandidateMatch[] = [];
   aiMessage   = '';
   total       = 0;
-  successionCandidates: any[] = []; 
-  loadingSuccessors = false; 
   hasSearched = false;
 
   loading     = false;
-  loadingInternal = false;
   error       = '';
-
-  mode        = 'groq';
-  activeTab   = 'external'; // 'external' or 'internal'
-
-  // Gap Analysis Panel State
-  selectedEmployee: InternalCandidateMatch | null = null;
-  showGapPanel = false;
 
   private offerId = '';
 
@@ -86,8 +62,7 @@ export class JobOfferMatchesComponent implements OnInit {
     private readonly auth:   AuthService,
     private readonly apiKey: ApiKeyService,
     private readonly toast:  ToastService,
-    private readonly cdr:    ChangeDetectorRef,
-    private readonly internalMobility: InternalMobilityService
+    private readonly cdr:    ChangeDetectorRef
   ) {}
 
   ngOnInit(): void {
@@ -95,37 +70,10 @@ export class JobOfferMatchesComponent implements OnInit {
     this.runMatch();
   }
 
-  setTab(tab: 'external' | 'internal'): void {
-    this.activeTab = tab;
-    if (tab === 'internal') {
-      if (this.internalCandidates.length === 0) {
-        this.loadInternalMatches();
-      } else {
-        this.total = this.internalCandidates.length;
-      }
-    } else {
-      this.total = this.candidates.length;
-    }
-  }
-
-  loadInternalMatches(): void {
-    if (!this.offerId) return;
-    this.loadingInternal = true;
-    this.internalMobility.getOfferMatches(this.offerId).pipe(
-      finalize(() => { this.loadingInternal = false; this.cdr.detectChanges(); })
-    ).subscribe({
-      next: res => { 
-        this.internalCandidates = res; 
-        this.total = res.length;
-      },
-      error: () => this.toast.error('Failed to load internal candidates.')
-    });
-  }
-
   runMatch(): void {
     if (!this.offerId) return;
-    if (this.mode === 'groq' && !this.apiKey.has()) {
-      this.error = 'No Groq API key found. Please add your key in the sidebar settings (key icon).';
+    if (!this.apiKey.has()) {
+      this.error = 'No AI API key found. Please add your key in the sidebar settings (key icon).';
       return;
     }
 
@@ -135,92 +83,57 @@ export class JobOfferMatchesComponent implements OnInit {
     this.aiMessage  = '';
 
     const key    = this.apiKey.get();
-    const params = new URLSearchParams({ mode: this.mode });
     let headers: any = {};
-    if (this.mode === 'groq' && key) {
+    if (key) {
         headers['x-api-key'] = key;
     }
 
     this.http.get<MatchResponse>(
-      `${environment.apiUrl}/job-offers/${this.offerId}/matches?${params}`,
+      `${environment.apiUrl}/job-offers/${this.offerId}/matches`,
       { headers }
     ).pipe(
       finalize(() => { this.loading = false; this.cdr.detectChanges(); }),
     ).subscribe({
       next: res => {
         this.offer      = res.offer;
-        this.candidates = res.candidates;
+        // Filter out any malformed candidates that might cause "empty" boxes
+        this.candidates = (res.candidates || []).filter(c => c && c.name && c.candidateId);
         this.aiMessage  = res.aiRecommendation ?? res.message;
-        this.total      = res.total;
+        this.total      = this.candidates.length; // Use actual length
         this.hasSearched = true;
-        this.loadSuccessors(); // Trigger succession check
-        if (this.activeTab === 'internal') this.loadInternalMatches();
       },
       error: () => {
-        this.error = 'Failed to fetch matches. Check your API key in sidebar settings and try again.';
-        this.toast.error('AI Matching failed. Verify your Groq API key.');
+        this.error = 'Failed to fetch matches. Check your AI API key in sidebar settings and try again.';
+        this.toast.error('AI Matching failed. Verify your API key.');
       },
     });
-  }
-
-  loadSuccessors(): void {
-    if (!this.offer?.jobRoleLevelId) return;
-    this.loadingSuccessors = true;
-    this.http.get<any[]>(`${environment.apiUrl}/job-architecture/job-role-levels/${this.offer.jobRoleLevelId}/succession-candidates`)
-      .pipe(finalize(() => { this.loadingSuccessors = false; this.cdr.detectChanges(); }))
-      .subscribe({
-        next: (res) => {
-          this.successionCandidates = res || [];
-        },
-        error: (err) => {
-          // If 404, it might just mean no requirements are set yet, but we'll log it
-          console.warn('Succession check failed:', err);
-          this.successionCandidates = [];
-        }
-      });
   }
 
   goToProfile(candidateId: string): void {
     this.router.navigate(['/candidates', candidateId], { queryParams: { from: 'job-offers' } });
   }
 
-  goToEmployee(id: string): void {
-    this.router.navigate(['/employees', id]);
-  }
-
-  openGapAnalysis(emp: InternalCandidateMatch): void {
-    this.selectedEmployee = emp;
-    this.showGapPanel = true;
-  }
-
-  closeGapAnalysis(): void {
-    this.showGapPanel = false;
-    this.selectedEmployee = null;
-  }
-
-  onNominated(): void {
-    // Optionally reload the internal matches to update state
-    this.loadInternalMatches();
-  }
-
   scoreColor(score: number): string {
-    if (score >= 75) return '#4ade80';
-    if (score >= 55) return 'var(--accent-soft)';
-    if (score >= 35) return '#fbbf24';
-    return '#fb7185';
+    if (score >= 75) return '#059669';
+    if (score >= 55) return '#6d55fa';
+    if (score >= 35) return '#d97706';
+    return '#dc2626';
   }
 
   scoreBg(score: number): string {
-    if (score >= 75) return 'rgba(34,197,94,.12)';
-    if (score >= 55) return 'var(--accent-dim)';
-    if (score >= 35) return 'rgba(245,158,11,.12)';
-    return 'var(--danger-dim)';
+    if (score >= 75) return 'rgba(16,185,129,0.1)';
+    if (score >= 55) return 'rgba(109,85,250,0.1)';
+    if (score >= 35) return 'rgba(251,191,36,0.1)';
+    return 'rgba(220,38,38,0.1)';
   }
 
   initials(name: string): string {
-    return name.split(' ').slice(0, 2).map(n => n[0]).join('').toUpperCase();
+    if (!name) return '??';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 0 || !parts[0]) return '??';
+    return parts.slice(0, 2).map(n => n[0]).join('').toUpperCase();
   }
 
   get userName():  string { const u = this.auth.getCurrentUser(); return u ? `${u.firstName} ${u.lastName}` : 'HR Manager'; }
   get userRole():  string { return this.auth.getCurrentUser()?.role ?? 'hr'; }
-}
+}

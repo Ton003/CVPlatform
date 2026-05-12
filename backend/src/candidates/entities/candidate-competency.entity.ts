@@ -40,7 +40,11 @@ export class CandidateCompetency {
   @Column({ name: 'source_application_id', type: 'uuid', nullable: true })
   sourceApplicationId: string | null;
 
-  @Column({ name: 'rated_at', type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'rated_at',
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   ratedAt: Date;
 
   @CreateDateColumn({ name: 'created_at' })

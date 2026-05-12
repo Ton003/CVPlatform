@@ -1,21 +1,22 @@
 import {
-  Injectable, NotFoundException, BadRequestException,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 
-import { Competence }      from './entities/competence.entity';
+import { Competence } from './entities/competence.entity';
 import { CompetenceLevel } from './entities/competence-level.entity';
 import { CompetenceFamily } from './entities/family.entity';
 import { CreateCompetenceDto } from './dto/create-competence.dto';
 import { UpdateCompetenceDto } from './dto/update-competence.dto';
-import { UpdateLevelsDto }     from './dto/update-levels.dto';
+import { UpdateLevelsDto } from './dto/update-levels.dto';
 
 const LEVEL_COUNT = 5;
 
 @Injectable()
 export class CompetencesService {
-
   constructor(
     @InjectRepository(Competence)
     private readonly competenceRepo: Repository<Competence>,
@@ -44,15 +45,17 @@ export class CompetencesService {
 
   async create(dto: CreateCompetenceDto): Promise<Competence> {
     // Validate family exists
-    const family = await this.familyRepo.findOne({ where: { id: dto.familyId } });
+    const family = await this.familyRepo.findOne({
+      where: { id: dto.familyId },
+    });
     if (!family) {
       throw new NotFoundException(`Family ${dto.familyId} not found.`);
     }
 
     const competence = this.competenceRepo.create({
-      name:        dto.name.trim(),
+      name: dto.name.trim(),
       description: dto.description?.trim() ?? null,
-      familyId:    dto.familyId,
+      familyId: dto.familyId,
     });
     const saved = await this.competenceRepo.save(competence);
 
@@ -60,8 +63,8 @@ export class CompetencesService {
     const levels = Array.from({ length: LEVEL_COUNT }, (_, i) =>
       this.levelRepo.create({
         competenceId: saved.id,
-        level:        i + 1,
-        description:  '',
+        level: i + 1,
+        description: '',
       }),
     );
     await this.levelRepo.save(levels);
@@ -74,17 +77,29 @@ export class CompetencesService {
   async update(id: string, dto: UpdateCompetenceDto): Promise<Competence> {
     const competence = await this.findOrFail(id);
 
-    if (dto.name        !== undefined) competence.name        = dto.name.trim();
-    if (dto.description !== undefined) competence.description = dto.description?.trim() ?? null;
-    if (dto.familyId    !== undefined && dto.familyId !== competence.familyId) {
-      const family = await this.familyRepo.findOne({ where: { id: dto.familyId } });
-      if (!family) throw new NotFoundException(`Family ${dto.familyId} not found.`);
-      
+    if (dto.name !== undefined) competence.name = dto.name.trim();
+    if (dto.description !== undefined)
+      competence.description = dto.description?.trim() ?? null;
+    if (dto.familyId !== undefined && dto.familyId !== competence.familyId) {
+      const family = await this.familyRepo.findOne({
+        where: { id: dto.familyId },
+      });
+      if (!family)
+        throw new NotFoundException(`Family ${dto.familyId} not found.`);
+
       const oldFamilyId = competence.familyId;
       competence.familyId = dto.familyId;
-      
-      await this.familyRepo.decrement({ id: oldFamilyId }, 'competenceCount', 1);
-      await this.familyRepo.increment({ id: dto.familyId }, 'competenceCount', 1);
+
+      await this.familyRepo.decrement(
+        { id: oldFamilyId },
+        'competenceCount',
+        1,
+      );
+      await this.familyRepo.increment(
+        { id: dto.familyId },
+        'competenceCount',
+        1,
+      );
     }
 
     await this.competenceRepo.save(competence);
@@ -99,7 +114,9 @@ export class CompetencesService {
     await this.findOrFail(id); // throws 404 if competence doesn't exist
 
     if (dto.levels.length !== LEVEL_COUNT) {
-      throw new BadRequestException(`Exactly ${LEVEL_COUNT} levels are required.`);
+      throw new BadRequestException(
+        `Exactly ${LEVEL_COUNT} levels are required.`,
+      );
     }
 
     const queryRunner = this.dataSource.createQueryRunner();
@@ -114,8 +131,8 @@ export class CompetencesService {
       const newLevels = dto.levels.map((l) =>
         queryRunner.manager.create(CompetenceLevel, {
           competenceId: id,
-          level:        l.level,
-          description:  l.description,
+          level: l.level,
+          description: l.description,
         }),
       );
       await queryRunner.manager.save(CompetenceLevel, newLevels);
@@ -134,7 +151,11 @@ export class CompetencesService {
   async remove(id: string): Promise<void> {
     const competence = await this.findOrFail(id);
     await this.competenceRepo.remove(competence);
-    await this.familyRepo.decrement({ id: competence.familyId }, 'competenceCount', 1);
+    await this.familyRepo.decrement(
+      { id: competence.familyId },
+      'competenceCount',
+      1,
+    );
   }
 
   // ── Private ─────────────────────────────────────────────────────────

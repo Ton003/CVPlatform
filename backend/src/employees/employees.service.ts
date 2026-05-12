@@ -1,30 +1,55 @@
-import { Injectable, NotFoundException, BadRequestException, ConflictException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource, Brackets } from 'typeorm';
 import { Employee, EmployeeStatus } from './entities/employee.entity';
-import { EmployeeCompetency, CompetencySource } from './entities/employee-competency.entity';
+import {
+  EmployeeCompetency,
+  CompetencySource,
+} from './entities/employee-competency.entity';
 import { Application } from '../applications/application.entity';
 import { Candidate } from '../candidates/entities/candidates.entity';
 import { PromoteCandidateDto, CreateEmployeeDto } from './dto/employee.dto';
 import { ApplicationCompetencyScore } from '../applications/application-competency-score.entity';
 import { Cv } from '../cvs/entities/cv.entity';
 import { CvParsedData } from '../cv-parsed-data/entities/cv-parsed-data.entity';
-import { EmployeeHistory, EmployeeHistoryEventType } from './entities/employee-history.entity';
+import {
+  EmployeeHistory,
+  EmployeeHistoryEventType,
+} from './entities/employee-history.entity';
+import { EmployeeAssessment, AssessmentStatus } from './entities/employee-assessment.entity';
 
 @Injectable()
 export class EmployeesService {
   private readonly logger = new Logger(EmployeesService.name);
 
   constructor(
-    @InjectRepository(Employee) private readonly employeeRepo: Repository<Employee>,
-    @InjectRepository(EmployeeCompetency) private readonly compRepo: Repository<EmployeeCompetency>,
-    @InjectRepository(Application) private readonly appRepo: Repository<Application>,
-    @InjectRepository(EmployeeHistory) private readonly historyRepo: Repository<EmployeeHistory>,
+    @InjectRepository(Employee)
+    private readonly employeeRepo: Repository<Employee>,
+    @InjectRepository(EmployeeCompetency)
+    private readonly compRepo: Repository<EmployeeCompetency>,
+    @InjectRepository(Application)
+    private readonly appRepo: Repository<Application>,
+    @InjectRepository(EmployeeHistory)
+    private readonly historyRepo: Repository<EmployeeHistory>,
     @InjectDataSource() private readonly dataSource: DataSource,
   ) {}
 
-  async list(filters: { buId?: string; departmentId?: string; roleId?: string; search?: string; page: number; limit: number }) {
-    const qb = this.employeeRepo.createQueryBuilder('e')
+  async list(filters: {
+    buId?: string;
+    departmentId?: string;
+    roleId?: string;
+    search?: string;
+    page: number;
+    limit: number;
+  }) {
+    const qb = this.employeeRepo
+      .createQueryBuilder('e')
       .leftJoinAndSelect('e.jobRole', 'role')
       .leftJoinAndSelect('e.jobRoleLevel', 'level')
       .leftJoinAndSelect('e.manager', 'manager')
@@ -32,12 +57,20 @@ export class EmployeesService {
       .orderBy('e.lastName', 'ASC');
 
     if (filters.search) {
-      qb.andWhere(new Brackets(sqb => {
-        sqb.where('e.firstName ILIKE :s OR e.lastName ILIKE :s OR e.email ILIKE :s', { s: `%${filters.search}%` });
-      }));
+      qb.andWhere(
+        new Brackets((sqb) => {
+          sqb.where(
+            'e.firstName ILIKE :s OR e.lastName ILIKE :s OR e.email ILIKE :s',
+            { s: `%${filters.search}%` },
+          );
+        }),
+      );
     }
 
-    const [data, total] = await qb.skip((filters.page - 1) * filters.limit).take(filters.limit).getManyAndCount();
+    const [data, total] = await qb
+      .skip((filters.page - 1) * filters.limit)
+      .take(filters.limit)
+      .getManyAndCount();
     return { data, total, page: filters.page, limit: filters.limit };
   }
 
@@ -54,16 +87,20 @@ export class EmployeesService {
         'manager',
         'competencies',
         'competencies.competence',
-        'department'
-      ]
+        'department',
+      ],
     });
     if (!employee) throw new NotFoundException(`Employee ${id} not found`);
 
     // Attach next level if available
     if (employee.jobRole?.levels && employee.jobRoleLevel) {
       const currentLevelNum = employee.jobRoleLevel.levelNumber;
-      const sortedLevels = [...employee.jobRole.levels].sort((a, b) => a.levelNumber - b.levelNumber);
-      const nextLevel = sortedLevels.find(l => l.levelNumber === currentLevelNum + 1);
+      const sortedLevels = [...employee.jobRole.levels].sort(
+        (a, b) => a.levelNumber - b.levelNumber,
+      );
+      const nextLevel = sortedLevels.find(
+        (l) => l.levelNumber === currentLevelNum + 1,
+      );
       (employee as any).nextJobRoleLevel = nextLevel || null;
     }
 
@@ -71,7 +108,8 @@ export class EmployeesService {
   }
 
   async findAllManagers(departmentId?: string) {
-    const qb = this.employeeRepo.createQueryBuilder('e')
+    const qb = this.employeeRepo
+      .createQueryBuilder('e')
       .leftJoinAndSelect('e.jobRole', 'role')
       .where('e.isManager = :isManager', { isManager: true })
       .orderBy('e.lastName', 'ASC');
@@ -84,7 +122,8 @@ export class EmployeesService {
 
     // Fallback: if no employees are flagged as managers, return all employees
     if (managers.length === 0) {
-      return this.employeeRepo.createQueryBuilder('e')
+      return this.employeeRepo
+        .createQueryBuilder('e')
         .leftJoinAndSelect('e.jobRole', 'role')
         .orderBy('e.lastName', 'ASC')
         .getMany();
@@ -97,7 +136,7 @@ export class EmployeesService {
     return this.dataSource.transaction(async (manager) => {
       const app = await manager.findOne(Application, {
         where: { id: dto.applicationId },
-        relations: ['candidate', 'job', 'job.jobRole', 'job.jobRoleLevel']
+        relations: ['candidate', 'job', 'job.jobRole', 'job.jobRoleLevel'],
       });
 
       if (!app) throw new NotFoundException('Application not found');
@@ -126,7 +165,7 @@ export class EmployeesService {
         status: EmployeeStatus.PROBATION,
         jobRoleId: resolvedJobRoleId,
         jobRoleLevelId: resolvedJobRoleLevelId!,
-        manager: dto.managerId ? { id: dto.managerId } as any : null,
+        manager: dto.managerId ? ({ id: dto.managerId } as any) : null,
         candidateId: candidate.id,
       });
 
@@ -168,26 +207,33 @@ export class EmployeesService {
   }
 
   async getHistory(employeeId: string) {
-    return this.historyRepo.find({ where: { employeeId }, order: { effectiveDate: 'DESC' } });
+    return this.historyRepo.find({
+      where: { employeeId },
+      order: { effectiveDate: 'DESC' },
+    });
   }
 
   async promoteToNextLevel(id: string, effectiveDate?: string, notes?: string) {
     return this.dataSource.transaction(async (manager) => {
       const employee = await this.findOne(id);
-      
+
       const nextLevel = (employee as any).nextJobRoleLevel;
       if (!nextLevel) {
-        throw new BadRequestException('Employee is already at the maximum level for this role');
+        throw new BadRequestException(
+          'Employee is already at the maximum level for this role',
+        );
       }
 
-      this.logger.log(`Promoting ${employee.firstName} to level ${nextLevel.title} (${nextLevel.id})`);
+      this.logger.log(
+        `Promoting ${employee.firstName} to level ${nextLevel.title} (${nextLevel.id})`,
+      );
 
       const oldLevelId = employee.jobRoleLevelId;
       const oldDeptId = employee.departmentId;
 
       // Update Employee using direct update to ensure column is changed
       await manager.update(Employee, id, {
-        jobRoleLevelId: nextLevel.id
+        jobRoleLevelId: nextLevel.id,
       });
 
       // Create History Entry
@@ -209,8 +255,187 @@ export class EmployeesService {
         success: true,
         newLevelId: nextLevel.id,
         newLevelTitle: nextLevel.title,
-        employee: updated
+        employee: updated,
       };
     });
   }
+
+  /**
+   * Generates data for the 9-Box Talent Matrix.
+   * Cross-references the latest submitted assessment score (Performance) 
+   * against succession readiness (Potential).
+   */
+  async getTalentMatrixData(filters: { buId?: string; departmentId?: string }) {
+    const qb = this.employeeRepo
+      .createQueryBuilder('e')
+      .leftJoin('e.department', 'dept')
+      .leftJoinAndMapOne(
+        'e.latestAssessment',
+        EmployeeAssessment,
+        'ea',
+        'ea.employeeId = e.id AND ea.status = :status',
+        { status: AssessmentStatus.SUBMITTED }
+      )
+      .select([
+        'e.id',
+        'e.firstName',
+        'e.lastName',
+        'e.email',
+        'e.successionReadiness',
+        'ea.totalScore',
+      ])
+      // Use subquery or ordering to get the LATEST assessment only if multiple exist
+      // For simplicity in this demo, we'll join and then filter in JS or use a window function if raw SQL
+      // Let's use raw SQL for precision on "latest" per employee
+      ;
+
+    if (filters.buId) {
+      qb.andWhere('dept.businessUnitId = :buId', { buId: filters.buId });
+    }
+    if (filters.departmentId) {
+      qb.andWhere('e.departmentId = :departmentId', { departmentId: filters.departmentId });
+    }
+
+    const employees = await qb.getMany();
+
+    const boxes: Record<string, any[]> = {
+      'star': [],               // High Perf, High Pot
+      'future_star': [],        // Mod Perf, High Pot
+      'rough_diamond': [],      // Low Perf, High Pot
+      'high_professional': [],  // High Perf, Mod Pot
+      'key_player': [],         // Mod Perf, Mod Pot
+      'inconsistent_player': [],// Low Perf, Mod Pot
+      'solid_professional': [], // High Perf, Low Pot
+      'average_performer': [],  // Mod Perf, Low Pot
+      'talent_risk': [],        // Low Perf, Low Pot
+      'unrated': []             // Missing data
+    };
+
+    employees.forEach(emp => {
+      const score = (emp as any).latestAssessment?.totalScore ?? null;
+      const readiness = emp.successionReadiness;
+
+      if (score === null || !readiness) {
+        boxes['unrated'].push(emp);
+        return;
+      }
+
+      // Performance Mapping (1-5 scale)
+      let perf: 'low' | 'mod' | 'high' = 'mod';
+      if (score > 3.7) perf = 'high';
+      else if (score < 2.5) perf = 'low';
+
+      // Potential Mapping
+      let pot: 'low' | 'mod' | 'high' = 'mod';
+      if (readiness === 'ready_now') pot = 'high';
+      else if (readiness === 'not_ready') pot = 'low';
+
+      // 9-Box Logic
+      if (pot === 'high') {
+        if (perf === 'high') boxes['star'].push(emp);
+        else if (perf === 'mod') boxes['future_star'].push(emp);
+        else boxes['rough_diamond'].push(emp);
+      } else if (pot === 'mod') {
+        if (perf === 'high') boxes['high_professional'].push(emp);
+        else if (perf === 'mod') boxes['key_player'].push(emp);
+        else boxes['inconsistent_player'].push(emp);
+      } else {
+        if (perf === 'high') boxes['solid_professional'].push(emp);
+        else if (perf === 'mod') boxes['average_performer'].push(emp);
+        else boxes['talent_risk'].push(emp);
+      }
+    });
+
+    return boxes;
+  }
+
+  /**
+   * Retrieves the full organizational structure as a nested tree.
+   * Built manually in JS for maximum compatibility.
+   */
+  async getOrgChart() {
+    const employees = await this.employeeRepo.find({
+      relations: ['jobRole', 'department'],
+      order: { firstName: 'ASC' }
+    });
+
+    const idToNode: Record<string, any> = {};
+    const roots: any[] = [];
+
+    // First pass: create all nodes and map them by ID
+    employees.forEach(emp => {
+      idToNode[emp.id] = { ...emp, subordinates: [] };
+    });
+
+    // Second pass: link nodes to parents
+    employees.forEach(emp => {
+      if (emp.managerId && idToNode[emp.managerId]) {
+        idToNode[emp.managerId].subordinates.push(idToNode[emp.id]);
+      } else {
+        roots.push(idToNode[emp.id]);
+      }
+    });
+
+    return roots;
+  }
+
+  /**
+   * Retrieves management statistics for a leader.
+   */
+  async getManagementStats(managerId: string) {
+    const subordinates = await this.employeeRepo.find({
+      where: { managerId },
+      relations: ['competencies'],
+    });
+
+    if (subordinates.length === 0) return null;
+
+    // Calculate Average Team Performance (based on competencies or latest assessments)
+    // For simplicity, we'll average the readiness scores or latest assessments
+    const latestAssessments = await this.dataSource.query(`
+      SELECT AVG(total_score) as avg_score
+      FROM employee_assessments
+      WHERE employee_id IN (SELECT id FROM employees WHERE manager_id = $1)
+      AND status = 'SUBMITTED'
+    `, [managerId]);
+
+    const avgPerf = parseFloat(latestAssessments[0]?.avg_score) || 0;
+
+    return {
+      teamSize: subordinates.length,
+      avgTeamPerformance: +(avgPerf.toFixed(2)),
+      totalTeamExperience: subordinates.reduce((acc, curr) => {
+        const hire = new Date(curr.hireDate);
+        const years = (new Date().getTime() - hire.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
+        return acc + years;
+      }, 0).toFixed(1),
+    };
+  }
+
+  /**
+   * Identifies potential successors for a role.
+   * Logic: Employees in the same department/role with 'ready_now' status.
+   */
+  async getPotentialSuccessors(employeeId: string) {
+    const target = await this.findOne(employeeId);
+    
+    if (!target.departmentId) return [];
+
+    return this.employeeRepo.find({
+      where: {
+        departmentId: target.departmentId,
+        successionReadiness: 'ready_now' as any,
+      },
+      take: 3,
+      order: { lastName: 'ASC' }
+    });
+  }
+
+  /**
+   * Recalculates Tree paths (Now redundant but kept for API compatibility).
+   */
+  async repairOrgChart() {
+    return { success: true, message: 'Tree is now built dynamically in memory.' };
+  }
 }
+

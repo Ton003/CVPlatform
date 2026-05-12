@@ -40,7 +40,12 @@ export class EmployeeRoleMatch {
   @Column({ type: 'jsonb', nullable: true })
   breakdown: any;
 
-  @Column({ name: 'readiness_label', type: 'varchar', length: 20, nullable: true })
+  @Column({
+    name: 'readiness_label',
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+  })
   readinessLabel: string; // 'READY' | 'NEAR_READY' | 'DEVELOPING' | 'NOT_READY'
 
   @Column({ name: 'matched_comps', type: 'jsonb', nullable: true })
@@ -49,7 +54,11 @@ export class EmployeeRoleMatch {
   @Column({ name: 'gap_comps', type: 'jsonb', nullable: true })
   gapComps: any;
 
-  @Column({ name: 'last_calculated_at', type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'last_calculated_at',
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   lastCalculatedAt: Date;
 
   @CreateDateColumn({ name: 'created_at' })

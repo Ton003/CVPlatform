@@ -116,7 +116,7 @@ export class PolicyService {
    */
   async getManagedJobIds(user: UserContext): Promise<string[]> {
     if (this.isHrOrAdmin(user)) return [];
-    
+
     // Managers can ONLY see jobs they are explicitly assigned to as hiring_manager.
     // Reverted from seeing all "Open" jobs as requested.
     if (!user.employeeId) return [];

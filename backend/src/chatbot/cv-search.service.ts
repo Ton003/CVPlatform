@@ -1,30 +1,30 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { InjectDataSource }   from '@nestjs/typeorm';
-import { DataSource }         from 'typeorm';
-import { ExtractedFilters }   from './keyword-extractor.service';
+import { InjectDataSource } from '@nestjs/typeorm';
+import { DataSource } from 'typeorm';
+import { ExtractedFilters } from './keyword-extractor.service';
 
 export interface RawPerson {
-  candidateId:  string;
-  personType:   'candidate' | 'employee';
-  name:         string;
-  email:        string | null;
-  location:     string | null;
+  candidateId: string;
+  personType: 'candidate' | 'employee';
+  name: string;
+  email: string | null;
+  location: string | null;
   currentTitle: string | null;
-  yearsExp:     number | null;
-  skills:       string[];
-  summary:      string | null;
-  similarity?:  number;
-  buName?:      string;
+  yearsExp: number | null;
+  skills: string[];
+  summary: string | null;
+  similarity?: number;
+  buName?: string;
   departmentName?: string;
-  rankName?:    string;
+  rankName?: string;
 }
 
 export type RawCandidate = RawPerson;
 
 export interface FullCandidate extends RawPerson {
-  education:  any[];
+  education: any[];
   experience: any[];
-  languages:  any[];
+  languages: any[];
 }
 
 @Injectable()
@@ -41,7 +41,9 @@ export class CvSearchService implements OnModuleInit {
       await this.dataSource.query('CREATE EXTENSION IF NOT EXISTS vector;');
       this.logger.log('✅ pgvector extension is ready');
     } catch (err) {
-      this.logger.warn('⚠️ pgvector extension check failed. Ensure it is manually enabled.');
+      this.logger.warn(
+        '⚠️ pgvector extension check failed. Ensure it is manually enabled.',
+      );
     }
   }
 
@@ -49,7 +51,7 @@ export class CvSearchService implements OnModuleInit {
    * ✅ Recall candidates using relational filters (SQL)
    */
   async findByFilters(filters: ExtractedFilters): Promise<RawCandidate[]> {
-    const conditions: string[] = ['1=1'];
+    const conditions: string[] = ["c.status NOT IN ('converted', 'hired')"];
     const params: any[] = [];
     let pIdx = 1;
 
@@ -64,7 +66,7 @@ export class CvSearchService implements OnModuleInit {
     }
 
     if (filters.skills.length > 0) {
-      const skillCond = filters.skills.map(s => {
+      const skillCond = filters.skills.map((s) => {
         params.push(s.toLowerCase());
         return `EXISTS (SELECT 1 FROM jsonb_array_elements_text(cpd.skills_technical) AS sk WHERE LOWER(sk) = $${pIdx++})`;
       });
@@ -94,15 +96,15 @@ export class CvSearchService implements OnModuleInit {
    * ✅ Recall using Vector Similarity (Semantic Search)
    */
   async findByEmbedding(
-    queryEmbedding: number[], 
-    limit = 30, 
+    queryEmbedding: number[],
+    limit = 30,
     personType?: string,
     scopedCandidateIds?: string[],
-    scopedDepartmentId?: string
+    scopedDepartmentId?: string,
   ): Promise<RawCandidate[]> {
     const vectorStr = `[${queryEmbedding.join(',')}]`;
     const params: any[] = [vectorStr, limit];
-    let pIdx = 3; 
+    let pIdx = 3;
 
     let candidateScope = '';
     if (scopedCandidateIds && scopedCandidateIds.length > 0) {
@@ -134,7 +136,7 @@ export class CvSearchService implements OnModuleInit {
       FROM candidates c
       JOIN cvs cv ON cv.candidate_id = c.id::text
       JOIN cv_parsed_data cpd ON cpd.cv_id = cv.id::text
-      WHERE cpd.embedding IS NOT NULL ${candidateScope}
+      WHERE cpd.embedding IS NOT NULL AND c.status NOT IN ('converted', 'hired') ${candidateScope}
       ORDER BY similarity DESC LIMIT $2
     `;
 
@@ -146,7 +148,8 @@ export class CvSearchService implements OnModuleInit {
   }
 
   async findFullCandidate(candidateId: string): Promise<FullCandidate> {
-    const results = await this.dataSource.query(`
+    const results = await this.dataSource.query(
+      `
       SELECT
         c.id::text AS "candidateId",
         CONCAT(c.first_name, ' ', c.last_name) AS name,
@@ -157,7 +160,9 @@ export class CvSearchService implements OnModuleInit {
       JOIN cvs cv ON cv.candidate_id = c.id::text
       JOIN cv_parsed_data cpd ON cpd.cv_id = cv.id::text
       WHERE c.id = $1::uuid LIMIT 1
-    `, [candidateId]);
+    `,
+      [candidateId],
+    );
 
     if (!results.length) throw new Error(`Candidate ${candidateId} not found`);
 

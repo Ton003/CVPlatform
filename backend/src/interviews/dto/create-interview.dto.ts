@@ -1,4 +1,11 @@
-import { IsString, IsNotEmpty, IsISO8601, IsIn, IsUUID, IsOptional } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsISO8601,
+  IsIn,
+  IsUUID,
+  IsOptional,
+} from 'class-validator';
 
 export class CreateInterviewDto {
   // Set by the controller from the URL param — not required in the request body
@@ -12,8 +19,25 @@ export class CreateInterviewDto {
 
   @IsString()
   @IsNotEmpty()
-  @IsIn(['HR', 'Technical', 'Final'])
-  type: 'HR' | 'Technical' | 'Final';
+  @IsIn([
+    'Screening',
+    'Technical',
+    'Culture Fit',
+    'Technical Deep Dive',
+    'Leadership',
+    'Final',
+    'Offer Discussion',
+    'HR',
+  ])
+  type:
+    | 'Screening'
+    | 'Technical'
+    | 'Culture Fit'
+    | 'Technical Deep Dive'
+    | 'Leadership'
+    | 'Final'
+    | 'Offer Discussion'
+    | 'HR';
 
   @IsString()
   @IsNotEmpty()

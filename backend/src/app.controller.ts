@@ -10,7 +10,7 @@ export class AppController {
 
   constructor(
     private readonly appService: AppService,
-    private readonly employeesService: EmployeesService
+    private readonly employeesService: EmployeesService,
   ) {}
 
   @Get('/health')
@@ -18,11 +18,11 @@ export class AppController {
   @ApiResponse({ status: 200, description: 'Returns the status of the API.' })
   health(): { status: string; timestamp: string; info: any } {
     this.logger.debug('Health check heartbeat received');
-    
-    return { 
+
+    return {
       status: 'ok',
       timestamp: new Date().toISOString(),
-      info: this.appService.getSystemInfo()
+      info: this.appService.getSystemInfo(),
     };
   }
 

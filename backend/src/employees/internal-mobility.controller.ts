@@ -1,4 +1,13 @@
-import { Controller, Get, Param, Query, UseGuards, Post, Body, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  UseGuards,
+  Post,
+  Body,
+  Patch,
+} from '@nestjs/common';
 import { UnifiedScoringService } from '../shared/services/unified-scoring.service';
 import { InternalMobilityService } from './internal-mobility.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -9,7 +18,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class InternalMobilityController {
   constructor(
     private readonly scoringService: UnifiedScoringService,
-    private readonly mobilityService: InternalMobilityService
+    private readonly mobilityService: InternalMobilityService,
   ) {}
 
   /**
@@ -26,7 +35,7 @@ export class InternalMobilityController {
   @Patch('status/:id')
   async updateStatus(
     @Param('id') id: string,
-    @Body() dto: { status: any; notes?: string }
+    @Body() dto: { status: any; notes?: string },
   ) {
     return this.mobilityService.updateStatus(id, dto.status, dto.notes);
   }
@@ -86,6 +95,10 @@ export class InternalMobilityController {
     // Typically you'd get the user from req.user, but we'll default to 'System' for now if not available
   ) {
     // Hardcoded 'System' or could pull from JWT if we inject req
-    return this.mobilityService.nominateEmployee(employeeId, offerId, 'HR/Manager');
+    return this.mobilityService.nominateEmployee(
+      employeeId,
+      offerId,
+      'HR/Manager',
+    );
   }
 }

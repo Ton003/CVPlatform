@@ -4,8 +4,10 @@ import re
 import logging
 from typing import List
 
+import math
+
 import pdfplumber
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sentence_transformers import SentenceTransformer, CrossEncoder
@@ -143,8 +145,6 @@ def rerank(body: RerankRequest):
     pairs = [(body.query, c.profileText) for c in body.candidates]
 
     raw_scores = rerank_model.predict(pairs)
-
-    import math
 
     def sigmoid(x):
         return 1 / (1 + math.exp(-x))

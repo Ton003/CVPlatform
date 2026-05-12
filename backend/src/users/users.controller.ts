@@ -1,5 +1,10 @@
 import { Controller, Get, UseGuards, Logger } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -13,11 +18,15 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('managers')
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'List all management-level users',
-    description: 'Returns a list of users with Admin, HR, or Manager roles for assignment workflows.'
+    description:
+      'Returns a list of users with Admin, HR, or Manager roles for assignment workflows.',
   })
-  @ApiResponse({ status: 200, description: 'List of managers returned successfully.' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of managers returned successfully.',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
   findAllManagers() {
     this.logger.debug('Fetching manager list for assignment workflow');

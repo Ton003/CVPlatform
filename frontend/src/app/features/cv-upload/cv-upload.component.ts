@@ -1,4 +1,4 @@
-import { Component, ChangeDetectorRef, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, ChangeDetectorRef, OnInit, Input, Output, EventEmitter, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule }                  from '@angular/common';
 import { FormsModule }                   from '@angular/forms';
 import { HttpClient }                    from '@angular/common/http';
@@ -12,6 +12,7 @@ import { environment }                   from '../../../environments/environment
 @Component({
   selector:    'app-cv-upload',
   standalone:  true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports:     [CommonModule, FormsModule],
   templateUrl: './cv-upload.component.html',
   styleUrls:   ['./cv-upload.component.scss'],
@@ -20,21 +21,17 @@ export class CvUploadComponent implements OnInit {
   selectedFile: File | null = null;
   isDragging    = false;
   isLoading     = false;
-  result:  any    = null;
+  result:  any = null;
   error:   string = '';
 
-  mode:       'local' | 'groq' = 'local';
   gdprConsent = false;
 
-  // Job selection
   @Input() preselectedJobId?: string;
-  @Output() uploadComplete = new EventEmitter<any>();
+  @Output() uploadComplete = new EventEmitter<unknown>();
 
   jobs: { id: string; title: string }[] = [];
   selectedJobId = '';
   jobsLoading   = false;
-
-
 
   constructor(
     private readonly http:        HttpClient,
@@ -71,13 +68,11 @@ export class CvUploadComponent implements OnInit {
       });
   }
 
-  toggleMode(m: 'local' | 'groq') { this.mode = m; this.result = null; this.error = ''; }
-
   get canUpload(): boolean {
     if (!this.selectedFile) return false;
     if (this.isLoading)     return false;
     if (!this.gdprConsent)  return false;
-    if (this.mode === 'groq' && !this.apiKey.has()) return false;
+    if (!this.apiKey.has()) return false;
     return true;
   }
 
@@ -123,9 +118,8 @@ export class CvUploadComponent implements OnInit {
 
     const formData = new FormData();
     formData.append('file',        this.selectedFile);
-    formData.append('mode',        this.mode);
     formData.append('gdprConsent', String(this.gdprConsent));
-    if (this.mode === 'groq') formData.append('apiKey', this.apiKey.get());
+    formData.append('apiKey',      this.apiKey.get());
 
     this.http.post<any>(`${environment.apiUrl}/cv-upload`, formData).pipe(
       switchMap((res) => {

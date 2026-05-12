@@ -504,7 +504,7 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
 
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-5px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: none; }
 }
 
 // ── Levels display ────────────────────────────────────────────────────────
@@ -981,7 +981,7 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
 
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(16px) scale(.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 1; transform: none scale(1); }
 }
 
 // ── Spinner ───────────────────────────────────────────────────────────────

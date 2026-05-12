@@ -15,15 +15,28 @@ import {
   Logger,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { SkipThrottle } from '@nestjs/throttler';
 import { ApplicationsService } from './applications.service';
 import { VerdictService } from './verdict.service';
 import { UserContext } from '../auth/jwt.strategy';
 import { PolicyService } from '../auth/policy.service';
-import { 
-  IsString, IsUUID, IsOptional, IsNumber, Min, Max, IsEnum 
+import {
+  IsString,
+  IsUUID,
+  IsOptional,
+  IsNumber,
+  Min,
+  Max,
+  IsEnum,
 } from 'class-validator';
 
 // Internal DTOs (Organized for better readability within the single-file constraint)
@@ -85,7 +98,10 @@ export class ApplicationsController {
   @Post()
   @ApiOperation({ summary: 'Submit a new job application' })
   @ApiResponse({ status: 201, description: 'Application created.' })
-  async create(@Body() dto: CreateApplicationDto, @Request() req: { user: UserContext }) {
+  async create(
+    @Body() dto: CreateApplicationDto,
+    @Request() req: { user: UserContext },
+  ) {
     // ABAC: Managers can only create applications for jobs they own
     if (this.policyService.isManager(req.user)) {
       await this.policyService.assertJobAccess(req.user, dto.jobId);
@@ -116,19 +132,22 @@ export class ApplicationsController {
       }
     }
 
-    return this.svc.list({ 
-      jobId, 
-      stage, 
-      page: Number(page), 
+    return this.svc.list({
+      jobId,
+      stage,
+      page: Number(page),
       limit: Number(limit),
-      scopedJobIds 
+      scopedJobIds,
     });
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get application dossier by ID' })
   @ApiParam({ name: 'id', format: 'uuid' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string, @Request() req?: { user: UserContext }) {
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req?: { user: UserContext },
+  ) {
     if (req?.user) {
       await this.policyService.assertApplicationAccess(req.user, id);
     }
@@ -156,8 +175,12 @@ export class ApplicationsController {
 
   @Get(':id/notes')
   @ApiOperation({ summary: 'Get recruiter notes and ratings' })
-  async getNotes(@Param('id', ParseUUIDPipe) id: string, @Request() req?: { user: UserContext }) {
-    if (req?.user) await this.policyService.assertApplicationAccess(req.user, id);
+  async getNotes(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req?: { user: UserContext },
+  ) {
+    if (req?.user)
+      await this.policyService.assertApplicationAccess(req.user, id);
     return this.svc.getNotes(id);
   }
 
@@ -173,21 +196,35 @@ export class ApplicationsController {
 
   @Get(':id/score')
   @ApiOperation({ summary: 'Get detailed scoring breakdown' })
-  async getScore(@Param('id', ParseUUIDPipe) id: string, @Request() req?: { user: UserContext }) {
-    if (req?.user) await this.policyService.assertApplicationAccess(req.user, id);
-    return this.svc.getScore(id);
+  async getScore(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: { user: UserContext; headers: any },
+  ) {
+    if (req?.user)
+      await this.policyService.assertApplicationAccess(req.user, id);
+
+    // Extract API key from custom header if provided
+    const headerKey = req.headers['x-ai-api-key'];
+    return this.svc.getScore(id, headerKey);
   }
 
   @Get(':id/verdict')
   @ApiOperation({ summary: 'Get AI-generated verdict and summary' })
-  async getVerdict(@Param('id', ParseUUIDPipe) id: string, @Request() req?: { user: UserContext }) {
-    if (req?.user) await this.policyService.assertApplicationAccess(req.user, id);
+  async getVerdict(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req?: { user: UserContext },
+  ) {
+    if (req?.user)
+      await this.policyService.assertApplicationAccess(req.user, id);
     return this.verdictSvc.getVerdict(id);
   }
 
   @Post(':id/verdict/refresh')
   @ApiOperation({ summary: 'Force re-computation of AI verdict' })
-  refreshVerdict(@Param('id', ParseUUIDPipe) id: string, @Request() req: { user: UserContext }) {
+  refreshVerdict(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req: { user: UserContext },
+  ) {
     return this.verdictSvc.refreshVerdict(id, req.user.id);
   }
 
@@ -203,21 +240,32 @@ export class ApplicationsController {
 
   @Get(':id/tasks')
   @ApiOperation({ summary: 'List associated pipeline tasks' })
-  async getTasks(@Param('id', ParseUUIDPipe) id: string, @Request() req?: { user: UserContext }) {
-    if (req?.user) await this.policyService.assertApplicationAccess(req.user, id);
+  async getTasks(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req?: { user: UserContext },
+  ) {
+    if (req?.user)
+      await this.policyService.assertApplicationAccess(req.user, id);
     return this.svc.getTasks(id);
   }
 
   @Post(':id/tasks')
   @ApiOperation({ summary: 'Add a new task to the application' })
-  addTask(@Param('id', ParseUUIDPipe) id: string, @Body() dto: { title: string }) {
+  addTask(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: { title: string },
+  ) {
     return this.svc.addTask(id, dto.title);
   }
 
   @Get(':id/competencies')
   @ApiOperation({ summary: 'Get evaluated competency scores' })
-  async getCompetencies(@Param('id', ParseUUIDPipe) id: string, @Request() req?: { user: UserContext }) {
-    if (req?.user) await this.policyService.assertApplicationAccess(req.user, id);
+  async getCompetencies(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req?: { user: UserContext },
+  ) {
+    if (req?.user)
+      await this.policyService.assertApplicationAccess(req.user, id);
     return this.svc.getCompetencies(id);
   }
 
@@ -229,12 +277,13 @@ export class ApplicationsController {
     @Body('evaluatedLevel') evaluatedLevel: number,
     @Request() req?: { user: UserContext },
   ) {
-    if (req?.user) await this.policyService.assertApplicationAccess(req.user, id);
+    if (req?.user)
+      await this.policyService.assertApplicationAccess(req.user, id);
     return this.svc.updateCompetencyRating(id, compId, evaluatedLevel);
   }
 
   // ─── Assessments (Formal Evaluations) ──────────────────────────────────────
-  
+
   @Get(':id/assessments')
   getAssessments(@Param('id', ParseUUIDPipe) id: string) {
     return this.svc.getAssessments(id);
@@ -243,7 +292,7 @@ export class ApplicationsController {
   @Post(':id/assessments')
   createAssessment(
     @Param('id', ParseUUIDPipe) id: string,
-    @Request() req: { user: UserContext }
+    @Request() req: { user: UserContext },
   ) {
     return this.svc.createAssessment(id, req.user.id);
   }
@@ -256,7 +305,7 @@ export class ApplicationsController {
   @Patch('assessments/:id/items')
   updateAssessmentItems(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() items: any[]
+    @Body() items: any[],
   ) {
     return this.svc.updateAssessmentItems(id, items);
   }
@@ -275,8 +324,12 @@ export class ApplicationsController {
 
   @Get(':id/outcome')
   @ApiOperation({ summary: 'Get hiring outcome' })
-  async getOutcome(@Param('id', ParseUUIDPipe) id: string, @Request() req?: { user: UserContext }) {
-    if (req?.user) await this.policyService.assertApplicationAccess(req.user, id);
+  async getOutcome(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req?: { user: UserContext },
+  ) {
+    if (req?.user)
+      await this.policyService.assertApplicationAccess(req.user, id);
     return this.svc.getOutcome(id);
   }
 }

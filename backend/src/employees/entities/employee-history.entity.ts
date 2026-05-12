@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import type { Relation } from 'typeorm';
 import { Employee } from './employee.entity';
 import { JobRoleLevel } from '../../job-architecture/entities/job-role-level.entity';
@@ -8,7 +15,7 @@ export enum EmployeeHistoryEventType {
   PROMOTION = 'promotion',
   TRANSFER = 'transfer',
   HIRE = 'hire',
-  OTHER = 'other'
+  OTHER = 'other',
 }
 
 @Entity('employee_history')
@@ -26,7 +33,7 @@ export class EmployeeHistory {
   @Column({
     type: 'enum',
     enum: EmployeeHistoryEventType,
-    default: EmployeeHistoryEventType.OTHER
+    default: EmployeeHistoryEventType.OTHER,
   })
   eventType: EmployeeHistoryEventType;
 

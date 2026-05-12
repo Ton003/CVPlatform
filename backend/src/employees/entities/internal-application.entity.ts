@@ -16,7 +16,7 @@ export enum InternalApplicationStatus {
   INTERVIEWING = 'interviewing',
   SELECTED = 'selected',
   REJECTED = 'rejected',
-  TRANSFERRED = 'transferred'
+  TRANSFERRED = 'transferred',
 }
 
 @Entity('internal_applications')
@@ -41,7 +41,7 @@ export class InternalApplication {
   @Column({
     type: 'enum',
     enum: InternalApplicationStatus,
-    default: InternalApplicationStatus.APPLIED
+    default: InternalApplicationStatus.APPLIED,
   })
   status: InternalApplicationStatus;
 
@@ -51,7 +51,11 @@ export class InternalApplication {
   @Column({ name: 'hr_notes', type: 'text', nullable: true })
   hrNotes: string | null;
 
-  @Column({ name: 'applied_at', type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'applied_at',
+    type: 'timestamptz',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   appliedAt: Date;
 
   @CreateDateColumn({ name: 'created_at' })

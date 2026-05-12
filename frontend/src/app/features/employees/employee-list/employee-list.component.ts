@@ -1,7 +1,7 @@
 import { Component, OnInit, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { EmployeeService, Employee } from '../../../core/services/employee.service';
 import { JobArchitectureService } from '../../../core/services/job-architecture.service';
 import { finalize, debounceTime, distinctUntilChanged, Subject } from 'rxjs';
@@ -11,7 +11,7 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-employee-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './employee-list.component.html',
   styleUrls: ['./employee-list.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush

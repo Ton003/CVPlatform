@@ -10,7 +10,13 @@ import {
   Request,
   ParseUUIDPipe,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { InterviewsService } from './interviews.service';
 import { CreateInterviewDto } from './dto/create-interview.dto';
@@ -27,7 +33,9 @@ export class InterviewsController {
   @Get('applications/:applicationId/interviews')
   @ApiOperation({ summary: 'List all interviews for a specific application' })
   @ApiParam({ name: 'applicationId', format: 'uuid' })
-  findByApplication(@Param('applicationId', ParseUUIDPipe) applicationId: string) {
+  findByApplication(
+    @Param('applicationId', ParseUUIDPipe) applicationId: string,
+  ) {
     return this.svc.findByApplication(applicationId);
   }
 

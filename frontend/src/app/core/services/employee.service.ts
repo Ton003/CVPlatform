@@ -45,6 +45,18 @@ export class EmployeeService {
     return this.http.get<Employee>(`${this.baseUrl}/${id}`);
   }
 
+  getTalentMatrix(params: any): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/talent-matrix`, { params });
+  }
+
+  getOrgChart(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/org-chart`);
+  }
+
+  repairOrgChart(): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/org-chart/repair`, {});
+  }
+
   promoteCandidate(payload: { applicationId: string; employeeId: string; hireDate: string; managerId?: string }): Observable<PromotionResult> {
     return this.http.post<PromotionResult>(`${this.baseUrl}/promote`, payload);
   }
@@ -81,6 +93,9 @@ export class EmployeeService {
     return this.http.get<any[]>(`${this.baseUrl}/${id}/history`);
   }
 
+  getAiDevelopmentPlan(employeeId: string, apiKey: string): Observable<any> {
+    return this.http.post<any>(`${this.baseUrl}/${employeeId}/ai-development-plan`, { apiKey });
+  }
 
   // Assessments
   createAssessmentDraft(employeeId: string, payload: any): Observable<any> {
@@ -105,5 +120,13 @@ export class EmployeeService {
 
   deleteAssessment(id: string): Observable<void> {
     return this.http.delete<void>(`${environment.apiUrl}/assessments/${id}`);
+  }
+
+  getManagementStats(id: string): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/${id}/management-stats`);
+  }
+
+  getPotentialSuccessors(id: string): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/${id}/potential-successors`);
   }
 }

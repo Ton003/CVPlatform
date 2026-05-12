@@ -14,7 +14,7 @@ import { ApplicationAssessmentItem } from './application-assessment-item.entity'
 import { ApplicationCompetencyScore } from '../application-competency-score.entity';
 
 export enum AssessmentStatus {
-  DRAFT     = 'DRAFT',
+  DRAFT = 'DRAFT',
   SUBMITTED = 'SUBMITTED',
 }
 
@@ -37,7 +37,11 @@ export class ApplicationAssessment {
   @JoinColumn({ name: 'evaluator_id' })
   evaluator: Relation<User> | null;
 
-  @Column({ type: 'enum', enum: AssessmentStatus, default: AssessmentStatus.DRAFT })
+  @Column({
+    type: 'enum',
+    enum: AssessmentStatus,
+    default: AssessmentStatus.DRAFT,
+  })
   status: AssessmentStatus;
 
   @Column({ name: 'submitted_at', type: 'timestamptz', nullable: true })
@@ -49,7 +53,9 @@ export class ApplicationAssessment {
   @Column({ type: 'text', nullable: true })
   notes: string | null;
 
-  @OneToMany(() => ApplicationAssessmentItem, (item) => item.assessment, { cascade: true })
+  @OneToMany(() => ApplicationAssessmentItem, (item) => item.assessment, {
+    cascade: true,
+  })
   items: Relation<ApplicationAssessmentItem[]>;
 
   @OneToMany(() => ApplicationCompetencyScore, (score) => score.assessment)

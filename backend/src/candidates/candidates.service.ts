@@ -23,7 +23,12 @@ export class CandidatesService {
    * ✅ List candidates with search and pagination, excluding hired/converted staff
    * ABAC: Supports scoping to a manager's jobs.
    */
-  async list(search?: string, page = 1, limit = 20, scopedJobIds: string[] = []) {
+  async list(
+    search?: string,
+    page = 1,
+    limit = 20,
+    scopedJobIds: string[] = [],
+  ) {
     const offset = (page - 1) * limit;
     const params: any[] = [];
     let whereClause = "c.status NOT IN ('converted', 'hired')";
@@ -45,14 +50,18 @@ export class CandidatesService {
       )`;
     }
 
-    const countRows = await this.dataSource.query(`
+    const countRows = await this.dataSource.query(
+      `
       SELECT COUNT(*) AS total FROM candidates c WHERE ${whereClause}
-    `, params);
+    `,
+      params,
+    );
 
     const total = parseInt(countRows[0].total, 10);
     params.push(limit, offset);
 
-    const rows = await this.dataSource.query(`
+    const rows = await this.dataSource.query(
+      `
       SELECT
         c.id::text           AS "candidateId",
         TRIM(CONCAT(c.first_name, ' ', c.last_name)) AS "name",
@@ -65,7 +74,9 @@ export class CandidatesService {
       WHERE ${whereClause}
       ORDER BY c.created_at DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}
-    `, params);
+    `,
+      params,
+    );
 
     return {
       data: rows,
@@ -80,7 +91,8 @@ export class CandidatesService {
    * ✅ Fetch full candidate dossier including latest parsed CV data
    */
   async getProfile(id: string) {
-    const rows = await this.dataSource.query(`
+    const rows = await this.dataSource.query(
+      `
       SELECT
         c.id::text           AS "candidateId",
         c.first_name         AS "firstName",
@@ -102,7 +114,9 @@ export class CandidatesService {
       WHERE c.id = $1::uuid
       ORDER BY cv.created_at DESC
       LIMIT 1
-    `, [id]);
+    `,
+      [id],
+    );
 
     if (!rows.length) throw new NotFoundException(`Candidate ${id} not found`);
 
@@ -130,16 +144,22 @@ export class CandidatesService {
     await this.dataSource.transaction(async (manager) => {
       for (const cv of cvs) {
         // 1. Delete parsed data
-        await manager.query('DELETE FROM cv_parsed_data WHERE cv_id = $1', [cv.id]);
-        
+        await manager.query('DELETE FROM cv_parsed_data WHERE cv_id = $1', [
+          cv.id,
+        ]);
+
         // 2. Remove local file
         if (cv.filePath) {
           const fullPath = path.resolve(process.cwd(), cv.filePath);
           if (fs.existsSync(fullPath)) {
-            try { fs.unlinkSync(fullPath); } catch (err) { this.logger.error(`File deletion failed: ${fullPath}`, err); }
+            try {
+              fs.unlinkSync(fullPath);
+            } catch (err) {
+              this.logger.error(`File deletion failed: ${fullPath}`, err);
+            }
           }
         }
-        
+
         // 3. Delete CV record
         await manager.remove(cv);
       }

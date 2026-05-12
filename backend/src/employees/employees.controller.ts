@@ -10,8 +10,16 @@ import {
   UseGuards,
   ParseUUIDPipe,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { EmployeesService } from './employees.service';
 import { PromoteCandidateDto, CreateEmployeeDto } from './dto/employee.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -20,6 +28,7 @@ import { Roles } from '../auth/roles.decorator';
 import { UnifiedScoringService } from '../shared/services/unified-scoring.service';
 import { PolicyService } from '../auth/policy.service';
 import { UserContext } from '../auth/jwt.strategy';
+import { DevelopmentAdvisorService } from './development-advisor.service';
 
 @ApiTags('Employees')
 @ApiBearerAuth()
@@ -30,6 +39,7 @@ export class EmployeesController {
     private readonly employeesService: EmployeesService,
     private readonly unifiedScoringService: UnifiedScoringService,
     private readonly policyService: PolicyService,
+    private readonly devAdvisorService: DevelopmentAdvisorService,
   ) {}
 
   @Get()
@@ -51,7 +61,13 @@ export class EmployeesController {
     if (req?.user && this.policyService.isManager(req.user)) {
       if (!req.user.departmentId) {
         // Manager has no department link -> return empty results
-        return { data: [], total: 0, page: Number(page), limit: Number(limit), totalPages: 0 };
+        return {
+          data: [],
+          total: 0,
+          page: Number(page),
+          limit: Number(limit),
+          totalPages: 0,
+        };
       }
       targetDeptId = req.user.departmentId;
     }
@@ -70,6 +86,27 @@ export class EmployeesController {
   @ApiOperation({ summary: 'Find all active managers' })
   findAllManagers(@Query('departmentId') departmentId?: string) {
     return this.employeesService.findAllManagers(departmentId);
+  }
+
+  @Get('talent-matrix')
+  @ApiOperation({ summary: 'Get 9-Box talent matrix data' })
+  getTalentMatrix(
+    @Query('buId') buId?: string,
+    @Query('departmentId') departmentId?: string,
+  ) {
+    return this.employeesService.getTalentMatrixData({ buId, departmentId });
+  }
+
+  @Get('org-chart')
+  @ApiOperation({ summary: 'Get organizational structure tree' })
+  getOrgChart() {
+    return this.employeesService.getOrgChart();
+  }
+
+  @Post('org-chart/repair')
+  @ApiOperation({ summary: 'Repair/Rebuild organizational tree structure' })
+  repairTree() {
+    return this.employeesService.repairOrgChart();
   }
 
   @Get(':id')
@@ -135,9 +172,13 @@ export class EmployeesController {
   @ApiParam({ name: 'id', format: 'uuid' })
   promoteToNextLevel(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() body: { effectiveDate?: string; notes?: string }
+    @Body() body: { effectiveDate?: string; notes?: string },
   ) {
-    return this.employeesService.promoteToNextLevel(id, body.effectiveDate, body.notes);
+    return this.employeesService.promoteToNextLevel(
+      id,
+      body.effectiveDate,
+      body.notes,
+    );
   }
 
   @Get(':id/history')
@@ -145,5 +186,33 @@ export class EmployeesController {
   @ApiParam({ name: 'id', format: 'uuid' })
   getHistory(@Param('id', ParseUUIDPipe) id: string) {
     return this.employeesService.getHistory(id);
+  }
+
+  @Get(':id/management-stats')
+  @ApiOperation({ summary: 'Get management statistics for a leader' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  getManagementStats(@Param('id', ParseUUIDPipe) id: string) {
+    return this.employeesService.getManagementStats(id);
+  }
+
+  @Get(':id/potential-successors')
+  @ApiOperation({ summary: 'Find potential successors for an employee' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  getPotentialSuccessors(@Param('id', ParseUUIDPipe) id: string) {
+    return this.employeesService.getPotentialSuccessors(id);
+  }
+
+  @Post(':id/ai-development-plan')
+  @ApiOperation({ summary: 'Generate AI-powered development recommendations' })
+  @ApiParam({ name: 'id', format: 'uuid' })
+  @ApiResponse({ status: 201, description: 'Development plan generated.' })
+  async generateAiDevelopmentPlan(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { apiKey: string },
+  ) {
+    if (!body.apiKey) {
+      throw new BadRequestException('AI API Key is required to generate a development plan.');
+    }
+    return this.devAdvisorService.generateRecommendations(id, body.apiKey);
   }
 }

@@ -1,9 +1,13 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, ManyToOne, JoinColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Application } from '../application.entity';
-import { User }        from '../../users/entities/user.entity';
+import { User } from '../../users/entities/user.entity';
 
 /**
  * Immutable append-only audit log of every score computation.
@@ -11,7 +15,6 @@ import { User }        from '../../users/entities/user.entity';
  */
 @Entity('scoring_audit_log')
 export class ScoringAuditLog {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

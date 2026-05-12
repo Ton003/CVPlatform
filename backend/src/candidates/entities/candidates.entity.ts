@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+} from 'typeorm';
 import { CandidateCompetency } from './candidate-competency.entity';
 
 @Entity('candidates')
@@ -21,7 +28,12 @@ export class Candidate {
   @Column({ type: 'text', nullable: true, name: 'linkedin_url' })
   linkedinUrl: string | null;
 
-  @Column({ type: 'varchar', length: 200, nullable: true, name: 'current_title' })
+  @Column({
+    type: 'varchar',
+    length: 200,
+    nullable: true,
+    name: 'current_title',
+  })
   currentTitle: string | null;
 
   @Column({ type: 'smallint', nullable: true, name: 'years_experience' })
@@ -62,4 +74,4 @@ export class Candidate {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
-}
+}

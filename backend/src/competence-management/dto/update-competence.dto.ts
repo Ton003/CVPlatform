@@ -1,6 +1,4 @@
-import {
-  IsString, IsOptional, IsUUID, MaxLength,
-} from 'class-validator';
+import { IsString, IsOptional, IsUUID, MaxLength } from 'class-validator';
 
 export class UpdateCompetenceDto {
   @IsOptional()

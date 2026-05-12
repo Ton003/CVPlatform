@@ -1,14 +1,14 @@
-import { Injectable, Logger, NotFoundException }  from '@nestjs/common';
-import { InjectRepository }    from '@nestjs/typeorm';
-import { Repository }          from 'typeorm';
-import * as crypto             from 'crypto';
-import * as fs                 from 'fs';
-import * as path               from 'path';
-import { Candidate }           from '../candidates/entities/candidates.entity';
-import { Cv }                  from '../cvs/entities/cv.entity';
-import { CvParsedData }        from '../cv-parsed-data/entities/cv-parsed-data.entity';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import * as crypto from 'crypto';
+import * as fs from 'fs';
+import * as path from 'path';
+import { Candidate } from '../candidates/entities/candidates.entity';
+import { Cv } from '../cvs/entities/cv.entity';
+import { CvParsedData } from '../cv-parsed-data/entities/cv-parsed-data.entity';
 import { CandidateCareerEntry } from '../candidates/entities/candidate-career-entry.entity';
-import { ParsedCvDto }         from './dto/parsed-cv.dto';
+import { ParsedCvDto } from './dto/parsed-cv.dto';
 import { PdfExtractorService } from './pdf-extractor.service';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB — same as Multer limit
@@ -30,10 +30,10 @@ export class CvStorageService {
   ) {}
 
   async store(
-    file:         Express.Multer.File,
-    parsed:       ParsedCvDto,
+    file: Express.Multer.File,
+    parsed: ParsedCvDto,
     uploadedById: string,
-    gdprConsent:  boolean = false,
+    gdprConsent: boolean = false,
   ): Promise<any> {
     const fileHash = this.generateFileHash(file.buffer);
     this.logger.log(`💾 STORAGE — file hash: ${fileHash.substring(0, 12)}...`);
@@ -43,7 +43,11 @@ export class CvStorageService {
     if (duplicateResult) return duplicateResult;
 
     // 2. Candidate Resolution (Create or Update)
-    const candidate = await this.upsertCandidate(parsed, uploadedById, gdprConsent);
+    const candidate = await this.upsertCandidate(
+      parsed,
+      uploadedById,
+      gdprConsent,
+    );
 
     // 3. File Storage
     const filePath = await this.saveFileToDisk(file.buffer, fileHash);
@@ -57,7 +61,7 @@ export class CvStorageService {
       fileHash,
       uploadedById,
       parsed.language,
-      'done'
+      'done',
     );
 
     // 5. Embedding & Parsed Data
@@ -80,9 +84,11 @@ export class CvStorageService {
     uploadedById: string,
   ): Promise<{ candidate: Candidate; cv: Cv }> {
     const fileHash = this.generateFileHash(file.buffer);
-    
+
     // Upsert candidate based on provided data (email is key)
-    let candidate = await this.candidateRepo.findOne({ where: { email: candidateData.email! } });
+    let candidate = await this.candidateRepo.findOne({
+      where: { email: candidateData.email! },
+    });
     if (!candidate) {
       candidate = this.candidateRepo.create({
         ...candidateData,
@@ -106,7 +112,7 @@ export class CvStorageService {
       fileHash,
       uploadedById,
       'en',
-      'parsing'
+      'parsing',
     );
 
     return { candidate, cv };
@@ -134,7 +140,10 @@ export class CvStorageService {
     this.logger.log(`✅ CV ${cvId} parsing finalized.`);
   }
 
-  async updateStatus(cvId: string, status: 'parsing' | 'done' | 'failed'): Promise<void> {
+  async updateStatus(
+    cvId: string,
+    status: 'parsing' | 'done' | 'failed',
+  ): Promise<void> {
     const cv = await this.cvRepo.findOne({ where: { id: cvId } });
     if (!cv) return;
     cv.parsingStatus = status;
@@ -144,12 +153,12 @@ export class CvStorageService {
   async getParseStatus(cvId: string) {
     const cv = await this.cvRepo.findOne({
       where: { id: cvId },
-      relations: ['parsedData']
+      relations: ['parsedData'],
     });
     if (!cv) throw new NotFoundException('CV not found');
     return {
       status: cv.parsingStatus,
-      hasData: !!cv['parsedData']
+      hasData: !!cv['parsedData'],
     };
   }
 
@@ -158,7 +167,9 @@ export class CvStorageService {
   }
 
   private async checkExistingCv(fileHash: string): Promise<any | null> {
-    const existingCv = await this.cvRepo.findOne({ where: { fileHash: fileHash } });
+    const existingCv = await this.cvRepo.findOne({
+      where: { fileHash: fileHash },
+    });
     if (!existingCv) return null;
 
     this.logger.log(`⚠️  Duplicate CV metadata found — cvId: ${existingCv.id}`);
@@ -167,25 +178,30 @@ export class CvStorageService {
     });
 
     if (existingCandidate) {
-      this.logger.log(`✅ Associated candidate found: ${existingCandidate.id} (Status: ${existingCandidate.status})`);
-      
+      this.logger.log(
+        `✅ Associated candidate found: ${existingCandidate.id} (Status: ${existingCandidate.status})`,
+      );
+
       // If candidate is hired, block with a duplicate message.
-      // If candidate is NOT hired (e.g. was un-hired by employee deletion), 
+      // If candidate is NOT hired (e.g. was un-hired by employee deletion),
       // we still tell them it exists, but the UI can now offer to "view/reset" it.
       return {
-        message:     existingCandidate.status === 'hired' 
-          ? 'This candidate is already an active employee.' 
-          : 'This CV already exists in the database.',
-        duplicate:   true,
+        message:
+          existingCandidate.status === 'hired'
+            ? 'This candidate is already an active employee.'
+            : 'This CV already exists in the database.',
+        duplicate: true,
         candidateId: existingCandidate.id,
-        cvId:        existingCv.id,
-        status:      existingCandidate.status
+        cvId: existingCv.id,
+        status: existingCandidate.status,
       };
     }
 
     this.logger.warn(`🛑 Orphaned CV detected (no candidate) — cleaning up...`);
     await this.cvRepo.remove(existingCv);
-    this.logger.log(`🧹 Orphaned CV record removed. Proceeding with fresh upload.`);
+    this.logger.log(
+      `🧹 Orphaned CV record removed. Proceeding with fresh upload.`,
+    );
     return null;
   }
 
@@ -194,48 +210,60 @@ export class CvStorageService {
     uploadedById: string,
     gdprConsent: boolean,
   ): Promise<Candidate> {
-    const email = parsed.email?.toLowerCase().trim() || `noemail_${crypto.randomBytes(6).toString('hex')}@cv.internal`;
+    const email =
+      parsed.email?.toLowerCase().trim() ||
+      `noemail_${crypto.randomBytes(6).toString('hex')}@cv.internal`;
     let candidate = await this.candidateRepo.findOne({ where: { email } });
 
     const candidateData = {
-      firstName:       parsed.firstName    ?? 'Unknown',
-      lastName:        parsed.lastName     ?? 'Unknown',
+      firstName: parsed.firstName ?? 'Unknown',
+      lastName: parsed.lastName ?? 'Unknown',
       email,
-      phone:            parsed.phone         ?? null,
-      linkedinUrl:     parsed.linkedinUrl  ?? null,
-      currentTitle:    parsed.currentTitle ?? null,
+      phone: parsed.phone ?? null,
+      linkedinUrl: parsed.linkedinUrl ?? null,
+      currentTitle: parsed.currentTitle ?? null,
       yearsExperience: this.toSmallInt(parsed.yearsExperience),
-      location:         parsed.location      ?? null,
-      source:           'upload',
-      gdprConsent:     gdprConsent,
-      gdprConsentAt:  gdprConsent ? new Date() : null,
-      createdBy:       uploadedById,
+      location: parsed.location ?? null,
+      source: 'upload',
+      gdprConsent: gdprConsent,
+      gdprConsentAt: gdprConsent ? new Date() : null,
+      createdBy: uploadedById,
     };
 
     if (!candidate) {
-      this.logger.log(`👤 Creating new candidate — ${candidateData.firstName} ${candidateData.lastName}`);
+      this.logger.log(
+        `👤 Creating new candidate — ${candidateData.firstName} ${candidateData.lastName}`,
+      );
       candidate = this.candidateRepo.create(candidateData);
     } else {
-      this.logger.log(`👤 Existing candidate found (${email}) — updating record`);
+      this.logger.log(
+        `👤 Existing candidate found (${email}) — updating record`,
+      );
       Object.assign(candidate, {
         ...candidateData,
         // Preserve creation info if updating
-        gdprConsent:    gdprConsent || candidate.gdprConsent,
-        gdprConsentAt: (gdprConsent && !candidate.gdprConsent) ? new Date() : candidate.gdprConsentAt,
+        gdprConsent: gdprConsent || candidate.gdprConsent,
+        gdprConsentAt:
+          gdprConsent && !candidate.gdprConsent
+            ? new Date()
+            : candidate.gdprConsentAt,
       });
     }
 
     return this.candidateRepo.save(candidate);
   }
 
-  private async saveFileToDisk(buffer: Buffer, fileHash: string): Promise<string> {
+  private async saveFileToDisk(
+    buffer: Buffer,
+    fileHash: string,
+  ): Promise<string> {
     if (buffer.length > MAX_FILE_SIZE) {
       throw new Error(`File too large: ${buffer.length} bytes`);
     }
 
     const fileName = `${fileHash}.pdf`;
     const uploadDir = path.join(process.cwd(), 'uploads');
-    
+
     if (!fs.existsSync(uploadDir)) {
       fs.mkdirSync(uploadDir, { recursive: true });
     }
@@ -258,15 +286,15 @@ export class CvStorageService {
     status: 'parsing' | 'done' | 'failed' = 'done',
   ): Promise<Cv> {
     const cv = this.cvRepo.create({
-      candidateId:   candidateId,
-      fileName:      fileName,
-      filePath:      filePath,
-      mimeType:      mimeType,
-      fileHash:      fileHash,
-      isPrimary:     true,
-      language:       language || 'fr',
+      candidateId: candidateId,
+      fileName: fileName,
+      filePath: filePath,
+      mimeType: mimeType,
+      fileHash: fileHash,
+      isPrimary: true,
+      language: language || 'fr',
       parsingStatus: status,
-      uploadedBy:    uploadedById,
+      uploadedBy: uploadedById,
     });
     const saved = await this.cvRepo.save(cv);
     this.logger.log(`✅ CV record saved — cvId: ${saved.id}`);
@@ -279,44 +307,53 @@ export class CvStorageService {
     return this.pdfExtractor.embedText(text);
   }
 
-  private async saveParsedData(cvId: string, parsed: ParsedCvDto, embedding: number[]): Promise<CvParsedData> {
+  private async saveParsedData(
+    cvId: string,
+    parsed: ParsedCvDto,
+    embedding: number[],
+  ): Promise<CvParsedData> {
     const parsedData = this.parsedRepo.create({
-      cvId:                   cvId,
-      rawText:                null,
-      skillsTechnical:        parsed.skillsTechnical        ?? [],
-      skillsSoft:             parsed.skillsSoft             ?? [],
-      languages:               parsed.languages               ?? [],
-      education:               parsed.education               ?? [],
-      experience:              parsed.experience              ?? [],
+      cvId: cvId,
+      rawText: null,
+      skillsTechnical: parsed.skillsTechnical ?? [],
+      skillsSoft: parsed.skillsSoft ?? [],
+      languages: parsed.languages ?? [],
+      education: parsed.education ?? [],
+      experience: parsed.experience ?? [],
       totalExperienceMonths: this.toSmallInt(parsed.totalExperienceMonths),
-      llmSummary:             parsed.llmSummary             ?? null,
-      parsedAt:               new Date(),
-      embedding:               embedding.length > 0 ? `[${embedding.join(',')}]` : null,
+      llmSummary: parsed.llmSummary ?? null,
+      parsedAt: new Date(),
+      embedding: embedding.length > 0 ? `[${embedding.join(',')}]` : null,
     });
     const saved = await this.parsedRepo.save(parsedData);
     this.logger.log(`✅ Parsed data + embedding saved`);
     return saved;
   }
 
-  private async saveCareerEntries(candidateId: string, experience: any[]): Promise<void> {
+  private async saveCareerEntries(
+    candidateId: string,
+    experience: any[],
+  ): Promise<void> {
     if (!experience.length) return;
 
     this.logger.log(`📜 Saving ${experience.length} career entries...`);
-    const careerEntries = experience.map(exp => {
+    const careerEntries = experience.map((exp) => {
       const tags = exp.inferredTags || [];
-      const avgConfidence = tags.length > 0 
-        ? tags.reduce((sum: number, t: any) => sum + (t.confidence || 0), 0) / tags.length 
-        : 0;
+      const avgConfidence =
+        tags.length > 0
+          ? tags.reduce((sum: number, t: any) => sum + (t.confidence || 0), 0) /
+            tags.length
+          : 0;
 
       return this.careerEntryRepo.create({
         candidateId,
-        roleTitle:       exp.title,
-        company:         exp.company,
-        startDate:       this.normalizeDate(exp.startDate),
-        endDate:         this.normalizeDate(exp.endDate),
-        rawDescription:  exp.description,
-        sfiaTags:        tags,
-        source:          'AI',
+        roleTitle: exp.title,
+        company: exp.company,
+        startDate: this.normalizeDate(exp.startDate),
+        endDate: this.normalizeDate(exp.endDate),
+        rawDescription: exp.description,
+        sfiaTags: tags,
+        source: 'AI',
         confidenceScore: avgConfidence,
       });
     });
@@ -324,21 +361,25 @@ export class CvStorageService {
     this.logger.log(`✅ Career entries saved`);
   }
 
-  private buildResponse(candidate: Candidate, cv: Cv, parsed: ParsedCvDto): any {
+  private buildResponse(
+    candidate: Candidate,
+    cv: Cv,
+    parsed: ParsedCvDto,
+  ): any {
     return {
-      message:     'CV processed successfully',
-      action:      'saved',
-      duplicate:   false,
+      message: 'CV processed successfully',
+      action: 'saved',
+      duplicate: false,
       candidateId: candidate.id,
-      cvId:        cv.id,
+      cvId: cv.id,
       preview: {
-        name:             `${candidate.firstName} ${candidate.lastName}`.trim(),
-        email:            candidate.email,
-        location:         candidate.location,
+        name: `${candidate.firstName} ${candidate.lastName}`.trim(),
+        email: candidate.email,
+        location: candidate.location,
         experience_years: parsed.yearsExperience,
-        current_title:    candidate.currentTitle,
-        skills:           parsed.skillsTechnical?.slice(0, 6) ?? [],
-        summary:          parsed.llmSummary,
+        current_title: candidate.currentTitle,
+        skills: parsed.skillsTechnical?.slice(0, 6) ?? [],
+        summary: parsed.llmSummary,
       },
     };
   }
@@ -347,7 +388,7 @@ export class CvStorageService {
     const parts: string[] = [];
 
     if (parsed.currentTitle) parts.push(parsed.currentTitle);
-    if (parsed.llmSummary)   parts.push(parsed.llmSummary);
+    if (parsed.llmSummary) parts.push(parsed.llmSummary);
 
     if (parsed.skillsTechnical?.length) {
       parts.push(`Skills: ${parsed.skillsTechnical.join(', ')}`);
@@ -357,13 +398,13 @@ export class CvStorageService {
     }
     if (parsed.experience?.length) {
       const expText = parsed.experience
-        .map(e => `${e.title}${e.company ? ` at ${e.company}` : ''}`)
+        .map((e) => `${e.title}${e.company ? ` at ${e.company}` : ''}`)
         .join(', ');
       parts.push(`Experience: ${expText}`);
     }
     if (parsed.education?.length) {
       const eduText = parsed.education
-        .map(e => `${e.degree ?? ''} ${e.institution ?? ''}`.trim())
+        .map((e) => `${e.degree ?? ''} ${e.institution ?? ''}`.trim())
         .join(', ');
       parts.push(`Education: ${eduText}`);
     }
@@ -374,7 +415,7 @@ export class CvStorageService {
   private toSmallInt(value: any): number | null {
     if (value === null || value === undefined) return null;
     const num = Number(value);
-    if (isNaN(num))  return null;
+    if (isNaN(num)) return null;
     if (num >= 0 && num <= 1200) return Math.round(num); // Max 100 years experience in months
     return null;
   }
@@ -385,4 +426,4 @@ export class CvStorageService {
     if (isNaN(d.getTime())) return null; // Fallback to null for unparsable dates like "Present"
     return d.toISOString().split('T')[0];
   }
-}
+}

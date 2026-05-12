@@ -1,48 +1,57 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, ManyToOne, JoinColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Application } from '../application.entity';
 
-export type VerdictRecommendation = 'ADVANCE' | 'INTERVIEW' | 'HOLD' | 'REJECT' | 'INSUFFICIENT_DATA';
-export type VerdictConfidence     = 'HIGH' | 'MEDIUM' | 'LOW';
-export type GapImpact             = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+export type VerdictRecommendation =
+  | 'ADVANCE'
+  | 'INTERVIEW'
+  | 'HOLD'
+  | 'REJECT'
+  | 'INSUFFICIENT_DATA';
+export type VerdictConfidence = 'HIGH' | 'MEDIUM' | 'LOW';
+export type GapImpact = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
 
 export interface VerdictStrength {
-  competenceId:   string;
-  sfiaCode:       string;
-  sfiaName:       string;
+  competenceId: string;
+  sfiaCode: string;
+  sfiaName: string;
   evaluatedLevel: number;
-  requiredLevel:  number;
-  delta:          number;
-  reason:         string;
+  requiredLevel: number;
+  delta: number;
+  reason: string;
 }
 
 export interface VerdictGap {
-  competenceId:   string;
-  sfiaCode:       string;
-  sfiaName:       string;
+  competenceId: string;
+  sfiaCode: string;
+  sfiaName: string;
   evaluatedLevel: number | null;
-  requiredLevel:  number;
-  delta:          number;
-  impact:         GapImpact;
-  reason:         string;
+  requiredLevel: number;
+  delta: number;
+  impact: GapImpact;
+  reason: string;
 }
 
 export interface RiskFlag {
-  code:     string;
+  code: string;
   severity: 'HIGH' | 'MEDIUM' | 'LOW';
-  message:  string;
+  message: string;
 }
 
 export interface VerdictScoreBreakdown {
-  competency:  number | null;
-  interview:   number | null;
-  experience:  number | null;
-  final:       number;
+  competency: number | null;
+  interview: number | null;
+  experience: number | null;
+  final: number;
   weights: {
     competency: number;
-    interview:  number;
+    interview: number;
     experience: number;
   };
 }
@@ -53,7 +62,6 @@ export interface VerdictScoreBreakdown {
  */
 @Entity('application_verdicts')
 export class ApplicationVerdict {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

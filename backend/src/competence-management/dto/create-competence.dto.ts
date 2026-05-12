@@ -1,5 +1,9 @@
 import {
-  IsString, IsNotEmpty, IsOptional, IsUUID, MaxLength,
+  IsString,
+  IsNotEmpty,
+  IsOptional,
+  IsUUID,
+  MaxLength,
 } from 'class-validator';
 
 export class CreateCompetenceDto {

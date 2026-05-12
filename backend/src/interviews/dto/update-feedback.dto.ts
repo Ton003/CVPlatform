@@ -26,4 +26,7 @@ export class UpdateFeedbackDto {
   @IsOptional()
   @IsIn(['scheduled', 'completed', 'cancelled'])
   status?: 'scheduled' | 'completed' | 'cancelled';
+
+  @IsOptional()
+  competencies?: Record<string, number>;
 }

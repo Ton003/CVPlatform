@@ -1,77 +1,104 @@
 <div class="command-center">
-  <!-- Astra Briefing Hero -->
+  <!-- Talent Hero -->
   <header class="briefing-hero">
     <div class="hero-main">
-      <div class="astra-pulse">
-        <div class="orb"></div>
-        <div class="rings"><span></span><span></span><span></span></div>
-      </div>
       <div class="briefing-text">
-        <div class="status-badge">SYSTEM ONLINE · ACTIVE SURVEILLANCE</div>
-        <h1>Astra Intelligence</h1>
-        <p class="mission-statement">Monitoring {{ openJobs.length }} active missions and {{ stats?.totalCandidates || 0 }} talent vectors.</p>
+        <div class="status-badge">SYSTEM ONLINE</div>
+        <h1>Talent Dashboard</h1>
+        <p class="mission-statement">Managing {{ openJobs.length }} active job offers and {{ stats?.totalCandidates || 0 }} total candidates.</p>
       </div>
     </div>
     
     <div class="hero-stats">
       <div class="quick-stat">
-        <span class="label">Total Pipeline</span>
+        <span class="label">Total Applications</span>
         <span class="value">{{ totalApps }}</span>
       </div>
       <div class="quick-stat">
-        <span class="label">Hiring Velocity</span>
-        <span class="value">High</span>
+        <span class="label">Open Roles</span>
+        <span class="value">{{ openJobs.length }}</span>
       </div>
       <div class="quick-stat">
-        <span class="label">Retention Health</span>
-        <span class="value">94%</span>
+        <span class="label">New This Week</span>
+        <span class="value">{{ stats?.addedThisWeek || 0 }}</span>
       </div>
     </div>
   </header>
 
+  <!-- Quick Actions -->
+  <section class="quick-actions">
+    <button class="action-btn" (click)="createJob()">
+      <div class="icon-wrap"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 4v16m8-8H4"/></svg></div>
+      <span>Post New Job</span>
+    </button>
+    <button class="action-btn" (click)="uploadCv()">
+      <div class="icon-wrap"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg></div>
+      <span>Upload CVs</span>
+    </button>
+    <button class="action-btn" (click)="searchTalent()">
+      <div class="icon-wrap"><svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg></div>
+      <span>Search Talent</span>
+    </button>
+  </section>
+
   <main class="dashboard-grid">
-    <!-- Center: Intelligence Stream -->
     <div class="grid-main">
-      <app-scout-agent></app-scout-agent>
+      <!-- Task Summary -->
+      <div class="task-summary-card" *ngIf="stats?.pendingScreenings">
+        <div class="task-info">
+          <h3>{{ stats?.pendingScreenings }} Candidates to Screen</h3>
+          <p>You have new applications waiting for initial review.</p>
+          <button class="btn-primary" (click)="startScreening()">Start Screening Now</button>
+        </div>
+        <div class="task-icon">
+          <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+      </div>
+
+      <!-- Upcoming Interviews -->
+      <div class="content-panel">
+        <div class="panel-head">
+          <span class="panel-title">Upcoming Interviews</span>
+          <a routerLink="/interviews" class="panel-link">Calendar →</a>
+        </div>
+        
+        <div class="interview-list" *ngIf="stats?.upcomingInterviews?.length; else noInterviews">
+          <div class="interview-card" *ngFor="let interview of stats?.upcomingInterviews">
+            <div class="date-badge">
+              <span class="day">{{ interview.scheduledAt | date:'dd' }}</span>
+              <span class="month">{{ interview.scheduledAt | date:'MMM' }}</span>
+            </div>
+            <div class="interview-info">
+              <span class="candidate">{{ interview.candidateName }}</span>
+              <span class="job">{{ interview.jobTitle }}</span>
+              <span class="details">{{ interview.type | titlecase }} · with {{ interview.interviewerName }}</span>
+            </div>
+            <div class="time">{{ interview.scheduledAt | date:'HH:mm' }}</div>
+          </div>
+        </div>
+        <ng-template #noInterviews>
+          <div class="empty-state">
+            <p>No interviews scheduled for the upcoming days.</p>
+          </div>
+        </ng-template>
+      </div>
     </div>
 
-    <!-- Right: Activity & Controls -->
+    <!-- Right: Activity & Pipeline Breakdown -->
     <aside class="grid-side">
       <!-- Recent Activity -->
       <div class="mini-panel">
         <div class="panel-head">
-          <span class="panel-title">Recent Transmissions</span>
-          <a routerLink="/candidates" class="panel-link">Logs →</a>
+          <span class="panel-title">Recent Activity</span>
+          <a routerLink="/candidates" class="panel-link">View all →</a>
         </div>
         <div class="activity-feed">
           <div class="activity-item" *ngFor="let app of recentApps" (click)="openApplication(app.applicationId)">
-            <div class="activity-time">{{ (app.stage || 'Applied') | titlecase }}</div>
+            <div class="activity-badge" [style.background]="getStageBadgeStyle(app.stage)">{{ (app.stage || 'Applied') | uppercase }}</div>
             <div class="activity-body">
-              <strong>{{ app.candidateName || 'Unknown Candidate' }}</strong> linked to <em>{{ app.jobTitle || 'Unknown Job' }}</em>
+              <strong>{{ app.candidateName || 'Unknown' }}</strong>
+              <span>for {{ app.jobTitle || 'General' }}</span>
             </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Open Missions -->
-      <div class="mini-panel">
-        <div class="panel-head">
-          <span class="panel-title">Active Missions</span>
-          <a routerLink="/job-offers" class="panel-link">Manage →</a>
-        </div>
-        <div *ngIf="jobsLoading" class="mission-list">
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Loading missions...</p>
-        </div>
-        <div *ngIf="!jobsLoading && openJobs.length === 0" class="mission-list">
-          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">No active missions found.</p>
-        </div>
-        <div *ngIf="!jobsLoading && openJobs.length > 0" class="mission-list">
-          <div class="mission-item" *ngFor="let job of openJobs" (click)="viewPipeline(job.id)">
-            <div class="mission-info">
-              <span class="title">{{ job.title }}</span>
-              <span class="sub">{{ job.location || 'Remote' }}</span>
-            </div>
-            <div class="mission-badge">ACTIVE</div>
           </div>
         </div>
       </div>
@@ -81,10 +108,7 @@
         <div class="panel-head">
           <span class="panel-title">Pipeline Health</span>
         </div>
-        <div *ngIf="statsLoading" class="health-chart">
-           <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0;">Loading pipeline...</p>
-        </div>
-        <div *ngIf="!statsLoading" class="health-chart">
+        <div class="health-chart">
           <div class="health-row" *ngFor="let stage of stages">
             <div class="health-bar-wrap">
               <div class="health-bar" [style.width.%]="stageBarWidth(getStageCount(stage.id))" [style.background]="stage.color"></div>
@@ -95,4 +119,4 @@
       </div>
     </aside>
   </main>
-</div>
+</div>

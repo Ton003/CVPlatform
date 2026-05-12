@@ -207,7 +207,7 @@
     box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
   }
 
-  &:active:not(:disabled) { transform: translateY(0); }
+  &:active:not(:disabled) { transform: none; }
 
   &:disabled {
     opacity: 0.45;

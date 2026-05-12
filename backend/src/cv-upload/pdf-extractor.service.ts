@@ -1,18 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { HttpService }        from '@nestjs/axios';
-import { ConfigService }      from '@nestjs/config';
-import { firstValueFrom }     from 'rxjs';
+import { HttpService } from '@nestjs/axios';
+import { ConfigService } from '@nestjs/config';
+import { firstValueFrom } from 'rxjs';
 
 export interface RerankCandidate {
   candidateId: string;
-  name:        string;
+  name: string;
   profileText: string;
 }
 
 export interface RerankResult {
   candidateId: string;
-  name:        string;
-  score:       number;
+  name: string;
+  score: number;
 }
 
 @Injectable()
@@ -21,10 +21,11 @@ export class PdfExtractorService {
   private readonly pythonUrl: string; // ✅ from env, not hardcoded
 
   constructor(
-    private readonly httpService:    HttpService,
-    private readonly configService:  ConfigService,
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService,
   ) {
-    this.pythonUrl = this.configService.getOrThrow<string>('PYTHON_SERVICE_URL');
+    this.pythonUrl =
+      this.configService.getOrThrow<string>('PYTHON_SERVICE_URL');
   }
 
   async extractText(pdfBuffer: Buffer): Promise<string> {
@@ -57,7 +58,9 @@ export class PdfExtractorService {
         ),
       );
       const embedding: number[] = response.data.embedding ?? [];
-      this.logger.log(`✅ Embedding generated — ${embedding.length} dimensions`);
+      this.logger.log(
+        `✅ Embedding generated — ${embedding.length} dimensions`,
+      );
       return embedding;
     } catch (err) {
       this.logger.warn(`⚠️ Embedding failed: ${err.message} — skipping vector`);
@@ -66,7 +69,7 @@ export class PdfExtractorService {
   }
 
   async rerankCandidates(
-    query:      string,
+    query: string,
     candidates: RerankCandidate[],
   ): Promise<RerankResult[]> {
     if (!candidates.length) return [];
@@ -83,22 +86,28 @@ export class PdfExtractorService {
       const results: RerankResult[] = response.data.results ?? [];
       this.logger.log(
         `✅ Reranked ${results.length} candidates — ` +
-        `top: ${results[0]?.name} (${results[0]?.score?.toFixed(2)})`
+          `top: ${results[0]?.name} (${results[0]?.score?.toFixed(2)})`,
       );
       return results;
-
     } catch (err) {
-      this.logger.warn(`⚠️ Reranking failed: ${err.message} — returning original order`);
-      return candidates.map(c => ({ candidateId: c.candidateId, name: c.name, score: 0 }));
+      this.logger.warn(
+        `⚠️ Reranking failed: ${err.message} — returning original order`,
+      );
+      return candidates.map((c) => ({
+        candidateId: c.candidateId,
+        name: c.name,
+        score: 0,
+      }));
     }
   }
 
   static buildProfileText(candidate: any): string {
     const parts: string[] = [];
 
-    if (candidate.currentTitle)       parts.push(candidate.currentTitle);
-    if (candidate.skills?.length)     parts.push(`Skills: ${candidate.skills.slice(0, 15).join(', ')}`);
-    if (candidate.summary)            parts.push(candidate.summary.substring(0, 200));
+    if (candidate.currentTitle) parts.push(candidate.currentTitle);
+    if (candidate.skills?.length)
+      parts.push(`Skills: ${candidate.skills.slice(0, 15).join(', ')}`);
+    if (candidate.summary) parts.push(candidate.summary.substring(0, 200));
     if (candidate.education?.length) {
       const edu = candidate.education
         .slice(0, 2)
@@ -114,7 +123,9 @@ export class PdfExtractorService {
       if (exp) parts.push(`Experience: ${exp}`);
     }
     if (candidate.languages?.length) {
-      parts.push(`Languages: ${candidate.languages.map((l: any) => l.name).join(', ')}`);
+      parts.push(
+        `Languages: ${candidate.languages.map((l: any) => l.name).join(', ')}`,
+      );
     }
 
     return parts.join('. ');

@@ -1,12 +1,16 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn,
-  OneToMany, Index,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+  Index,
 } from 'typeorm';
 import { Competence } from './competence.entity';
 
 export enum CompetenceCategory {
-  TECHNICAL  = 'TECHNICAL',
+  TECHNICAL = 'TECHNICAL',
   BEHAVIORAL = 'BEHAVIORAL',
   MANAGERIAL = 'MANAGERIAL',
 }
@@ -14,7 +18,6 @@ export enum CompetenceCategory {
 @Entity('competence_families')
 @Index('idx_family_category', ['category'])
 export class CompetenceFamily {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 
-const KEY = 'groq_api_key';
+const KEY = 'ai_api_key';
 
 @Injectable({ providedIn: 'root' })
 export class ApiKeyService {

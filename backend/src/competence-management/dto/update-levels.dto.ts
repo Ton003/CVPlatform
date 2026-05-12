@@ -1,5 +1,13 @@
 import {
-  IsArray, ValidateNested, IsInt, Min, Max, IsString, IsNotEmpty, ArrayMinSize, ArrayMaxSize,
+  IsArray,
+  ValidateNested,
+  IsInt,
+  Min,
+  Max,
+  IsString,
+  IsNotEmpty,
+  ArrayMinSize,
+  ArrayMaxSize,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 

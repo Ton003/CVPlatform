@@ -364,13 +364,6 @@
       </div>
 
       <div *ngIf="!loading && jobCompetencies.length > 0">
-        <div class="eval-actions-bar">
-          <button class="btn-primary" (click)="openAssessment()">
-            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
-            Start Formal Assessment
-          </button>
-          <p class="eval-actions-hint">Use formal assessments to track Draft/Submitted evaluations with structured scoring.</p>
-        </div>
 
         <div *ngFor="let group of getEvaluationGroups()" class="card eval-group">
           <div class="card-head">
@@ -461,14 +454,11 @@
             <p class="score-hero-title">Competency-Based Score</p>
             <p class="score-hero-sub">Evaluated against <strong>{{ app.jobTitle }}</strong></p>
             <div class="score-sources">
-              <span class="src-chip" [class.src-on]="score.breakdown?.technical?.available">⚙️ Technical</span>
-              <span class="src-chip" [class.src-on]="score.breakdown?.interview?.available">💬 Interviews</span>
+              <span class="src-chip" [class.src-on]="score.breakdown?.technical?.available">⚙️ AI Match</span>
+              <span class="src-chip" [class.src-on]="score.breakdown?.evaluation?.available">📋 Evaluation</span>
             </div>
           </div>
         </div>
-
-        <!-- Missing data warning -->
-
 
         <!-- Breakdown -->
         <div class="card">
@@ -477,8 +467,8 @@
             <!-- Technical -->
             <div class="score-row">
               <div class="score-row-info">
-                <span class="score-row-label">Technical Skills</span>
-                <span class="score-row-sub">Manual ratings & CV match</span>
+                <span class="score-row-label">{{ score.breakdown?.technical?.label }}</span>
+                <span class="score-row-sub">{{ score.breakdown?.technical?.sub }}</span>
               </div>
               <div class="score-bar-wrap">
                 <div class="score-bar" [style.width.%]="score.breakdown?.technical?.score" [style.background]="scoreColor(score.breakdown?.technical?.score)"></div>
@@ -487,22 +477,20 @@
               <span class="score-weight">×{{ score.breakdown?.technical?.weight }}%</span>
             </div>
 
-
-
-            <!-- Interviews -->
+            <!-- Evaluation -->
             <div class="score-row">
               <div class="score-row-info">
-                <span class="score-row-label">Interviews</span>
-                <span class="score-row-sub">Average cross-round score</span>
+                <span class="score-row-label">{{ score.breakdown?.evaluation?.label }}</span>
+                <span class="score-row-sub">{{ score.breakdown?.evaluation?.sub }}</span>
               </div>
-              <ng-container *ngIf="score.breakdown?.interview?.available; else interviewNA">
+              <ng-container *ngIf="score.breakdown?.evaluation?.available; else evalNA">
                 <div class="score-bar-wrap">
-                  <div class="score-bar" [style.width.%]="score.breakdown?.interview?.score" [style.background]="scoreColor(score.breakdown?.interview?.score)"></div>
+                  <div class="score-bar" [style.width.%]="score.breakdown?.evaluation?.score" [style.background]="scoreColor(score.breakdown?.evaluation?.score)"></div>
                 </div>
-                <span class="score-pct" [style.color]="scoreColor(score.breakdown?.interview?.score)">{{ score.breakdown?.interview?.score }}%</span>
-                <span class="score-weight">×{{ score.breakdown?.interview?.weight }}%</span>
+                <span class="score-pct" [style.color]="scoreColor(score.breakdown?.evaluation?.score)">{{ score.breakdown?.evaluation?.score }}%</span>
+                <span class="score-weight">×{{ score.breakdown?.evaluation?.weight }}%</span>
               </ng-container>
-              <ng-template #interviewNA><span class="score-na">Complete an interview to include</span></ng-template>
+              <ng-template #evalNA><span class="score-row-na">Awaiting interview feedback</span></ng-template>
             </div>
           </div>
         </div>
@@ -530,55 +518,107 @@
 
     <!-- ══════════════════════════════════════════ INTERVIEWS ══ -->
     <div *ngIf="activeTab === 'interviews'" class="tab-content">
-
       <div class="interviews-header">
-        <h3 class="section-title">Scheduled Interviews</h3>
+        <div class="header-left">
+          <h3 class="section-title">Interview Journey</h3>
+          <p class="section-subtitle">Track and manage the evaluation steps for this candidate.</p>
+        </div>
         <button class="btn-primary" (click)="showInterviewModal = true">
-          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-          Schedule Interview
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+          Schedule New Round
         </button>
       </div>
 
       <div *ngIf="interviewsLoading" class="loading-row">
-        <div class="spinner-sm"></div><span>Loading interviews…</span>
+        <div class="spinner-sm"></div><span>Loading journey…</span>
       </div>
 
       <div *ngIf="!interviewsLoading && interviews.length === 0" class="empty-state">
-        <span class="empty-icon">📅</span>
+        <div class="empty-art">
+          <svg width="64" height="64" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="0.5" style="color:var(--text-muted)">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+        </div>
         <p>No interviews scheduled yet.</p>
+        <button class="btn-ghost" (click)="showInterviewModal = true">Start the process →</button>
       </div>
 
-      <div *ngFor="let it of interviews" class="interview-card" [class.iv-completed]="it.status === 'completed'">
-        <div class="iv-header">
-          <div class="iv-type-icon">
-            <ng-container [ngSwitch]="it.type.toLowerCase()">
-              <span *ngSwitchCase="'screening'">📞</span>
-              <span *ngSwitchCase="'technical'">⚙️</span>
-              <span *ngSwitchCase="'technical deep dive'">🔬</span>
-              <span *ngSwitchCase="'culture fit'">🎭</span>
-              <span *ngSwitchCase="'leadership'">👑</span>
-              <span *ngSwitchCase="'final'">🏁</span>
-              <span *ngSwitchCase="'offer discussion'">💰</span>
-              <span *ngSwitchDefault>💬</span>
-            </ng-container>
+      <div class="interview-timeline" *ngIf="!interviewsLoading && interviews.length > 0">
+        <div *ngFor="let it of interviews; let first = first; let last = last" 
+             class="iv-timeline-item" 
+             [class.iv--completed]="it.status === 'completed'"
+             [class.iv--active]="it.status === 'scheduled'">
+          
+          <div class="iv-line-wrap">
+            <div class="iv-status-dot">
+              <svg *ngIf="it.status === 'completed'" width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <div *ngIf="it.status === 'scheduled'" class="pulse-dot"></div>
+            </div>
+            <div class="iv-line" *ngIf="!last"></div>
           </div>
-          <div class="iv-info">
-            <p class="iv-title">{{ it.type }} Interview</p>
-            <p class="iv-sub">{{ it.interviewerName }} · {{ it.scheduledAt | date:'MMM d, yyyy · HH:mm' }}</p>
+
+          <div class="iv-timeline-card">
+            <div class="iv-card-header">
+              <div class="iv-type-badge">
+                <span class="iv-icon">{{ getInterviewIcon(it.type) }}</span>
+                <span class="iv-type-name">{{ it.type }} Round</span>
+              </div>
+              <div class="iv-time">
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                {{ it.scheduledAt | date:'EEE, MMM d · HH:mm' }}
+              </div>
+            </div>
+
+            <div class="iv-card-body">
+              <div class="iv-participants">
+                <div class="iv-participant">
+                  <div class="part-av">{{ getInitials(it.interviewerName || 'U') }}</div>
+                  <div class="part-info">
+                    <p class="part-name">{{ it.interviewerName }}</p>
+                    <p class="part-role">Interviewer</p>
+                  </div>
+                </div>
+                <div class="iv-link-box" *ngIf="it.meetingUrl && it.status === 'scheduled'">
+                  <a [href]="it.meetingUrl" target="_blank" class="meet-link">
+                    <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    Join Virtual Room
+                  </a>
+                </div>
+              </div>
+
+              <!-- Results Section -->
+              <div class="iv-results-panel" *ngIf="it.status === 'completed'">
+                <div class="iv-outcome-row">
+                  <div class="iv-score-pills">
+                    <div class="score-pill">
+                      <span class="pill-lbl">Technical</span>
+                      <div class="pill-val">
+                        <span *ngFor="let s of stars()" class="star-tiny" [class.lit]="s <= (it.technicalScore ?? 0)">★</span>
+                      </div>
+                    </div>
+                    <div class="score-pill">
+                      <span class="pill-lbl">Soft Skills</span>
+                      <div class="pill-val">
+                        <span *ngFor="let s of stars()" class="star-tiny" [class.lit]="s <= (it.communicationScore ?? 0)">★</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="iv-verdict-badge" [attr.data-decision]="it.decision">
+                    {{ it.decision === 'pass' ? 'Hiring Verdict: PASS' : it.decision === 'maybe' ? 'Verdict: WEAK PASS' : 'Verdict: NO-GO' }}
+                  </div>
+                </div>
+                <div class="iv-feedback-box" *ngIf="it.feedback">
+                  <p class="feedback-text">"{{ it.feedback }}"</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="iv-card-footer" *ngIf="it.status !== 'completed'">
+              <button class="btn-feedback" (click)="openFeedbackModal(it)">
+                Submit Results & Scoring
+              </button>
+            </div>
           </div>
-          <span class="iv-status" [attr.data-status]="it.status">{{ it.status | titlecase }}</span>
-        </div>
-        <div class="iv-results" *ngIf="it.status === 'completed'">
-          <div class="iv-scores">
-            <span class="iv-score-chip">⚙️ Technical: {{ it.technicalScore }}/5</span>
-            <span class="iv-score-chip">💬 Communication: {{ it.communicationScore }}/5</span>
-            <span class="iv-decision" [attr.data-decision]="it.decision">{{ it.decision | titlecase }}</span>
-          </div>
-          <p *ngIf="it.feedback" class="iv-feedback">{{ it.feedback }}</p>
-        </div>
-        <div class="iv-actions" *ngIf="it.status !== 'completed'">
-          <button class="btn-outline" (click)="openFeedbackModal(it)">Post Feedback</button>
-          <a *ngIf="it.meetingUrl" [href]="it.meetingUrl" target="_blank" class="btn-meet">Join Meeting ↗</a>
         </div>
       </div>
     </div>

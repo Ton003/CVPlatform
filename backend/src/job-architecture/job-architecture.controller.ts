@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Param, Patch, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Patch,
+  Delete,
+} from '@nestjs/common';
 import { JobArchitectureService } from './job-architecture.service';
 import { BusinessUnit } from './entities/business-unit.entity';
 import { Department } from './entities/department.entity';
@@ -26,12 +34,17 @@ export class JobArchitectureController {
 
   // --- BUSINESS UNITS ---
   @Post('business-units')
-  createBU(@Body() dto: { name: string; description?: string }): Promise<BusinessUnit> {
+  createBU(
+    @Body() dto: { name: string; description?: string },
+  ): Promise<BusinessUnit> {
     return this.jaService.createBusinessUnit(dto.name, dto.description);
   }
 
   @Patch('business-units/:id')
-  updateBU(@Param('id') id: string, @Body() dto: { name?: string; description?: string }): Promise<BusinessUnit> {
+  updateBU(
+    @Param('id') id: string,
+    @Body() dto: { name?: string; description?: string },
+  ): Promise<BusinessUnit> {
     return this.jaService.updateBusinessUnit(id, dto.name, dto.description);
   }
 
@@ -42,12 +55,21 @@ export class JobArchitectureController {
 
   // --- DEPARTMENTS ---
   @Post('departments')
-  createDepartment(@Body() dto: { businessUnitId: string; name: string; description?: string }): Promise<Department> {
-    return this.jaService.createDepartment(dto.businessUnitId, dto.name, dto.description);
+  createDepartment(
+    @Body() dto: { businessUnitId: string; name: string; description?: string },
+  ): Promise<Department> {
+    return this.jaService.createDepartment(
+      dto.businessUnitId,
+      dto.name,
+      dto.description,
+    );
   }
 
   @Patch('departments/:id')
-  updateDepartment(@Param('id') id: string, @Body() dto: { name?: string; description?: string }): Promise<Department> {
+  updateDepartment(
+    @Param('id') id: string,
+    @Body() dto: { name?: string; description?: string },
+  ): Promise<Department> {
     return this.jaService.updateDepartment(id, dto.name, dto.description);
   }
 
@@ -70,30 +92,32 @@ export class JobArchitectureController {
 
   @Post('roles')
   createRole(
-    @Body() dto: { 
-      departmentId: string; 
-      name: string; 
+    @Body()
+    dto: {
+      departmentId: string;
+      name: string;
       familyId?: string;
       level?: number;
       sfiaRequirements?: any[];
       successorRoleIds?: string[];
       levelCount?: number;
-    }
+    },
   ): Promise<JobRole> {
     return this.jaService.createJobRole(dto);
   }
 
   @Patch('roles/:id')
   updateRole(
-    @Param('id') id: string, 
-    @Body() dto: { 
-      name?: string; 
+    @Param('id') id: string,
+    @Body()
+    dto: {
+      name?: string;
       status?: string;
       familyId?: string;
       level?: number;
       sfiaRequirements?: any[];
       successorRoleIds?: string[];
-    }
+    },
   ): Promise<JobRole> {
     return this.jaService.updateJobRole(id, dto);
   }
@@ -103,12 +127,17 @@ export class JobArchitectureController {
     return this.jaService.deleteJobRole(id);
   }
 
-
   // --- ROLE LEVELS ---
   @Patch('levels/:id')
   updateRoleLevel(
-    @Param('id') id: string, 
-    @Body() dto: { mission?: string; responsibilities?: string[]; description?: string; title?: string }
+    @Param('id') id: string,
+    @Body()
+    dto: {
+      mission?: string;
+      responsibilities?: string[];
+      description?: string;
+      title?: string;
+    },
   ): Promise<JobRoleLevel> {
     return this.jaService.updateJobRoleLevel(id, dto);
   }
@@ -116,7 +145,8 @@ export class JobArchitectureController {
   @Patch('levels/:id/competencies')
   updateRoleLevelCompetencies(
     @Param('id') id: string,
-    @Body() dto: { requirements: { competenceId: string; requiredLevel: number }[] }
+    @Body()
+    dto: { requirements: { competenceId: string; requiredLevel: number }[] },
   ): Promise<JobRoleLevel> {
     return this.jaService.updateJobRoleCompetencies(id, dto.requirements);
   }

@@ -1,0 +1,92 @@
+<div class="org-container">
+  <header class="org-header">
+    <div class="header-left">
+      <h1 class="org-title">Organizational Chart</h1>
+      <p class="org-subtitle">Interactive visualization of the company hierarchy</p>
+    </div>
+
+    <div class="header-actions">
+      <div class="zoom-controls">
+        <button class="btn-zoom" (click)="zoomOut()" title="Zoom Out">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <span class="zoom-val">{{ (zoomLevel * 100) | number:'1.0-0' }}%</span>
+        <button class="btn-zoom" (click)="zoomIn()" title="Zoom In">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+        <button class="btn-reset" (click)="resetZoom()">Reset</button>
+      </div>
+      <button class="btn-refresh" (click)="loadOrgChart()" [disabled]="loading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spinning]="loading">
+          <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+      </button>
+      <button class="btn-sync" (click)="repairTree()" [disabled]="loading" title="Rebuild Hierarchy">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83" />
+        </svg>
+        Sync Hierarchy
+      </button>
+    </div>
+  </header>
+
+  <div class="org-viewport custom-scrollbar">
+    <div class="org-canvas" [style.transform]="'scale(' + zoomLevel + ')'">
+      <div class="org-tree">
+        <ng-container *ngFor="let node of orgData">
+          <ng-container *ngTemplateOutlet="nodeTemplate; context: { $implicit: node }"></ng-container>
+        </ng-container>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div class="empty-state" *ngIf="!loading && orgData.length === 0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="8.5" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+      <p>No organizational structure found.</p>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" *ngIf="loading">
+    <div class="spinner"></div>
+    <span>Building organization map...</span>
+  </div>
+</div>
+
+<!-- Recursive Template for Org Nodes -->
+<ng-template #nodeTemplate let-node>
+  <div class="node-container">
+    <div class="node-card card" (click)="goToProfile(node.id)">
+      <div class="node-avatar">
+        {{ getInitials(node.firstName, node.lastName) }}
+      </div>
+      <div class="node-info">
+        <div class="node-header">
+          <h3 class="node-name">{{ node.firstName }} {{ node.lastName }}</h3>
+          <span *ngIf="node.isManager" class="mgr-crown" title="Manager">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/></svg>
+          </span>
+        </div>
+        <span class="node-title">{{ node.jobRole?.name || 'Staff' }}</span>
+        <div class="node-meta">
+          <span class="node-dept">{{ node.department?.name }}</span>
+          <span class="status-dot" [attr.data-status]="node.status"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="node-children" *ngIf="(node.subordinates?.length > 0) || (node.children?.length > 0)">
+      <div class="connector-line"></div>
+      <div class="children-grid">
+        <ng-container *ngFor="let child of (node.subordinates || node.children)">
+          <ng-container *ngTemplateOutlet="nodeTemplate; context: { $implicit: child }"></ng-container>
+        </ng-container>
+      </div>
+    </div>
+  </div>
+</ng-template>

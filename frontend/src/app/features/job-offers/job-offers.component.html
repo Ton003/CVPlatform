@@ -97,6 +97,14 @@
                 {{ offer.snapshot?.orgContext?.businessUnit || offer.snapshot?.orgContext?.department }}
               </span>
 
+              <span class="meta-item">
+                Filled: <strong>{{ offer.hiredCount || 0 }} / {{ offer.openingsCount || 1 }}</strong>
+              </span>
+
+              <span class="meta-item" *ngIf="offer.resolvedCount">
+                Resolved: <strong>{{ offer.resolvedCount }}</strong>
+              </span>
+
               <span class="meta-item">{{ formatDate(offer.createdAt) }}</span>
             </div>
           </div>

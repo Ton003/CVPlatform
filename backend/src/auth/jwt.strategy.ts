@@ -6,7 +6,7 @@ import { UsersService } from '../users/users.service';
 import { Request } from 'express';
 
 export interface JwtPayload {
-  sub: string;      // User UUID
+  sub: string; // User UUID
   email: string;
   role: string;
   iat?: number;
@@ -19,12 +19,12 @@ export interface JwtPayload {
  * This means even if a tampered JWT carried a fake departmentId, it would be ignored.
  */
 export interface UserContext {
-  id:           string;   // user UUID — auth identity
-  email:        string;
-  role:         'admin' | 'hr' | 'manager';
-  firstName:    string;
-  lastName:     string;
-  employeeId:   string | null; // employee UUID — used as hiring_manager FK
+  id: string; // user UUID — auth identity
+  email: string;
+  role: 'admin' | 'hr' | 'manager';
+  firstName: string;
+  lastName: string;
+  employeeId: string | null; // employee UUID — used as hiring_manager FK
   departmentId: string | null; // derived from Employee.departmentId at login
 }
 
@@ -59,7 +59,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     // Derive departmentId and employeeId from the linked Employee record
     let departmentId: string | null = null;
-    let employeeId: string | null = user.employeeId ?? null;
+    const employeeId: string | null = user.employeeId ?? null;
 
     if (employeeId) {
       // Single targeted query — not a full ORM relation load
@@ -78,11 +78,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     */
 
     return {
-      id:           user.id,
-      email:        user.email,
-      role:         user.role,
-      firstName:    user.firstName,
-      lastName:     user.lastName,
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      firstName: user.firstName,
+      lastName: user.lastName,
       employeeId,
       departmentId,
     };

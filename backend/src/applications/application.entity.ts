@@ -1,10 +1,16 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn,
-  ManyToOne, JoinColumn, OneToMany, Unique,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  OneToMany,
+  Unique,
 } from 'typeorm';
 import { Candidate } from '../candidates/entities/candidates.entity';
-import { JobOffer }  from '../job-offers/job-offer.entity';
+import { JobOffer } from '../job-offers/job-offer.entity';
 
 export type ApplicationStage =
   | 'applied'
@@ -18,7 +24,6 @@ export type ApplicationStage =
 @Entity('applications')
 @Unique(['jobId', 'candidateId'])
 export class Application {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -39,7 +44,7 @@ export class Application {
 
   // ── Source — how candidate entered the system ────────────────────
   @Column({ type: 'varchar', length: 100, nullable: true })
-  source: string | null;   // 'cv_upload' | 'manual' | 'referral'
+  source: string | null; // 'cv_upload' | 'manual' | 'referral'
 
   // ── Cover letter or additional notes at application time ─────────
   @Column({ type: 'text', name: 'cover_note', nullable: true })
@@ -57,7 +62,6 @@ export class Application {
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
-
 
   // ── Relations ────────────────────────────────────────────────────
   @ManyToOne(() => Candidate, { onDelete: 'CASCADE', eager: false })

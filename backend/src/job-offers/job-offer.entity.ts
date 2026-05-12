@@ -1,7 +1,11 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, UpdateDateColumn,
-  ManyToOne, JoinColumn
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { JobRoleLevel } from '../job-architecture/entities/job-role-level.entity';
 import { JobRole } from '../job-architecture/entities/job-role.entity';
@@ -35,16 +39,33 @@ export class JobOffer {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ name: 'contract_type', type: 'varchar', length: 50, nullable: true })
+  @Column({
+    name: 'contract_type',
+    type: 'varchar',
+    length: 50,
+    nullable: true,
+  })
   contractType: string | null;
 
   @Column({ name: 'work_mode', type: 'varchar', length: 50, nullable: true })
   workMode: string | null;
 
-  @Column({ name: 'salary_min', type: 'decimal', precision: 12, scale: 2, nullable: true })
+  @Column({
+    name: 'salary_min',
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+  })
   salaryMin: number | null;
 
-  @Column({ name: 'salary_max', type: 'decimal', precision: 12, scale: 2, nullable: true })
+  @Column({
+    name: 'salary_max',
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+  })
   salaryMax: number | null;
 
   @Column({ type: 'varchar', length: 10, default: 'TND' })

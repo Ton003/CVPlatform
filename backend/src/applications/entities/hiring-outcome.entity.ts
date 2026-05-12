@@ -1,9 +1,13 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, ManyToOne, JoinColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Application } from '../application.entity';
-import { User }        from '../../users/entities/user.entity';
+import { User } from '../../users/entities/user.entity';
 
 export type HiringOutcomeType =
   | 'hired'
@@ -18,7 +22,6 @@ export type HiringOutcomeType =
  */
 @Entity('hiring_outcomes')
 export class HiringOutcome {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -32,7 +35,12 @@ export class HiringOutcome {
   outcome: HiringOutcomeType;
 
   /** Why was this candidate rejected? Used for calibration analytics. */
-  @Column({ name: 'rejection_reason', type: 'varchar', length: 100, nullable: true })
+  @Column({
+    name: 'rejection_reason',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
   rejectionReason: string | null;
 
   /** Snapshot of match score at the moment of decision */
@@ -40,7 +48,12 @@ export class HiringOutcome {
   matchScoreAtDecision: number | null;
 
   /** Snapshot of AI verdict recommendation at decision time */
-  @Column({ name: 'verdict_at_decision', type: 'varchar', length: 30, nullable: true })
+  @Column({
+    name: 'verdict_at_decision',
+    type: 'varchar',
+    length: 30,
+    nullable: true,
+  })
   verdictAtDecision: string | null;
 
   @Column({ name: 'recorded_by', type: 'uuid', nullable: true })

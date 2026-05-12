@@ -26,7 +26,7 @@ export class LastCandidateDto {
 
   @IsOptional()
   @IsString()
-  email?: string | null;       // ← email so Groq can answer "give me his email"
+  email?: string | null; // ← email so Groq can answer "give me his email"
 
   @IsOptional()
   @IsString()
@@ -85,4 +85,4 @@ export class RecommendDto {
 
 // Aliases for compatibility
 export type ConversationMessage = ConversationMessageDto;
-export type LastCandidate       = LastCandidateDto;
+export type LastCandidate = LastCandidateDto;

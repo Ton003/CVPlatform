@@ -34,7 +34,10 @@ export class AuthService {
     const email = dto.email.toLowerCase();
 
     try {
-      const passwordHash = await bcrypt.hash(dto.password, AuthService.SALT_ROUNDS);
+      const passwordHash = await bcrypt.hash(
+        dto.password,
+        AuthService.SALT_ROUNDS,
+      );
 
       const user = await this.usersService.create({
         ...dto,
@@ -53,7 +56,9 @@ export class AuthService {
       };
     } catch (error) {
       if (error.code === '23505' || error.status === 409) {
-        throw new ConflictException('An account with this email already exists');
+        throw new ConflictException(
+          'An account with this email already exists',
+        );
       }
       throw error;
     }
@@ -76,7 +81,10 @@ export class AuthService {
       throw new UnauthorizedException('Your account has been suspended.');
     }
 
-    const isPasswordValid = await bcrypt.compare(dto.password, user.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      dto.password,
+      user.passwordHash,
+    );
     if (!isPasswordValid) {
       this.logger.warn(`Incorrect password attempt for user: ${email}`);
       throw new UnauthorizedException('Invalid email or password');
@@ -106,10 +114,10 @@ export class AuthService {
    * ✅ Private helper for consistent JWT payload generation
    */
   private generateToken(user: User): string {
-    const payload = { 
-      sub: user.id, 
-      email: user.email, 
-      role: user.role 
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
     };
     return this.jwtService.sign(payload);
   }

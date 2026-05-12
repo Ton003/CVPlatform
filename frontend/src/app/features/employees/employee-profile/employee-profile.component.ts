@@ -3,13 +3,15 @@ import { CommonModule, Location } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink, Router } from '@angular/router';
 import { EmployeeService, Employee } from '../../../core/services/employee.service';
-import { finalize } from 'rxjs/operators';
+import { finalize, catchError } from 'rxjs/operators';
+import { of } from 'rxjs';
 import { InternalMobilityService, GapAnalysisReport } from '../services/internal-mobility.service';
 import { JobArchitectureService } from '../../../core/services/job-architecture.service';
-import { GapAnalysisHeatmapComponent } from './gap-analysis-heatmap.component';
+
 import { AssessmentPanelComponent } from './assessment-panel.component';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { ApiKeyService } from '../../../core/services/api-key.service';
 
 interface CompetencyDelta {
   name: string;
@@ -25,7 +27,7 @@ interface CompetencyDelta {
 @Component({
   selector: 'app-employee-profile',
   standalone: true,
-  imports: [CommonModule, RouterLink, FormsModule, GapAnalysisHeatmapComponent, AssessmentPanelComponent],
+  imports: [CommonModule, RouterLink, FormsModule, AssessmentPanelComponent],
   templateUrl: './employee-profile.component.html',
   styleUrls: ['./employee-profile.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -105,6 +107,18 @@ export class EmployeeProfileComponent implements OnInit {
   devError = '';
   nextLevel: { id: string; title: string; levelNumber: number } | null = null;
 
+  // AI Development Advisor
+  aiRecommendations: any | null = null;
+  aiLoading = false;
+  aiError = '';
+  showApiKeyInput = false;
+  aiApiKey = '';
+  
+  // Leadership Data
+  managementStats: any = null;
+  potentialSuccessors: any[] = [];
+  loadingLeadership = false;
+
   constructor(
     private readonly route: ActivatedRoute,
     private readonly employeeService: EmployeeService,
@@ -114,8 +128,12 @@ export class EmployeeProfileComponent implements OnInit {
     private readonly auth: AuthService,
     private readonly cdr: ChangeDetectorRef,
     private readonly location: Location,
-    private readonly router: Router
-  ) { }
+    private readonly router: Router,
+    private readonly apiKeyService: ApiKeyService
+  ) {
+    // Load centralized API key from sidebar service
+    this.aiApiKey = this.apiKeyService.get();
+  }
 
   get userRole(): string {
     return this.auth.getCurrentUser()?.role || 'hr';
@@ -167,11 +185,32 @@ export class EmployeeProfileComponent implements OnInit {
             this.loadTargetGap(this.employee.id, this.nextLevel.id);
           }
           
+          if (emp.isManager) {
+            this.loadLeadershipData(id);
+          }
+          this.loadPotentialSuccessors(id);
           this.loadHistory(id);
           this.cdr.markForCheck();
         },
         error: () => { this.error = 'Failed to load employee profile.'; }
       });
+  }
+
+  loadLeadershipData(id: string): void {
+    this.loadingLeadership = true;
+    this.employeeService.getManagementStats(id)
+      .pipe(finalize(() => { this.loadingLeadership = false; this.cdr.markForCheck(); }))
+      .subscribe({
+        next: (stats) => { this.managementStats = stats; this.cdr.markForCheck(); },
+        error: () => { console.warn('No team stats found for this manager.'); }
+      });
+  }
+
+  loadPotentialSuccessors(id: string): void {
+    this.employeeService.getPotentialSuccessors(id).subscribe({
+      next: (list) => { this.potentialSuccessors = list; this.cdr.markForCheck(); },
+      error: () => { console.warn('Could not load potential successors.'); }
+    });
   }
 
   loadHistory(id: string): void {
@@ -457,4 +496,76 @@ export class EmployeeProfileComponent implements OnInit {
   }
 
   stars(n = 5) { return Array.from({ length: n }, (_, i) => i + 1); }
+
+  // ── AI Development Advisor ───────────────────────────────────
+  toggleApiKeyInput(): void {
+    this.showApiKeyInput = !this.showApiKeyInput;
+    this.cdr.markForCheck();
+  }
+
+  saveApiKey(): void {
+    if (this.aiApiKey.trim()) {
+      this.apiKeyService.set(this.aiApiKey.trim());
+      this.showApiKeyInput = false;
+      this.cdr.markForCheck();
+    }
+  }
+
+  generateAiRecommendations(): void {
+    if (!this.employee) return;
+    
+    // Refresh from service in case it changed in sidebar
+    this.aiApiKey = this.apiKeyService.get();
+
+    if (!this.aiApiKey.trim()) {
+      this.showApiKeyInput = true;
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.aiLoading = true;
+    this.aiError = '';
+    this.aiRecommendations = null;
+    this.cdr.markForCheck();
+
+    this.employeeService.getAiDevelopmentPlan(this.employee.id, this.aiApiKey.trim())
+      .pipe(
+        finalize(() => {
+          this.aiLoading = false;
+          this.cdr.markForCheck();
+        }),
+        catchError((err) => {
+          this.aiError = err.error?.message || 'Failed to generate AI recommendations. Please check your API key and try again.';
+          return of(null);
+        }),
+      )
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.aiRecommendations = result;
+          }
+          this.cdr.markForCheck();
+        },
+      });
+  }
+
+  getPlatformIcon(platform: string): string {
+    const p = (platform || '').toLowerCase();
+    if (p.includes('coursera')) return '🎓';
+    if (p.includes('udemy')) return '📺';
+    if (p.includes('linkedin')) return '💼';
+    if (p.includes('pluralsight')) return '🟣';
+    if (p.includes('edx')) return '🏛️';
+    if (p.includes('youtube')) return '▶️';
+    return '🌐';
+  }
+
+  getPriorityColor(priority: string): string {
+    switch (priority) {
+      case 'high': return '#ef4444';
+      case 'medium': return '#f59e0b';
+      case 'low': return '#10b981';
+      default: return '#6b7280';
+    }
+  }
 }

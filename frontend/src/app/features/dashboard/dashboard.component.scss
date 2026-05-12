@@ -7,50 +7,21 @@
 
 /* --- Briefing Hero --- */
 .briefing-hero {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8));
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: white;
+  border: 1px solid var(--border-default);
   border-radius: var(--radius-xl);
-  padding: 40px;
+  padding: 32px 40px;
   margin-bottom: 32px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-sm);
 }
 
 .hero-main {
   display: flex;
   align-items: center;
-  gap: 32px;
-}
-
-.astra-pulse {
-  position: relative;
-  width: 80px; height: 80px;
-  
-  .orb {
-    position: absolute;
-    inset: 20px;
-    background: radial-gradient(circle at 30% 30%, #818cf8, #4f46e5);
-    border-radius: 50%;
-    z-index: 2;
-    box-shadow: 0 0 30px rgba(79, 70, 229, 0.6);
-  }
-
-  .rings {
-    position: absolute;
-    inset: 0;
-    span {
-      position: absolute;
-      inset: 0;
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      border-radius: 50%;
-      animation: astraPulse 4s infinite linear;
-      &:nth-child(2) { animation-delay: 1.3s; }
-      &:nth-child(3) { animation-delay: 2.6s; }
-    }
-  }
+  gap: 24px;
 }
 
 .briefing-text {
@@ -58,37 +29,77 @@
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.1em;
-    color: #818cf8;
+    color: var(--accent);
     margin-bottom: 8px;
     display: inline-block;
     padding: 2px 8px;
-    background: rgba(129, 140, 248, 0.1);
+    background: var(--accent-dim);
     border-radius: 4px;
   }
   h1 {
     font-family: var(--font-display);
-    font-size: 2.5rem;
+    font-size: 2.25rem;
     font-weight: 800;
-    color: white;
+    color: var(--text-primary);
     margin: 0 0 4px;
     letter-spacing: -0.02em;
   }
   .mission-statement {
-    color: #94a3b8;
-    font-size: 1rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
     margin: 0;
   }
 }
 
 .hero-stats {
   display: flex;
-  gap: 40px;
+  gap: 32px;
   
   .quick-stat {
     display: flex;
     flex-direction: column;
-    .label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; margin-bottom: 4px; }
-    .value { font-size: 1.5rem; font-weight: 800; color: white; line-height: 1; }
+    .label { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
+    .value { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+  }
+}
+
+/* --- Quick Actions --- */
+.quick-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 32px;
+
+  .action-btn {
+    background: white;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-xs);
+
+    .icon-wrap {
+      width: 40px; height: 40px;
+      background: var(--bg-raised);
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      color: var(--accent);
+      transition: all 0.2s;
+    }
+
+    span { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--accent);
+      .icon-wrap { background: var(--accent); color: white; }
+    }
   }
 }
 
@@ -104,6 +115,104 @@
   }
 }
 
+.grid-main {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* --- Task Summary Card --- */
+.task-summary-card {
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border-radius: var(--radius-xl);
+  padding: 32px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 10px 30px rgba(6, 182, 212, 0.2);
+
+  .task-info {
+    h3 { font-size: 1.5rem; font-weight: 800; margin: 0 0 8px; }
+    p { font-size: 0.95rem; opacity: 0.9; margin: 0 0 20px; }
+    .btn-primary { 
+      background: white; color: var(--accent); border: none; font-weight: 700; 
+      padding: 10px 20px; border-radius: 8px; cursor: pointer; transition: all 0.2s;
+      &:hover { transform: scale(1.05); }
+    }
+  }
+  
+  .task-icon {
+    width: 80px; height: 80px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 50%;
+    display: grid; place-items: center;
+    backdrop-filter: blur(5px);
+  }
+}
+
+/* --- Interview List --- */
+.content-panel {
+  background: white;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  box-shadow: var(--shadow-sm);
+
+  .panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    .panel-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); }
+    .panel-link { font-size: 0.85rem; color: var(--accent); font-weight: 600; }
+  }
+}
+
+.interview-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.interview-card {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 16px;
+  background: var(--bg-raised);
+  border-radius: var(--radius-md);
+  transition: transform 0.2s;
+  cursor: pointer;
+
+  &:hover { transform: translateX(8px); background: #f8fafc; }
+
+  .date-badge {
+    display: flex; flex-direction: column; align-items: center;
+    min-width: 50px;
+    .day { font-size: 1.25rem; font-weight: 800; color: var(--text-primary); line-height: 1; }
+    .month { font-size: 0.75rem; font-weight: 700; color: var(--accent); text-transform: uppercase; }
+  }
+
+  .interview-info {
+    flex: 1;
+    display: flex; flex-direction: column;
+    .candidate { font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+    .job { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
+    .details { font-size: 0.75rem; color: var(--text-muted); }
+  }
+
+  .time { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* --- Right Side: Activity & Health --- */
 .grid-side {
   display: flex;
   flex-direction: column;
@@ -122,13 +231,11 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
-    
     .panel-title { font-size: 0.875rem; font-weight: 700; color: var(--text-primary); }
     .panel-link { font-size: 0.75rem; color: var(--accent); font-weight: 600; }
   }
 }
 
-/* Sidebar Components Styling */
 .activity-feed {
   display: flex;
   flex-direction: column;
@@ -136,58 +243,29 @@
   
   .activity-item {
     display: flex;
+    align-items: center;
     gap: 12px;
+    padding: 8px;
+    border-radius: 8px;
     cursor: pointer;
-    &:hover .activity-body { color: var(--text-primary); }
+    &:hover { background: var(--bg-raised); }
     
-    .activity-time {
-      font-size: 9px;
+    .activity-badge {
+      font-size: 8px;
       font-weight: 800;
-      text-transform: uppercase;
-      color: var(--accent);
-      background: var(--accent-dim);
-      padding: 2px 6px;
+      color: white;
+      padding: 3px 6px;
       border-radius: 4px;
-      height: fit-content;
+      min-width: 70px;
+      text-align: center;
     }
     
     .activity-body {
+      display: flex;
+      flex-direction: column;
       font-size: 0.8rem;
-      color: var(--text-secondary);
-      line-height: 1.4;
-      strong { font-weight: 600; }
-    }
-  }
-}
-
-.mission-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  
-  .mission-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    background: var(--bg-raised);
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    &:hover { transform: translateX(4px); background: #f8fafc; border: 1px solid var(--accent); }
-    
-    .mission-info {
-      .title { display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-primary); }
-      .sub { font-size: 0.75rem; color: var(--text-muted); }
-    }
-    
-    .mission-badge {
-      font-size: 9px;
-      font-weight: 800;
-      color: var(--success);
-      background: var(--success-dim);
-      padding: 2px 6px;
-      border-radius: 4px;
+      strong { font-weight: 600; color: var(--text-primary); }
+      span { font-size: 0.75rem; color: var(--text-secondary); }
     }
   }
 }
@@ -201,24 +279,13 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
-    
-    .health-bar-wrap {
-      height: 6px;
-      background: var(--bg-raised);
-      border-radius: 3px;
-      overflow: hidden;
-    }
+    .health-bar-wrap { height: 6px; background: var(--bg-raised); border-radius: 3px; overflow: hidden; }
     .health-bar { height: 100%; border-radius: 3px; }
     .health-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; }
   }
 }
 
-@keyframes astraPulse {
-  0% { transform: scale(1); opacity: 0.8; }
-  100% { transform: scale(1.5); opacity: 0; }
-}
-
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }

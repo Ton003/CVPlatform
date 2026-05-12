@@ -1,5 +1,12 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToOne, JoinColumn
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { JobRoleLevel } from './job-role-level.entity';
 import { Department } from './department.entity';
@@ -29,7 +36,12 @@ export class JobRole {
   @Column({ name: 'sfia_requirements', type: 'jsonb', default: [] })
   sfiaRequirements: any[];
 
-  @Column({ name: 'successor_role_ids', type: 'uuid', array: true, default: '{}' })
+  @Column({
+    name: 'successor_role_ids',
+    type: 'uuid',
+    array: true,
+    default: '{}',
+  })
   successorRoleIds: string[];
 
   @Column({ type: 'varchar', length: 20, default: 'DRAFT' })
@@ -38,7 +50,10 @@ export class JobRole {
   @Column({ name: 'department_id', nullable: true })
   departmentId: string | null;
 
-  @ManyToOne(() => Department, d => d.jobRoles, { onDelete: 'SET NULL', nullable: true })
+  @ManyToOne(() => Department, (d) => d.jobRoles, {
+    onDelete: 'SET NULL',
+    nullable: true,
+  })
   @JoinColumn({ name: 'department_id' })
   department: Department;
 
@@ -47,7 +62,7 @@ export class JobRole {
     to JobRoleLevel to support career pathing (Levels 1-7).
   */
 
-  @OneToMany(() => JobRoleLevel, level => level.role, { cascade: true })
+  @OneToMany(() => JobRoleLevel, (level) => level.role, { cascade: true })
   levels: JobRoleLevel[];
 
   @Column({ name: 'created_by', type: 'varchar', nullable: true })
@@ -62,4 +77,3 @@ export class JobRole {
   @UpdateDateColumn()
   updatedAt: Date;
 }
-

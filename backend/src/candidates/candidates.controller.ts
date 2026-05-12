@@ -9,7 +9,13 @@ import {
   HttpStatus,
   Logger,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -49,11 +55,18 @@ export class CandidatesController {
   ) {
     const pageNum = Math.max(1, Number(page));
     const limitNum = Math.min(50, Math.max(1, Number(limit)));
-    
+
     // ABAC: Get managed job IDs if the user is a manager
-    const managedJobIds = req?.user ? await this.policyService.getManagedJobIds(req.user) : [];
-    
-    return this.candidatesService.list(search, pageNum, limitNum, managedJobIds);
+    const managedJobIds = req?.user
+      ? await this.policyService.getManagedJobIds(req.user)
+      : [];
+
+    return this.candidatesService.list(
+      search,
+      pageNum,
+      limitNum,
+      managedJobIds,
+    );
   }
 
   @Get(':id')
@@ -68,7 +81,10 @@ export class CandidatesController {
   @Get(':id/score')
   @SkipThrottle()
   @ApiOperation({ summary: 'Get AI-calculated candidate suitability score' })
-  @ApiResponse({ status: 200, description: 'Composite score and role matches.' })
+  @ApiResponse({
+    status: 200,
+    description: 'Composite score and role matches.',
+  })
   async getScore(@Param('id') id: string) {
     return this.scoringService.score(id);
   }
@@ -78,7 +94,10 @@ export class CandidatesController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete candidate and all associated CV data' })
   @ApiResponse({ status: 204, description: 'Candidate deleted successfully.' })
-  @ApiResponse({ status: 403, description: 'Forbidden - Insufficient permissions.' })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Insufficient permissions.',
+  })
   async deleteCandidate(@Param('id') id: string) {
     this.logger.warn(`Candidate deletion requested for ID: ${id}`);
     await this.candidatesService.delete(id);

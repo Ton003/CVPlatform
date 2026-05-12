@@ -1,9 +1,13 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, ManyToOne, JoinColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Application } from './application.entity';
-import { User }        from '../users/entities/user.entity';
+import { User } from '../users/entities/user.entity';
 
 export type ActivityAction =
   | 'application_created'
@@ -18,10 +22,8 @@ export type ActivityAction =
   | 'note_deleted'
   | 'competency_rated';
 
-
 @Entity('activity_log')
 export class ActivityLog {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -38,7 +40,7 @@ export class ActivityLog {
   description: string | null; // e.g. "[User] moved candidate to Interview"
 
   @Column({ type: 'jsonb', nullable: true })
-  metadata: Record<string, any> | null;  // e.g. { from: 'applied', to: 'screening' }
+  metadata: Record<string, any> | null; // e.g. { from: 'applied', to: 'screening' }
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
@@ -51,4 +53,3 @@ export class ActivityLog {
   @JoinColumn({ name: 'user_id' })
   user: User;
 }
-

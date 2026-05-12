@@ -1,10 +1,15 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, ManyToOne, JoinColumn, Unique,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
+  Unique,
 } from 'typeorm';
 import { JobRoleLevel } from '../../job-architecture/entities/job-role-level.entity';
-import { Competence }   from '../../competence-management/entities/competence.entity';
-import { User }         from '../../users/entities/user.entity';
+import { Competence } from '../../competence-management/entities/competence.entity';
+import { User } from '../../users/entities/user.entity';
 
 /**
  * Stores per-job-role-level importance multipliers for competencies.
@@ -15,7 +20,6 @@ import { User }         from '../../users/entities/user.entity';
 @Entity('job_competency_weights')
 @Unique(['jobRoleLevelId', 'competenceId'])
 export class JobCompetencyWeight {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

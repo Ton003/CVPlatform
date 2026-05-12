@@ -35,6 +35,8 @@ export interface JobOffer {
   visibility: string;
   createdAt: string;
   pipelineCount?: number;
+  hiredCount?: number;
+  resolvedCount?: number;
 }
 
 export interface CompetencyRow {

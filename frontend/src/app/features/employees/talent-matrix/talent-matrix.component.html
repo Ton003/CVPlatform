@@ -1,0 +1,102 @@
+<div class="matrix-container">
+  <header class="matrix-header">
+    <div class="header-left">
+      <h1 class="matrix-title">Talent Matrix (9-Box)</h1>
+      <p class="matrix-subtitle">Visualizing Performance vs. Potential across the organization</p>
+    </div>
+
+    <div class="header-filters">
+      <div class="filter-group">
+        <label>Business Unit</label>
+        <select class="field-select" [(ngModel)]="filters.buId" (change)="onBUChange()">
+          <option value="">All Units</option>
+          <option *ngFor="let bu of businessUnits" [value]="bu.id">{{ bu.name }}</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Department</label>
+        <select class="field-select" [(ngModel)]="filters.departmentId" (change)="loadMatrix()" [disabled]="!filters.buId">
+          <option value="">All Departments</option>
+          <option *ngFor="let d of departments" [value]="d.id">{{ d.name }}</option>
+        </select>
+      </div>
+      <button class="btn-refresh" (click)="loadMatrix()" [disabled]="loading">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" [class.spinning]="loading">
+          <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="matrix-wrapper card" *ngIf="viewMode === 'matrix'">
+    <div class="y-axis-label">Potential</div>
+    <div class="x-axis-label">Performance</div>
+
+    <div class="matrix-grid">
+      <div class="matrix-box" *ngFor="let box of boxes" [style.grid-area]="box.gridArea" [attr.data-box]="box.id">
+        <div class="box-header">
+          <span class="box-title">{{ box.title }}</span>
+          <span class="box-count">{{ getBoxEmployees(box.id).length }}</span>
+        </div>
+        
+        <div class="box-content custom-scrollbar">
+          <div class="employee-avatar-list">
+            <div class="emp-avatar-item" 
+                 *ngFor="let emp of getBoxEmployees(box.id)" 
+                 (click)="goToProfile(emp.id)"
+                 [title]="emp.firstName + ' ' + emp.lastName">
+              <div class="avatar-circle">{{ getInitials(emp.firstName, emp.lastName) }}</div>
+              <span class="emp-tooltip">{{ emp.firstName }} {{ emp.lastName }}</span>
+            </div>
+          </div>
+          
+          <div class="empty-box" *ngIf="getBoxEmployees(box.id).length === 0">
+            No employees
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Axis Markers -->
+    <div class="axis-markers-y">
+      <span>High</span>
+      <span>Moderate</span>
+      <span>Low</span>
+    </div>
+    <div class="axis-markers-x">
+      <span>Low</span>
+      <span>Moderate</span>
+      <span>High</span>
+    </div>
+  </div>
+
+  <!-- Unrated List View -->
+  <div class="unrated-view card" *ngIf="viewMode === 'unrated'">
+    <div class="unrated-header">
+      <h3>Unrated Employees</h3>
+      <button class="btn-back" (click)="viewMode = 'matrix'">Back to Matrix</button>
+    </div>
+    <div class="unrated-list">
+      <div class="unrated-item" *ngFor="let emp of matrix['unrated']" (click)="goToProfile(emp.id)">
+        <div class="avatar">{{ getInitials(emp.firstName, emp.lastName) }}</div>
+        <div class="info">
+          <span class="name">{{ emp.firstName }} {{ emp.lastName }}</span>
+          <span class="reason">Missing assessment or succession readiness data</span>
+        </div>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="unrated-footer" *ngIf="getUnratedCount() > 0 && viewMode === 'matrix'">
+    <div class="unrated-info">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span><strong>{{ getUnratedCount() }}</strong> employees are unrated due to missing assessment or potential data.</span>
+    </div>
+    <button class="btn-view-unrated" (click)="viewMode = 'unrated'">View List</button>
+  </div>
+</div>

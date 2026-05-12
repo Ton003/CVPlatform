@@ -1,13 +1,16 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column,
-  CreateDateColumn, ManyToOne, JoinColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Application } from './application.entity';
-import { User }        from '../users/entities/user.entity';
+import { User } from '../users/entities/user.entity';
 
 @Entity('application_notes')
 export class ApplicationNote {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -21,7 +24,7 @@ export class ApplicationNote {
   note: string;
 
   @Column({ type: 'smallint', default: 0 })
-  rating: number;   // 0 = no rating, 1-5 stars
+  rating: number; // 0 = no rating, 1-5 stars
 
   @Column({ type: 'varchar', length: 50, nullable: true })
   stage: string | null;

@@ -1,5 +1,12 @@
 import {
-  Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { JobRole } from './job-role.entity';
 import { JobCompetencyRequirement } from './job-competency-requirement.entity';
@@ -12,7 +19,7 @@ export class JobRoleLevel {
   @Column()
   jobRoleId: string;
 
-  @ManyToOne(() => JobRole, role => role.levels, { onDelete: 'CASCADE' })
+  @ManyToOne(() => JobRole, (role) => role.levels, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'jobRoleId' })
   role: JobRole;
 
@@ -31,7 +38,9 @@ export class JobRoleLevel {
   @Column({ type: 'text', nullable: true })
   description: string | null;
 
-  @OneToMany(() => JobCompetencyRequirement, req => req.jobRoleLevel, { cascade: true })
+  @OneToMany(() => JobCompetencyRequirement, (req) => req.jobRoleLevel, {
+    cascade: true,
+  })
   competencyRequirements: JobCompetencyRequirement[];
 
   @CreateDateColumn()

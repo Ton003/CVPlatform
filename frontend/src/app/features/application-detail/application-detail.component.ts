@@ -15,6 +15,7 @@ import { AssessmentPanelComponent } from '../employees/employee-profile/assessme
 import { ConfirmModalComponent } from '../../shared/confirm-modal/confirm-modal.component';
 import { AiVerdictPanelComponent } from './ai-verdict-panel/ai-verdict-panel.component';
 import { HiringOutcomeComponent } from './hiring-outcome/hiring-outcome.component';
+import { ApiKeyService } from '../../core/services/api-key.service';
 
 export type AppTab = 'overview' | 'notes' | 'tasks' | 'scoring' | 'activity' | 'interviews' | 'evaluation';
 
@@ -74,6 +75,7 @@ export class ApplicationDetailComponent implements OnInit {
   private toast = inject(ToastService);
   private auth = inject(AuthService);
   private employeeService = inject(EmployeeService);
+  private apiKeyService = inject(ApiKeyService);
 
   applicationId = '';
   app: any = null;
@@ -331,8 +333,9 @@ export class ApplicationDetailComponent implements OnInit {
   // ── Scoring ────────────────────────────────────────────────────
   loadScore(): void {
     this.scoreLoading = true;
+    const headers = { 'x-ai-api-key': this.apiKeyService.get() };
     this.http
-      .get<any>(`${environment.apiUrl}/applications/${this.applicationId}/score`)
+      .get<any>(`${environment.apiUrl}/applications/${this.applicationId}/score`, { headers })
       .pipe(finalize(() => { this.scoreLoading = false; this.cdr.detectChanges(); }))
       .subscribe({
         next: (s) => {
@@ -445,6 +448,9 @@ export class ApplicationDetailComponent implements OnInit {
       payload.communicationScore = this.feedbackForm.communicationScore;
     }
 
+    // Include competency ratings directly in the feedback payload
+    payload.competencies = this.feedbackCompRatings;
+
     this.http
       .patch<Interview>(`${environment.apiUrl}/interviews/${this.selectedInterview.id}`, payload)
       .subscribe({
@@ -463,34 +469,15 @@ export class ApplicationDetailComponent implements OnInit {
             ];
           }
           this.closeFeedbackModal();
-          this.toast.success('Feedback saved.');
-          this.saveAllCompRatings();
+          this.toast.success('Feedback and competency ratings saved.');
+          this.loadEvaluation();
+          this.loadScore();
           this.cdr.detectChanges();
         },
         error: () => this.toast.error('Failed to save feedback.')
       });
   }
 
-  private saveAllCompRatings(): void {
-    const entries = Object.entries(this.feedbackCompRatings).filter(([, v]) => v > 0);
-    if (!entries.length) { this.loadScore(); return; }
-
-    const calls = entries.map(([compId, level]) =>
-      this.http.put(
-        `${environment.apiUrl}/applications/${this.applicationId}/competencies/${compId}`,
-        { evaluatedLevel: level }
-      )
-    );
-
-    forkJoin(calls).subscribe({
-      next: () => {
-        this.competencyScores = { ...this.competencyScores, ...this.feedbackCompRatings };
-        this.loadScore();
-        this.cdr.detectChanges();
-      },
-      error: () => this.toast.error('Some competency ratings failed to save.')
-    });
-  }
 
   // ── Tasks ──────────────────────────────────────────────────────
   loadTasks(): void {
