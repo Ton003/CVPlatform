@@ -100,7 +100,10 @@ export class Employee {
   @JoinColumn({ name: 'department_id' })
   department: Department;
 
-  @ManyToOne(() => Employee, (emp) => emp.subordinates, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => Employee, (emp) => emp.subordinates, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
   @JoinColumn({ name: 'manager_id' })
   manager: Employee | null;
 

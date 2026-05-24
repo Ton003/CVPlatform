@@ -196,7 +196,7 @@ export class VerdictService {
 
     // Experience score (vs job minimum — default 3 years if not specified)
     const yearsExp = app.yearsExp ?? 0;
-    const minYears = 3; // TODO: pull from job_role_level when added
+    const minYears = 3;
     const experienceScore = Math.min(
       Math.round((yearsExp / minYears) * 100),
       100,

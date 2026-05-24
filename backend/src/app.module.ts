@@ -1,4 +1,4 @@
-import { Module, Logger } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -36,8 +36,6 @@ import { AppService } from './app.service';
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => {
-        const logger = new Logger('Database');
-
         return {
           type: 'postgres',
           host: cfg.get<string>('DB_HOST'),

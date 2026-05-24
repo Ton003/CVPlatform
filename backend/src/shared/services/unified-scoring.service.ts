@@ -11,7 +11,6 @@ import { CompetenceCategory } from '../../competence-management/entities/family.
 import {
   GapAction,
   GapItem,
-  DevelopmentPlan,
 } from '../../employees/dto/gap-analysis.dto';
 
 export interface PillarScore {
@@ -325,14 +324,12 @@ export class UnifiedScoringService {
     if (targetReqs.length === 0) return null;
 
     let totalPct = 0;
-    let matchCount = 0;
 
     for (const req of targetReqs) {
       const empComp = current.find((c) => c.competenceId === req.competenceId);
       if (empComp) {
         const ratio = Math.min(empComp.currentLevel / req.requiredLevel, 1.0);
         totalPct += ratio * 100;
-        matchCount++;
       }
     }
 

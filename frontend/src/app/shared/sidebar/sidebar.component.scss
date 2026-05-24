@@ -338,4 +338,54 @@
 }
 
 @keyframes bdIn  { from { opacity: 0; } to { opacity: 1; } }
-@keyframes pnlIn { from { opacity: 0; transform: scale(.94) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes pnlIn { from { opacity: 0; transform: scale(.94) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+/* ── Profile settings styles ────────────────────────────────── */
+.user-block--clickable {
+  cursor: pointer;
+  border-radius: var(--radius-md);
+  padding: .5rem .75rem !important;
+  margin-left: -.5rem;
+  margin-right: -.5rem;
+  transition: background .15s;
+
+  .edit-profile-icon {
+    margin-left: auto;
+    color: var(--text-muted);
+    opacity: 0;
+    transition: opacity .15s, color .15s;
+  }
+
+  &:hover {
+    background: var(--bg-surface);
+    .edit-profile-icon {
+      opacity: 1;
+      color: var(--accent-soft);
+    }
+  }
+}
+
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: .875rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+}
+
+.form-label {
+  font-size: .75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-family: var(--font-display);
+}
+
+.settings-input.text-input {
+  font-family: inherit;
+  padding-left: .875rem;
+}
+

@@ -93,9 +93,7 @@ export class DevelopmentAdvisorService {
 
     for (const req of nextRequirements) {
       const compId = req.competenceId;
-      const proficiency = proficiencies.find(
-        (p) => p.competenceId === compId,
-      );
+      const proficiency = proficiencies.find((p) => p.competenceId === compId);
       const currentLvl = proficiency?.currentLevel ?? 0;
       const gap = req.requiredLevel - currentLvl;
 
@@ -110,11 +108,17 @@ export class DevelopmentAdvisorService {
     }
 
     // 5. Build prompt
-    const gapDescription = gaps.length > 0
-      ? gaps.map((g) => `- ${g.name}: currently at level ${g.current}/5, needs level ${g.target}/5 (gap: ${g.gap})`).join('\n')
-      : 'No significant gaps detected — employee meets most requirements.';
+    const gapDescription =
+      gaps.length > 0
+        ? gaps
+            .map(
+              (g) =>
+                `- ${g.name}: currently at level ${g.current}/5, needs level ${g.target}/5 (gap: ${g.gap})`,
+            )
+            .join('\n')
+        : 'No significant gaps detected — employee meets most requirements.';
 
-    const currentSkills = (employee.personalDetails?.skills ?? []);
+    const currentSkills = employee.personalDetails?.skills ?? [];
     const skillsList = Array.isArray(currentSkills)
       ? currentSkills.join(', ')
       : typeof currentSkills === 'string'
@@ -182,7 +186,8 @@ RULES:
     } catch (err) {
       this.logger.warn(`Failed to parse AI response: ${err.message}`);
       parsed = {
-        summary: 'AI generated development recommendations. Please review the competency gaps below and consult with your manager for a personalized development plan.',
+        summary:
+          'AI generated development recommendations. Please review the competency gaps below and consult with your manager for a personalized development plan.',
         courses: [],
         books: [],
         projects: [],

@@ -4,10 +4,7 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  OneToOne,
-  JoinColumn,
 } from 'typeorm';
-import type { Relation } from 'typeorm';
 
 // Forward-reference avoids circular import between User ↔ Employee
 @Entity('users')

@@ -1,12 +1,13 @@
-import { Controller, Get, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Get, Patch, Body, Request, UseGuards, Logger } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
 } from '@nestjs/swagger';
-import { UsersService } from './users.service';
+import { UsersService, UpdateProfileDto } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UserContext } from '../auth/jwt.strategy';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -32,4 +33,23 @@ export class UsersController {
     this.logger.debug('Fetching manager list for assignment workflow');
     return this.usersService.findAllManagers();
   }
+
+  @Patch('profile')
+  @ApiOperation({
+    summary: 'Update current authenticated user profile',
+    description: 'Allows changing first name, last name, and password.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile updated successfully.',
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  async updateProfile(
+    @Request() req: { user: UserContext },
+    @Body() dto: UpdateProfileDto,
+  ) {
+    this.logger.debug(`Profile update requested for user: ${req.user.id}`);
+    return this.usersService.updateProfile(req.user.id, dto);
+  }
 }
+

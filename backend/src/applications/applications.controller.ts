@@ -36,7 +36,6 @@ import {
   IsNumber,
   Min,
   Max,
-  IsEnum,
 } from 'class-validator';
 
 // Internal DTOs (Organized for better readability within the single-file constraint)

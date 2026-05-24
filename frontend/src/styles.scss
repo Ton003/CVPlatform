@@ -363,6 +363,6 @@ button, input, textarea, select { font-family: var(--font-body); }
 .modal-footer { padding: 1rem 1.5rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: flex-end; gap: .75rem; }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes modalUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: none scale(1); } }
+@keyframes modalUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
 

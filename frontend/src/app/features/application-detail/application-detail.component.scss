@@ -1857,9 +1857,9 @@
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(15, 23, 42, 0.5);
-  backdrop-filter: blur(8px);
-  display: flex !important;
+  background: rgba(15, 23, 42, 0.35);
+  backdrop-filter: blur(4px);
+  display: flex;
   justify-content: center;
   align-items: center;
   animation: fadeIn 0.2s ease both;
@@ -1881,7 +1881,7 @@
 
 @keyframes modalIn {
   from { opacity: 0; transform: translateY(30px) scale(0.98); }
-  to { opacity: 1; transform: none scale(1); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes fadeIn {
@@ -1893,7 +1893,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
 
   h2 {
     font-family: var(--font-display);
@@ -1915,12 +1914,7 @@
   &:hover { color: var(--text-primary); }
 }
 
-.mo.detail-root {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  height: 100%;
-}
+
 
 .converted-banner {
   display: flex;
@@ -1983,6 +1977,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  background: transparent;
 }
 
 .field-group {
@@ -2015,9 +2010,6 @@
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border-subtle);
 }
 
 .modal-promote {

@@ -118,11 +118,18 @@ export class MailService {
       });
       this.logger.log(`✅ Status update email sent to ${to}`);
     } catch (error) {
-      this.logger.error(`❌ Failed to send status update email to ${to}`, error);
+      this.logger.error(
+        `❌ Failed to send status update email to ${to}`,
+        error,
+      );
     }
   }
 
-  async sendRejectionEmail(to: string, candidateName: string, jobTitle: string) {
+  async sendRejectionEmail(
+    to: string,
+    candidateName: string,
+    jobTitle: string,
+  ) {
     const html = `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
         <div style="text-align: center; margin-bottom: 20px;">

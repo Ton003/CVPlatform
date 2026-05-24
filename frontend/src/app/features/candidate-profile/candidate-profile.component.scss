@@ -973,3 +973,202 @@
   color: var(--danger);
   border-color: rgba(239, 68, 68, 0.2);
 }
+
+/* ── Edit Mode ──────────────────────────────────────────────────── */
+
+.btn-primary-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-md);
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    filter: brightness(1.15);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.45rem 1rem;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: var(--font-body);
+  border: 1px solid var(--border-default);
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:hover:not(:disabled) {
+    background: var(--bg-raised);
+    color: var(--text-primary);
+  }
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.btn-add-sm {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.3rem 0.75rem;
+  border-radius: var(--radius-md);
+  background: var(--accent-dim);
+  color: var(--accent-soft);
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+  border: 1px solid rgba(109,85,250,0.2);
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover { background: var(--accent); color: #fff; }
+}
+
+.btn-remove-sm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-md);
+  background: rgba(239,68,68,0.08);
+  color: #ef4444;
+  border: 1px solid rgba(239,68,68,0.18);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+
+  &:hover { background: #ef4444; color: #fff; }
+}
+
+.dossier-header--editing {
+  align-items: flex-start;
+  padding-bottom: 2rem;
+
+  .dossier-left { align-items: flex-start; }
+  .dossier-right { display: none; }
+}
+
+.edit-header-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+  padding-top: 0.5rem;
+
+  @media (max-width: 700px) { grid-template-columns: 1fr; }
+}
+
+.edit-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.edit-label {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+
+.edit-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: var(--font-body);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+
+  &::placeholder { color: var(--text-disabled); }
+}
+
+.edit-select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: var(--font-body);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+}
+
+.edit-textarea {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  font-family: var(--font-body);
+  line-height: 1.6;
+  resize: vertical;
+  min-height: 100px;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+
+  &::placeholder { color: var(--text-disabled); }
+}
+
+.lang-edit-list {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.lang-edit-row {
+  display: grid;
+  grid-template-columns: 1fr 160px 28px;
+  align-items: center;
+  gap: 0.65rem;
+
+  @media (max-width: 600px) { grid-template-columns: 1fr 1fr 28px; }
+}

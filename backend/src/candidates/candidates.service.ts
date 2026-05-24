@@ -6,6 +6,7 @@ import { Cv } from '../cvs/entities/cv.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 
+
 @Injectable()
 export class CandidatesService {
   private readonly logger = new Logger(CandidatesService.name);

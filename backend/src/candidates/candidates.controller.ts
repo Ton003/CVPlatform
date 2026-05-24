@@ -1,8 +1,10 @@
 import {
   Controller,
   Get,
+  Patch,
   Delete,
   Param,
+  Body,
   UseGuards,
   Query,
   HttpCode,

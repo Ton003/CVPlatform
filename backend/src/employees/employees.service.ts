@@ -22,7 +22,10 @@ import {
   EmployeeHistory,
   EmployeeHistoryEventType,
 } from './entities/employee-history.entity';
-import { EmployeeAssessment, AssessmentStatus } from './entities/employee-assessment.entity';
+import {
+  EmployeeAssessment,
+  AssessmentStatus,
+} from './entities/employee-assessment.entity';
 
 @Injectable()
 export class EmployeesService {
@@ -262,7 +265,7 @@ export class EmployeesService {
 
   /**
    * Generates data for the 9-Box Talent Matrix.
-   * Cross-references the latest submitted assessment score (Performance) 
+   * Cross-references the latest submitted assessment score (Performance)
    * against succession readiness (Potential).
    */
   async getTalentMatrixData(filters: { buId?: string; departmentId?: string }) {
@@ -274,7 +277,7 @@ export class EmployeesService {
         EmployeeAssessment,
         'ea',
         'ea.employeeId = e.id AND ea.status = :status',
-        { status: AssessmentStatus.SUBMITTED }
+        { status: AssessmentStatus.SUBMITTED },
       )
       .select([
         'e.id',
@@ -283,35 +286,35 @@ export class EmployeesService {
         'e.email',
         'e.successionReadiness',
         'ea.totalScore',
-      ])
-      // Use subquery or ordering to get the LATEST assessment only if multiple exist
-      // For simplicity in this demo, we'll join and then filter in JS or use a window function if raw SQL
-      // Let's use raw SQL for precision on "latest" per employee
-      ;
-
+      ]);
+    // Use subquery or ordering to get the LATEST assessment only if multiple exist
+    // For simplicity in this demo, we'll join and then filter in JS or use a window function if raw SQL
+    // Let's use raw SQL for precision on "latest" per employee
     if (filters.buId) {
       qb.andWhere('dept.businessUnitId = :buId', { buId: filters.buId });
     }
     if (filters.departmentId) {
-      qb.andWhere('e.departmentId = :departmentId', { departmentId: filters.departmentId });
+      qb.andWhere('e.departmentId = :departmentId', {
+        departmentId: filters.departmentId,
+      });
     }
 
     const employees = await qb.getMany();
 
     const boxes: Record<string, any[]> = {
-      'star': [],               // High Perf, High Pot
-      'future_star': [],        // Mod Perf, High Pot
-      'rough_diamond': [],      // Low Perf, High Pot
-      'high_professional': [],  // High Perf, Mod Pot
-      'key_player': [],         // Mod Perf, Mod Pot
-      'inconsistent_player': [],// Low Perf, Mod Pot
-      'solid_professional': [], // High Perf, Low Pot
-      'average_performer': [],  // Mod Perf, Low Pot
-      'talent_risk': [],        // Low Perf, Low Pot
-      'unrated': []             // Missing data
+      star: [], // High Perf, High Pot
+      future_star: [], // Mod Perf, High Pot
+      rough_diamond: [], // Low Perf, High Pot
+      high_professional: [], // High Perf, Mod Pot
+      key_player: [], // Mod Perf, Mod Pot
+      inconsistent_player: [], // Low Perf, Mod Pot
+      solid_professional: [], // High Perf, Low Pot
+      average_performer: [], // Mod Perf, Low Pot
+      talent_risk: [], // Low Perf, Low Pot
+      unrated: [], // Missing data
     };
 
-    employees.forEach(emp => {
+    employees.forEach((emp) => {
       const score = (emp as any).latestAssessment?.totalScore ?? null;
       const readiness = emp.successionReadiness;
 
@@ -356,19 +359,19 @@ export class EmployeesService {
   async getOrgChart() {
     const employees = await this.employeeRepo.find({
       relations: ['jobRole', 'department'],
-      order: { firstName: 'ASC' }
+      order: { firstName: 'ASC' },
     });
 
     const idToNode: Record<string, any> = {};
     const roots: any[] = [];
 
     // First pass: create all nodes and map them by ID
-    employees.forEach(emp => {
+    employees.forEach((emp) => {
       idToNode[emp.id] = { ...emp, subordinates: [] };
     });
 
     // Second pass: link nodes to parents
-    employees.forEach(emp => {
+    employees.forEach((emp) => {
       if (emp.managerId && idToNode[emp.managerId]) {
         idToNode[emp.managerId].subordinates.push(idToNode[emp.id]);
       } else {
@@ -392,23 +395,30 @@ export class EmployeesService {
 
     // Calculate Average Team Performance (based on competencies or latest assessments)
     // For simplicity, we'll average the readiness scores or latest assessments
-    const latestAssessments = await this.dataSource.query(`
+    const latestAssessments = await this.dataSource.query(
+      `
       SELECT AVG(total_score) as avg_score
       FROM employee_assessments
       WHERE employee_id IN (SELECT id FROM employees WHERE manager_id = $1)
       AND status = 'SUBMITTED'
-    `, [managerId]);
+    `,
+      [managerId],
+    );
 
     const avgPerf = parseFloat(latestAssessments[0]?.avg_score) || 0;
 
     return {
       teamSize: subordinates.length,
-      avgTeamPerformance: +(avgPerf.toFixed(2)),
-      totalTeamExperience: subordinates.reduce((acc, curr) => {
-        const hire = new Date(curr.hireDate);
-        const years = (new Date().getTime() - hire.getTime()) / (1000 * 60 * 60 * 24 * 365.25);
-        return acc + years;
-      }, 0).toFixed(1),
+      avgTeamPerformance: +avgPerf.toFixed(2),
+      totalTeamExperience: subordinates
+        .reduce((acc, curr) => {
+          const hire = new Date(curr.hireDate);
+          const years =
+            (new Date().getTime() - hire.getTime()) /
+            (1000 * 60 * 60 * 24 * 365.25);
+          return acc + years;
+        }, 0)
+        .toFixed(1),
     };
   }
 
@@ -418,7 +428,7 @@ export class EmployeesService {
    */
   async getPotentialSuccessors(employeeId: string) {
     const target = await this.findOne(employeeId);
-    
+
     if (!target.departmentId) return [];
 
     return this.employeeRepo.find({
@@ -427,7 +437,7 @@ export class EmployeesService {
         successionReadiness: 'ready_now' as any,
       },
       take: 3,
-      order: { lastName: 'ASC' }
+      order: { lastName: 'ASC' },
     });
   }
 
@@ -435,7 +445,9 @@ export class EmployeesService {
    * Recalculates Tree paths (Now redundant but kept for API compatibility).
    */
   async repairOrgChart() {
-    return { success: true, message: 'Tree is now built dynamically in memory.' };
+    return {
+      success: true,
+      message: 'Tree is now built dynamically in memory.',
+    };
   }
 }
-

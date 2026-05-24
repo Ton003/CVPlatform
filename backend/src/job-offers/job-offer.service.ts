@@ -216,7 +216,7 @@ export class JobOffersService {
     return str.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
   }
   async remove(id: string) {
-    const offer = await this.findOne(id);
+    await this.findOne(id);
     await this.dataSource.transaction(async (manager) => {
       // Cascade deletions for associated recruiter data
       await manager.query(
@@ -250,7 +250,7 @@ export class JobOffersService {
       Find candidates for: ${offer.title}.
       Description: ${offer.description}.
       ${snapshot.mission ? `Mission: ${snapshot.mission}.` : ''}
-      ${snapshot.competencies?.length ? `Required: ${snapshot.competencies.map((c: {name: string, requiredLevel: number}) => `${c.name} (Lvl ${c.requiredLevel})`).join(', ')}.` : ''}
+      ${snapshot.competencies?.length ? `Required: ${snapshot.competencies.map((c: { name: string; requiredLevel: number }) => `${c.name} (Lvl ${c.requiredLevel})`).join(', ')}.` : ''}
     `;
 
     const result = await this.chatbot.recommend({

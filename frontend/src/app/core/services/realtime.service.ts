@@ -15,17 +15,8 @@ export class RealtimeService implements OnDestroy {
       transports: ['websocket'],
     });
 
-    this.socket.on('connect', () => {
-      console.log('📡 [Realtime] Connected to WebSocket');
-    });
-
     this.socket.on('notification', (data: any) => {
-      console.log('🔔 [Realtime] New notification:', data);
       this.notificationSubject.next(data);
-    });
-
-    this.socket.on('disconnect', () => {
-      console.log('📡 [Realtime] Disconnected from WebSocket');
     });
   }
 

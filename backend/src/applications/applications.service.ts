@@ -2,12 +2,11 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ForbiddenException,
   Logger,
 } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
-import { User } from '../users/entities/user.entity';
+
 import { Application, ApplicationStage } from './application.entity';
 import { ApplicationNote } from './application-note.entity';
 import { ActivityLog } from './activity-log.entity';
@@ -17,13 +16,10 @@ import {
   AssessmentStatus,
 } from './entities/application-assessment.entity';
 import { ApplicationAssessmentItem } from './entities/application-assessment-item.entity';
-import { AssessmentItemUpdateDto } from '../shared/dto/assessment.dto';
+
 import { CandidateSnapshotService } from '../candidates/candidate-snapshot.service';
 import { Task } from './entities/task.entity';
-import {
-  HiringOutcome,
-  HiringOutcomeType,
-} from './entities/hiring-outcome.entity';
+import { HiringOutcome } from './entities/hiring-outcome.entity';
 import { Interview } from '../interviews/interview.entity';
 import { NotificationsGateway } from '../notifications/notifications.gateway';
 import { MailService } from '../mail/mail.service';
@@ -292,7 +288,12 @@ export class ApplicationsService {
         relations: ['candidate', 'job'],
       });
 
-      if (fullApp && fullApp.candidate && fullApp.candidate.email && fullApp.job) {
+      if (
+        fullApp &&
+        fullApp.candidate &&
+        fullApp.candidate.email &&
+        fullApp.job
+      ) {
         if (newStage === 'rejected') {
           await this.mailService.sendRejectionEmail(
             fullApp.candidate.email,
@@ -309,7 +310,10 @@ export class ApplicationsService {
         }
       }
     } catch (err) {
-      this.logger.error(`Failed to send automated email for stage ${newStage}`, err);
+      this.logger.error(
+        `Failed to send automated email for stage ${newStage}`,
+        err,
+      );
     }
 
     return app;
@@ -375,50 +379,71 @@ export class ApplicationsService {
 
     // 1. Technical Match (AI-Driven with Keyword Fallback) - 30%
     let technicalScore = app.matchScore || 0;
-    
+
     // Priority: 1. Header Key (Sidebar) 2. Env Key (Admin)
-    const apiKey = headerKey || this.configService.get<string>('AI_API_KEY') || this.configService.get<string>('GROQ_API_KEY');
-    const candidateSkills = Array.isArray(app.candidateSkills) ? app.candidateSkills : [];
-    
+    const apiKey =
+      headerKey ||
+      this.configService.get<string>('AI_API_KEY') ||
+      this.configService.get<string>('GROQ_API_KEY');
+    const candidateSkills = Array.isArray(app.candidateSkills)
+      ? app.candidateSkills
+      : [];
+
     let jobSkills: string[] = [];
     let usedAi = false;
 
     if (apiKey && app.description) {
       try {
-        jobSkills = await this.aiService.extractJobSkills(app.description, apiKey);
+        jobSkills = await this.aiService.extractJobSkills(
+          app.description,
+          apiKey,
+        );
         usedAi = true;
       } catch (err) {
-        this.logger.warn(`AI Scoring failed (401/error), using emergency keyword fallback: ${err.message}`);
+        this.logger.warn(
+          `AI Scoring failed (401/error), using emergency keyword fallback: ${err.message}`,
+        );
       }
     }
 
     // EMERGENCY FALLBACK: If AI failed or no API key, do a direct keyword scan
     if (!usedAi || jobSkills.length === 0) {
       const text = (app.description || '').toLowerCase();
-      // If we don't have AI-extracted skills, we'll see how many of the candidate's skills 
+      // If we don't have AI-extracted skills, we'll see how many of the candidate's skills
       // appear directly in the job description text.
       if (candidateSkills.length > 0 && text.length > 10) {
-        const matches = candidateSkills.filter(s => {
+        const matches = candidateSkills.filter((s) => {
           const skill = s.toLowerCase().trim();
           if (skill.length < 2) return false;
           // Use regex to find whole word matches to avoid "Java" matching "JavaScript"
-          const regex = new RegExp(`\\b${skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+          const regex = new RegExp(
+            `\\b${skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`,
+            'i',
+          );
           return regex.test(text);
         });
-        
+
         // We calculate a score based on how many candidate skills matched the JD
         // capped at 100 but usually around 30-80 for a good match
-        technicalScore = Math.min(100, Math.round((matches.length / Math.max(5, candidateSkills.length * 0.5)) * 100));
-        
+        technicalScore = Math.min(
+          100,
+          Math.round(
+            (matches.length / Math.max(5, candidateSkills.length * 0.5)) * 100,
+          ),
+        );
+
         // Ensure that if "Python" is in both, we at least get a decent base score
-        if (matches.length > 0 && technicalScore < 40) technicalScore = 40 + (matches.length * 5);
+        if (matches.length > 0 && technicalScore < 40)
+          technicalScore = 40 + matches.length * 5;
         if (technicalScore > 100) technicalScore = 100;
       }
     } else {
       // AI Success Path
       const matches = jobSkills.filter((s: string) =>
         candidateSkills.some(
-          (cs: string) => cs.toLowerCase().includes(s.toLowerCase()) || s.toLowerCase().includes(cs.toLowerCase()),
+          (cs: string) =>
+            cs.toLowerCase().includes(s.toLowerCase()) ||
+            s.toLowerCase().includes(cs.toLowerCase()),
         ),
       );
       technicalScore = Math.round((matches.length / jobSkills.length) * 100);
@@ -442,7 +467,8 @@ export class ApplicationsService {
     let finalScore = 0;
     if (hasEvaluation) {
       finalScore = Math.round(
-        technicalScore * (techWeight / 100) + evaluationScore * (evalWeight / 100),
+        technicalScore * (techWeight / 100) +
+          evaluationScore * (evalWeight / 100),
       );
     } else {
       finalScore = technicalScore; // 100% Technical until evaluation starts

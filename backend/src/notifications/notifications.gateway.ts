@@ -31,7 +31,7 @@ export class NotificationsGateway
 
   /**
    * ✅ Emit a notification to all connected clients
-   * For simplicity in this PFE, we broadcast. 
+   * For simplicity in this PFE, we broadcast.
    * In production, we would use rooms for specific users.
    */
   emitNotification(action: string, data: any) {
@@ -43,7 +43,7 @@ export class NotificationsGateway
   }
 
   @SubscribeMessage('ping')
-  handlePing(client: Socket): string {
+  handlePing(): string {
     return 'pong';
   }
 }

@@ -84,6 +84,7 @@ export class CandidateProfileComponent implements OnInit {
   showDeleteModal = false;
   deleting = false;
 
+
   // Role Comparison
   roles: any[] = [];
   selectedCompareRoleId = '';
@@ -297,11 +298,6 @@ export class CandidateProfileComponent implements OnInit {
     this.activeTab = tab;
     if (tab === 'scoring' && this.candidate && !this.scoreData && !this.scoreLoading) this.loadScore(this.candidate.candidateId);
     if (tab === 'gap' && this.roles.length === 0) this.loadActiveRoles();
-  }
-
-  private showSuccess(msg: string): void {
-    this.successMessage = msg; this.errorBanner = ''; this.cdr.detectChanges();
-    setTimeout(() => { this.successMessage = ''; this.cdr.detectChanges(); }, 4000);
   }
 
   private showError(msg: string): void {

@@ -2,6 +2,8 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
 import { AuthService } from '../../core/services/auth.service';
 import { ApiKeyService } from '../../core/services/api-key.service';
 import { ToastService } from '../../core/services/toast.service';
@@ -81,10 +83,23 @@ export class SidebarComponent {
   apiKeyInput  = '';
   showApiKey   = false;
 
+  // ── Profile Settings ──────────────────────────────────────────
+  showProfileModal = false;
+  profileSaving = false;
+  showProfilePassword = false;
+  showProfileOldPassword = false;
+  profileForm = {
+    firstName: '',
+    lastName: '',
+    password: '',
+    oldPassword: '',
+  };
+
   constructor(
     private readonly auth:   AuthService,
     private readonly apiKey: ApiKeyService,
     private readonly toast:  ToastService,
+    private readonly http:   HttpClient,
   ) {}
 
   openSettings(): void {
@@ -120,6 +135,59 @@ export class SidebarComponent {
   }
 
   get hasApiKey(): boolean { return this.apiKey.has(); }
+
+  openProfileModal(): void {
+    const user = this.auth.getCurrentUser();
+    this.profileForm = {
+      firstName: user?.firstName ?? '',
+      lastName: user?.lastName ?? '',
+      password: '',
+      oldPassword: '',
+    };
+    this.showProfilePassword = false;
+    this.showProfileModal = true;
+  }
+
+  saveProfile(): void {
+    if (!this.profileForm.firstName.trim() || !this.profileForm.lastName.trim()) {
+      this.toast.error('First name and last name are required.');
+      return;
+    }
+
+    this.profileSaving = true;
+    const payload: any = {
+      firstName: this.profileForm.firstName.trim(),
+      lastName: this.profileForm.lastName.trim(),
+      oldPassword: this.profileForm.oldPassword,
+    };
+
+    if (this.profileForm.password.trim()) {
+      payload.password = this.profileForm.password.trim();
+    }
+
+    const apiUrl = environment.apiUrl;
+    this.http.patch(`${apiUrl}/users/profile`, payload, { withCredentials: true })
+      .subscribe({
+        next: () => {
+          this.auth.refreshUser().subscribe({
+            next: () => {
+              this.profileSaving = false;
+              this.showProfileModal = false;
+              this.toast.success('Profile updated successfully.');
+            },
+            error: () => {
+              this.profileSaving = false;
+              this.toast.error('Profile saved, but failed to refresh session.');
+            }
+          });
+        },
+        error: (err) => {
+          this.profileSaving = false;
+          const errMsg = err.error?.message || 'Failed to update profile.';
+          this.toast.error(errMsg);
+        }
+      });
+  }
 
   logout(): void { this.auth.logout(); }
 }

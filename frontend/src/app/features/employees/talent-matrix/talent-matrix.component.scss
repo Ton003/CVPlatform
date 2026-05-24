@@ -116,24 +116,26 @@
 }
 
 .matrix-box {
-  background: rgba(255, 255, 255, 0.4);
-  border: 2px solid var(--border-subtle);
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border-default);
   border-radius: 16px;
-  padding: 1.5rem; /* Increased padding */
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1rem;
   transition: all .2s;
-  min-height: 180px; /* Ensure a base height */
+  min-height: 180px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
 
   &:hover {
     border-color: var(--accent-soft);
     box-shadow: var(--shadow-md);
-    background: rgba(255, 255, 255, 0.6);
+    transform: translateY(-2px);
   }
 
-  &[data-box="star"] { background: rgba(16, 185, 129, 0.08); border-color: rgba(16, 185, 129, 0.2); }
-  &[data-box="talent_risk"] { background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.15); }
+  &[data-box="star"] { background: rgba(16, 185, 129, 0.06); border-color: rgba(16, 185, 129, 0.25); }
+  &[data-box="talent_risk"] { background: rgba(239, 68, 68, 0.04); border-color: rgba(239, 68, 68, 0.2); }
 }
 
 .box-header {
@@ -145,10 +147,15 @@
 
 .box-title {
   font-family: var(--font-display);
-  font-size: 1rem; /* Slightly larger */
+  font-size: .88rem;
   font-weight: 800;
   color: var(--text-primary);
-  line-height: 1.2;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
 }
 
 .box-count {
@@ -165,7 +172,9 @@
 .box-content {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 4px;
+  min-height: 0;
 }
 
 .employee-avatar-list {
@@ -248,16 +257,17 @@
 /* Labels & Markers */
 .y-axis-label {
   position: absolute;
-  left: 1rem;
+  left: 0;
   top: 50%;
-  transform: rotate(-90deg) translateY(-50%);
-  transform-origin: center;
-  font-size: .85rem;
+  transform: rotate(-90deg) translateX(-50%);
+  transform-origin: 0 0;
+  font-size: .8rem;
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: .2em;
   color: var(--accent-soft);
   white-space: nowrap;
+  pointer-events: none;
 }
 
 .x-axis-label {
@@ -275,18 +285,19 @@
 
 .axis-markers-y {
   position: absolute;
-  left: 3.5rem;
+  left: 2.5rem;
   top: 4rem;
   bottom: 5rem;
   display: flex;
   flex-direction: column;
   justify-content: space-around;
-  font-size: .75rem;
+  font-size: .72rem;
   font-weight: 800;
   color: var(--text-muted);
   text-transform: uppercase;
-  width: 3rem;
+  width: 4rem;
   text-align: right;
+  pointer-events: none;
 }
 
 .axis-markers-x {

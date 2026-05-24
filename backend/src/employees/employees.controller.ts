@@ -211,7 +211,9 @@ export class EmployeesController {
     @Body() body: { apiKey: string },
   ) {
     if (!body.apiKey) {
-      throw new BadRequestException('AI API Key is required to generate a development plan.');
+      throw new BadRequestException(
+        'AI API Key is required to generate a development plan.',
+      );
     }
     return this.devAdvisorService.generateRecommendations(id, body.apiKey);
   }

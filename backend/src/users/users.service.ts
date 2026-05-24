@@ -1,7 +1,30 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository, InjectDataSource } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
+import * as bcrypt from 'bcrypt';
+import { IsString, IsOptional, MinLength } from 'class-validator';
 import { User } from './entities/user.entity';
+
+export class UpdateProfileDto {
+  @IsString()
+  @MinLength(1, { message: 'First name is required' })
+  @IsOptional()
+  firstName?: string;
+
+  @IsString()
+  @MinLength(1, { message: 'Last name is required' })
+  @IsOptional()
+  lastName?: string;
+
+  @IsString()
+  @MinLength(8, { message: 'New password must be at least 8 characters long' })
+  @IsOptional()
+  password?: string;
+
+  @IsString()
+  @MinLength(1, { message: 'Current password is required to verify identity' })
+  oldPassword: string;
+}
 
 @Injectable()
 export class UsersService {
@@ -110,6 +133,40 @@ export class UsersService {
 
     return this.usersRepository.save(user);
   }
+
+  /**
+   * ✅ Updates current authenticated user profile (name and password)
+   */
+  async updateProfile(id: string, dto: UpdateProfileDto): Promise<Partial<User>> {
+    const user = await this.findById(id);
+    if (!user) throw new NotFoundException(`User with ID ${id} not found`);
+
+    // Verify current (old) password
+    const isPasswordValid = await bcrypt.compare(dto.oldPassword, user.passwordHash);
+    if (!isPasswordValid) {
+      throw new BadRequestException('Incorrect current password.');
+    }
+
+    if (dto.firstName !== undefined) user.firstName = dto.firstName;
+    if (dto.lastName !== undefined) user.lastName = dto.lastName;
+
+    if (dto.password) {
+      user.passwordHash = await bcrypt.hash(dto.password, 12);
+    }
+
+    const savedUser = await this.usersRepository.save(user);
+
+    // If the user's name is updated and they have an associated employee record,
+    // we should also update the corresponding employee record!
+    await this.dataSource.query(
+      `UPDATE employees SET first_name = $1, last_name = $2 WHERE id = $3 OR user_id = $4`,
+      [savedUser.firstName, savedUser.lastName, savedUser.employeeId, savedUser.id],
+    );
+
+    const { passwordHash, ...safeUser } = savedUser;
+    return safeUser;
+  }
+
 
   /**
    * ✅ Checks if an email is already registered
