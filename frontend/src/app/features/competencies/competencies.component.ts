@@ -13,8 +13,6 @@ import {
 import { ToastService } from '../../core/services/toast.service';
 import { ConfirmModalComponent } from '../../shared/confirm-modal/confirm-modal.component';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-
 interface CategoryMeta {
   value: CompetenceCategory;
   label: string;
@@ -22,8 +20,6 @@ interface CategoryMeta {
   gradient: string;
   icon: string;
 }
-
-// ─── Constants ───────────────────────────────────────────────────────────────
 
 export const CATEGORIES: CategoryMeta[] = [
   {
@@ -69,7 +65,6 @@ const LEVEL_LABELS = ['Aware', 'Basic', 'Intermediate', 'Advanced', 'Expert'];
 })
 export class CompetenciesComponent implements OnInit {
 
-  // ── Data ────────────────────────────────────────────────────────────
   readonly categories = CATEGORIES;
   readonly levelLabels = LEVEL_LABELS;
 
@@ -82,11 +77,9 @@ export class CompetenciesComponent implements OnInit {
   familySearch  = '';
   expandedIds   = new Set<string>();
 
-  // ── Loading flags ────────────────────────────────────────────────────
   loadingFamilies   = false;
   loadingCompetences = false;
 
-  // ── Family admin ─────────────────────────────────────────────────────
   showFamilyForm    = false;
   editingFamily:    CompetenceFamily | null = null;
   familyForm!:      FormGroup;
@@ -96,7 +89,6 @@ export class CompetenciesComponent implements OnInit {
   pendingDeleteFamilyId = '';
   deletingFamilyId  = '';
 
-  // ── Competence admin ─────────────────────────────────────────────────
   showCompetenceForm    = false;
   editingCompetence:    Competence | null = null;
   competenceForm!:      FormGroup;
@@ -106,12 +98,10 @@ export class CompetenciesComponent implements OnInit {
   pendingDeleteCompetenceId = '';
   deletingCompetenceId  = '';
 
-  // ── Levels editing ───────────────────────────────────────────────────
   editingLevelsFor: Competence | null = null;
   levelsForm!: FormGroup;
   savingLevels = false;
 
-  // ─── Computed ─────────────────────────────────────────────────────────────
   get activeMeta(): CategoryMeta {
     return this.categories.find(c => c.value === this.activeCategory)!;
   }
@@ -143,7 +133,6 @@ export class CompetenciesComponent implements OnInit {
     this.selectCategory('TECHNICAL');
   }
 
-  // ─── Category ────────────────────────────────────────────────────────────
   selectCategory(cat: CompetenceCategory): void {
     this.activeCategory   = cat;
     this.selectedFamily   = null;
@@ -153,7 +142,6 @@ export class CompetenciesComponent implements OnInit {
     this.loadFamilies(cat);
   }
 
-  // ─── Families ────────────────────────────────────────────────────────────
   loadFamilies(category: CompetenceCategory): void {
     this.loadingFamilies = true;
     this.families        = [];
@@ -211,7 +199,6 @@ export class CompetenciesComponent implements OnInit {
     return this.expandedIds.has(id);
   }
 
-  // ─── Family CRUD ─────────────────────────────────────────────────────────
   openAddFamilyForm(): void {
     this.editingFamily  = null;
     this.familyForm.reset({ name: '', category: this.activeCategory });
@@ -304,7 +291,6 @@ export class CompetenciesComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  // ─── Competence CRUD ─────────────────────────────────────────────────────
   openAddCompetenceForm(): void {
     if (!this.selectedFamily) return;
     this.editingCompetence  = null;
@@ -391,7 +377,6 @@ export class CompetenciesComponent implements OnInit {
     this.cdr.markForCheck();
   }
 
-  // ─── Levels editing ──────────────────────────────────────────────────────
   openLevelsEditor(c: Competence, event: Event): void {
     event.stopPropagation();
     this.editingLevelsFor = c;
@@ -445,7 +430,6 @@ export class CompetenciesComponent implements OnInit {
     });
   }
 
-  // ─── Helpers ────────────────────────────────────────────────────────────
   getLevelColor(level: number): string {
     const colors = ['#94a3b8', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
     return colors[level - 1] ?? '#94a3b8';
@@ -455,7 +439,6 @@ export class CompetenciesComponent implements OnInit {
   trackByValue(_: number, item: CategoryMeta): string { return item.value; }
   trackByIndex(i: number): number { return i; }
 
-  // ─── Private ────────────────────────────────────────────────────────────
   private initForms(): void {
     this.familyForm = this.fb.group({
       name:     ['', [Validators.required, Validators.maxLength(200)]],

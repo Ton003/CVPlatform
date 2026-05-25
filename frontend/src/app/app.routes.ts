@@ -7,8 +7,7 @@ export const routes: Routes = [
     path: '',
     redirectTo: '/dashboard',
     pathMatch: 'full',
-  },
-  // ── Public auth routes (no shell / no sidebar) ──────────────────
+  },
   {
     path: 'auth',
     children: [
@@ -23,8 +22,7 @@ export const routes: Routes = [
           import('./features/auth/signup/signup.component').then(m => m.SignupComponent),
       },
     ],
-  },
-  // ── Authenticated routes (all share the global Shell sidebar) ───
+  },
   {
     path: '',
     component: ShellComponent,

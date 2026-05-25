@@ -84,7 +84,6 @@ export class CandidateProfileComponent implements OnInit {
   showDeleteModal = false;
   deleting = false;
 
-
   // Role Comparison
   roles: any[] = [];
   selectedCompareRoleId = '';
@@ -163,7 +162,6 @@ export class CandidateProfileComponent implements OnInit {
     });
   }
 
-  // ── Scoring ────────────────────────────────────────────────────
   loadScore(candidateId: string): void {
     this.scoreLoading = true;
     this.http.get<CandidateScore>(`${this.apiUrl}/candidates/${candidateId}/score`)
@@ -228,7 +226,6 @@ export class CandidateProfileComponent implements OnInit {
     this.cdr.detectChanges();
   }
 
-  // ── Gap Analysis ────────────────────────────────────────────────
   loadActiveRoles(): void {
     this.http.get<any[]>(`${this.apiUrl}/job-architecture/tree`).subscribe({
       next: (bus: any[]) => {
@@ -293,7 +290,6 @@ export class CandidateProfileComponent implements OnInit {
     });
   }
 
-  // ── Tab routing ────────────────────────────────────────────────
   setTab(tab: string): void {
     this.activeTab = tab;
     if (tab === 'scoring' && this.candidate && !this.scoreData && !this.scoreLoading) this.loadScore(this.candidate.candidateId);
@@ -305,7 +301,6 @@ export class CandidateProfileComponent implements OnInit {
     setTimeout(() => { this.errorBanner = ''; this.cdr.detectChanges(); }, 5000);
   }
 
-  // ── Helpers ────────────────────────────────────────────────────
   goBack(): void {
     const from = this.route.snapshot.queryParamMap.get('from');
     if (from === 'application') {

@@ -360,7 +360,6 @@ export class EmployeeProfileComponent implements OnInit {
     return `${this.employee.firstName[0]}${this.employee.lastName[0]}`.toUpperCase();
   }
 
-  // ── Helpers ────────────────────────────────────────────────────
   goBack(): void {
     this.router.navigate([this.backRoute]);
   }
@@ -497,7 +496,6 @@ export class EmployeeProfileComponent implements OnInit {
 
   stars(n = 5) { return Array.from({ length: n }, (_, i) => i + 1); }
 
-  // ── AI Development Advisor ───────────────────────────────────
   toggleApiKeyInput(): void {
     this.showApiKeyInput = !this.showApiKeyInput;
     this.cdr.markForCheck();

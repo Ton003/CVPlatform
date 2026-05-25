@@ -15,8 +15,8 @@ import {
   providedIn: 'root',
 })
 export class AuthService {
-  private readonly API_URL = environment.apiUrl; // ✅ no more hardcode
-  private readonly TOKEN_KEY = 'biat_access_token';
+ private readonly API_URL = environment.apiUrl; // no more hardcode
+ private readonly TOKEN_KEY = 'biat_access_token';
   private readonly USER_KEY = 'biat_user';
   private readonly isBrowser: boolean;
 
@@ -48,36 +48,36 @@ export class AuthService {
 
   logout(): void {
     this.http.post(`${this.API_URL}/auth/logout`, {}, { withCredentials: true }).subscribe({
-      next: () => this.executeLogout(),
-      error: () => this.executeLogout()
-    });
-  }
+ next: () => this.executeLogout(),
+ error: () => this.executeLogout()
+ });
+ }
 
-  executeLogout(): void {
-    this.clearStorage(); // ✅ centralized
-    this.currentUserSubject.next(null);
-    this.router.navigate(['/auth/login']);
-  }
+ executeLogout(): void {
+ this.clearStorage(); // centralized
+ this.currentUserSubject.next(null);
+ this.router.navigate(['/auth/login']);
+ }
 
-  isLoggedIn(): boolean {
-    if (!this.isBrowser) return false;
-    return !!this.getUserFromStorage();
-  }
+ isLoggedIn(): boolean {
+ if (!this.isBrowser) return false;
+ return !!this.getUserFromStorage();
+ }
 
-  getCurrentUser(): User | null {
-    return this.currentUserSubject.getValue();
-  }
+ getCurrentUser(): User | null {
+ return this.currentUserSubject.getValue();
+ }
 
-  hasRole(role: string | string[]): boolean {
-    const user = this.getCurrentUser();
-    if (!user) return false;
-    if (Array.isArray(role)) return role.includes(user.role);
-    return user.role === role;
-  }
+ hasRole(role: string | string[]): boolean {
+ const user = this.getCurrentUser();
+ if (!user) return false;
+ if (Array.isArray(role)) return role.includes(user.role);
+ return user.role === role;
+ }
 
-  // ✅ Call this on app init or after role changes
-  refreshUser(): Observable<User> {
-    return this.http.get<User>(`${this.API_URL}/auth/me`, { withCredentials: true }).pipe(
+ // Call this on app init or after role changes
+ refreshUser(): Observable<User> {
+ return this.http.get<User>(`${this.API_URL}/auth/me`, { withCredentials: true }).pipe(
       tap((user) => {
         if (this.isBrowser) {
           localStorage.setItem(this.USER_KEY, JSON.stringify(user));

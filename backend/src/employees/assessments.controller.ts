@@ -32,8 +32,6 @@ import {
 export class AssessmentsController {
   constructor(private readonly assessmentsService: AssessmentsService) {}
 
-  // ── Employee-scoped ─────────────────────────────────────────────────────────
-
   @Post('employees/:employeeId/assessments')
   createDraft(
     @Param('employeeId') employeeId: string,
@@ -47,8 +45,6 @@ export class AssessmentsController {
   listHistory(@Param('employeeId') employeeId: string) {
     return this.assessmentsService.listForEmployee(employeeId);
   }
-
-  // ── Assessment-scoped ───────────────────────────────────────────────────────
 
   @Get('assessments/:id')
   findOne(@Param('id') id: string) {

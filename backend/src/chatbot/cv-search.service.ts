@@ -39,10 +39,18 @@ export class CvSearchService implements OnModuleInit {
   async onModuleInit() {
     try {
       await this.dataSource.query('CREATE EXTENSION IF NOT EXISTS vector;');
-      this.logger.log('✅ pgvector extension is ready');
+      this.logger.log(' pgvector extension is ready');
+      
+      // Fix for Bug #2 (Vector Sequential Scans)
+      // This expression index allows Postgres to use HNSW without changing the underlying text column
+      await this.dataSource.query(`
+        CREATE INDEX IF NOT EXISTS cv_embed_idx 
+        ON cv_parsed_data USING hnsw ((embedding::vector(384)) vector_cosine_ops);
+      `);
+      this.logger.log(' pgvector HNSW index is ready');
     } catch (err) {
       this.logger.warn(
-        '⚠️ pgvector extension check failed. Ensure it is manually enabled.',
+        ' pgvector extension or index check failed. Ensure it is manually enabled.',
       );
     }
   }
@@ -88,21 +96,21 @@ export class CvSearchService implements OnModuleInit {
       ORDER BY c.created_at DESC LIMIT 50
     `;
 
-    const results = await this.dataSource.query(query, params);
-    return results.map((r: any) => this.mapRaw(r));
-  }
+ const results = await this.dataSource.query(query, params);
+ return results.map((r: any) => this.mapRaw(r));
+ }
 
-  /**
-   * ✅ Recall using Vector Similarity (Semantic Search)
-   */
-  async findByEmbedding(
-    queryEmbedding: number[],
-    limit = 30,
-    personType?: string,
-    scopedCandidateIds?: string[],
-    scopedDepartmentId?: string,
-  ): Promise<RawCandidate[]> {
-    const vectorStr = `[${queryEmbedding.join(',')}]`;
+ /**
+ * Recall using Vector Similarity (Semantic Search)
+ */
+ async findByEmbedding(
+ queryEmbedding: number[],
+ limit = 30,
+ personType?: string,
+ scopedCandidateIds?: string[],
+ scopedDepartmentId?: string,
+ ): Promise<RawCandidate[]> {
+ const vectorStr = `[${queryEmbedding.join(',')}]`;
     const params: any[] = [vectorStr, limit];
     let pIdx = 3;
 

@@ -12,38 +12,38 @@ import { LoginDto } from './dto/login.dto';
 import { User } from '../users/entities/user.entity';
 
 export interface AuthResponse {
-  message: string;
-  access_token: string;
-  user: Partial<User>;
+ message: string;
+ access_token: string;
+ user: Partial<User>;
 }
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
-  private static readonly SALT_ROUNDS = 12;
+ private readonly logger = new Logger(AuthService.name);
+ private static readonly SALT_ROUNDS = 12;
 
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly jwtService: JwtService,
-  ) {}
+ constructor(
+ private readonly usersService: UsersService,
+ private readonly jwtService: JwtService,
+ ) {}
 
-  /**
-   * ✅ Handles user registration and initial token generation
-   */
-  async signup(dto: SignupDto): Promise<AuthResponse> {
-    const email = dto.email.toLowerCase();
+ /**
+ * Handles user registration and initial token generation
+ */
+ async signup(dto: SignupDto): Promise<AuthResponse> {
+ const email = dto.email.toLowerCase();
 
-    try {
-      const passwordHash = await bcrypt.hash(
-        dto.password,
-        AuthService.SALT_ROUNDS,
-      );
+ try {
+ const passwordHash = await bcrypt.hash(
+ dto.password,
+ AuthService.SALT_ROUNDS,
+ );
 
-      const user = await this.usersService.create({
-        ...dto,
-        email,
-        passwordHash,
-        role: dto.role || 'hr',
+ const user = await this.usersService.create({
+ ...dto,
+ email,
+ passwordHash,
+ role: dto.role || 'hr',
         isActive: true,
       });
 
@@ -58,21 +58,21 @@ export class AuthService {
       if (error.code === '23505' || error.status === 409) {
         throw new ConflictException(
           'An account with this email already exists',
-        );
-      }
-      throw error;
-    }
-  }
+ );
+ }
+ throw error;
+ }
+ }
 
-  /**
-   * ✅ Authenticates user and generates a stateful JWT
-   */
-  async login(dto: LoginDto): Promise<AuthResponse> {
-    const email = dto.email.toLowerCase();
-    const user = await this.usersService.findByEmail(email);
+ /**
+ * Authenticates user and generates a stateful JWT
+ */
+ async login(dto: LoginDto): Promise<AuthResponse> {
+ const email = dto.email.toLowerCase();
+ const user = await this.usersService.findByEmail(email);
 
-    if (!user) {
-      this.logger.warn(`Failed login attempt for non-existent user: ${email}`);
+ if (!user) {
+ this.logger.warn(`Failed login attempt for non-existent user: ${email}`);
       throw new UnauthorizedException('Invalid email or password');
     }
 
@@ -94,18 +94,18 @@ export class AuthService {
 
     return {
       message: 'Login successful',
-      access_token: token,
-      user: this.sanitizeUser(user),
-    };
-  }
+ access_token: token,
+ user: this.sanitizeUser(user),
+ };
+ }
 
-  /**
-   * ✅ Returns sanitized profile for currently authenticated user
-   */
-  async getProfile(userId: string): Promise<Partial<User>> {
-    const user = await this.usersService.findById(userId);
-    if (!user) {
-      throw new UnauthorizedException('User not found');
+ /**
+ * Returns sanitized profile for currently authenticated user
+ */
+ async getProfile(userId: string): Promise<Partial<User>> {
+ const user = await this.usersService.findById(userId);
+ if (!user) {
+ throw new UnauthorizedException('User not found');
     }
     return this.sanitizeUser(user);
   }

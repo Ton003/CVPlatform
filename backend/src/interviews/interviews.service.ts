@@ -11,35 +11,35 @@ import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class InterviewsService {
-  private readonly logger = new Logger(InterviewsService.name);
+ private readonly logger = new Logger(InterviewsService.name);
 
-  constructor(
-    @InjectRepository(Interview)
-    private readonly interviewRepo: Repository<Interview>,
+ constructor(
+ @InjectRepository(Interview)
+ private readonly interviewRepo: Repository<Interview>,
 
-    @InjectRepository(ActivityLog)
-    private readonly logRepo: Repository<ActivityLog>,
+ @InjectRepository(ActivityLog)
+ private readonly logRepo: Repository<ActivityLog>,
 
-    @InjectRepository(Application)
-    private readonly appRepo: Repository<Application>,
+ @InjectRepository(Application)
+ private readonly appRepo: Repository<Application>,
 
-    @InjectRepository(ApplicationCompetencyScore)
-    private readonly compScoreRepo: Repository<ApplicationCompetencyScore>,
+ @InjectRepository(ApplicationCompetencyScore)
+ private readonly compScoreRepo: Repository<ApplicationCompetencyScore>,
 
-    private readonly mailService: MailService,
-  ) {}
+ private readonly mailService: MailService,
+ ) {}
 
-  /**
-   * ✅ Schedule a new interview and log the activity
-   */
-  async create(dto: CreateInterviewDto, userId: string): Promise<Interview> {
-    const interview = this.interviewRepo.create({
-      applicationId: dto.applicationId,
-      scheduledAt: new Date(dto.scheduledAt),
-      type: dto.type,
-      interviewerName: dto.interviewerName,
-      meetingUrl: dto.meetingUrl,
-      status: 'scheduled',
+ /**
+ * Schedule a new interview and log the activity
+ */
+ async create(dto: CreateInterviewDto, userId: string): Promise<Interview> {
+ const interview = this.interviewRepo.create({
+ applicationId: dto.applicationId,
+ scheduledAt: new Date(dto.scheduledAt),
+ type: dto.type,
+ interviewerName: dto.interviewerName,
+ meetingUrl: dto.meetingUrl,
+ status: 'scheduled',
     });
 
     const saved = await this.interviewRepo.save(interview);
@@ -74,34 +74,34 @@ export class InterviewsService {
       } catch (err) {
         this.logger.error(
           `Failed to send interview invitation email for application ${dto.applicationId}`,
-          err,
-        );
-      }
-    }
+ err,
+ );
+ }
+ }
 
-    return saved;
-  }
+ return saved;
+ }
 
-  /**
-   * ✅ Fetch all interviews associated with an application
-   */
-  async findByApplication(applicationId: string): Promise<Interview[]> {
-    return this.interviewRepo.find({
-      where: { applicationId },
-      order: { scheduledAt: 'DESC' },
-    });
-  }
+ /**
+ * Fetch all interviews associated with an application
+ */
+ async findByApplication(applicationId: string): Promise<Interview[]> {
+ return this.interviewRepo.find({
+ where: { applicationId },
+ order: { scheduledAt: 'DESC' },
+ });
+ }
 
-  /**
-   * ✅ Update feedback, scores, and status of an interview
-   */
-  async updateFeedback(
-    id: string,
-    dto: UpdateFeedbackDto,
-    userId: string,
-  ): Promise<Interview> {
-    const interview = await this.interviewRepo.findOne({ where: { id } });
-    if (!interview) throw new NotFoundException(`Interview ${id} not found`);
+ /**
+ * Update feedback, scores, and status of an interview
+ */
+ async updateFeedback(
+ id: string,
+ dto: UpdateFeedbackDto,
+ userId: string,
+ ): Promise<Interview> {
+ const interview = await this.interviewRepo.findOne({ where: { id } });
+ if (!interview) throw new NotFoundException(`Interview ${id} not found`);
 
     const { competencies, ...feedbackData } = dto;
 
@@ -132,23 +132,23 @@ export class InterviewsService {
           userId,
           action: 'interview_completed',
           description: `${interview.type} interview feedback recorded (Decision: ${dto.decision ?? 'N/A'})`,
-          metadata: {
-            decision: dto.decision,
-            scores: { tech: dto.technicalScore, comm: dto.communicationScore },
-          },
-        }),
-      );
-    }
+ metadata: {
+ decision: dto.decision,
+ scores: { tech: dto.technicalScore, comm: dto.communicationScore },
+ },
+ }),
+ );
+ }
 
-    return saved;
-  }
+ return saved;
+ }
 
-  /**
-   * ✅ Remove an interview record
-   */
-  async remove(id: string): Promise<void> {
-    const interview = await this.interviewRepo.findOne({ where: { id } });
-    if (!interview) throw new NotFoundException(`Interview ${id} not found`);
+ /**
+ * Remove an interview record
+ */
+ async remove(id: string): Promise<void> {
+ const interview = await this.interviewRepo.findOne({ where: { id } });
+ if (!interview) throw new NotFoundException(`Interview ${id} not found`);
     await this.interviewRepo.remove(interview);
   }
 }

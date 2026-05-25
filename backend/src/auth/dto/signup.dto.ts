@@ -24,12 +24,12 @@ export class SignupDto {
 
   @IsString()
   @MinLength(1, { message: 'Last name is required' })
-  @MaxLength(100)
-  lastName: string;
+ @MaxLength(100)
+ lastName: string;
 
-  // ✅ Fix #6 — admin role removed, only hr and manager allowed on self-signup
-  @IsOptional()
-  @IsIn(['hr', 'manager'], {
+ // Fix #6 — admin role removed, only hr and manager allowed on self-signup
+ @IsOptional()
+ @IsIn(['hr', 'manager'], {
     message: 'Role must be hr or manager',
   })
   role?: 'hr' | 'manager';

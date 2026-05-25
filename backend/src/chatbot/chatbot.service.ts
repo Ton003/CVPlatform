@@ -11,24 +11,24 @@ import {
 
 @Injectable()
 export class ChatbotService {
-  private readonly logger = new Logger(ChatbotService.name);
+ private readonly logger = new Logger(ChatbotService.name);
 
-  constructor(
-    private readonly keywordExtractor: KeywordExtractorService,
-    private readonly cvSearch: CvSearchService,
-    private readonly pdfExtractor: PdfExtractorService,
-    private readonly aiService: AiService,
-  ) {}
+ constructor(
+ private readonly keywordExtractor: KeywordExtractorService,
+ private readonly cvSearch: CvSearchService,
+ private readonly pdfExtractor: PdfExtractorService,
+ private readonly aiService: AiService,
+ ) {}
 
-  /**
-   * ✅ Main recommendation entry point - routes between Groq RAG and local pipelines
-   */
-  async recommend(
-    dto: RecommendDto,
-    scopedCandidateIds?: string[],
-    scopedDepartmentId?: string,
-  ): Promise<RecommendationResultDto> {
-    this.logger.log(`💬 [Search] "${dto.message.substring(0, 80)}"`);
+ /**
+ * Main recommendation entry point - routes between Groq RAG and local pipelines
+ */
+ async recommend(
+ dto: RecommendDto,
+ scopedCandidateIds?: string[],
+ scopedDepartmentId?: string,
+ ): Promise<RecommendationResultDto> {
+ this.logger.log(` [Search] "${dto.message.substring(0, 80)}"`);
 
     // AI Search Pipeline
     if (dto.apiKey) {
@@ -103,7 +103,7 @@ export class ChatbotService {
       matchedSkills: [], // Populated by frontend or scoring service
     }));
 
-    this.logger.log(`✅ Pipeline completed in ${Date.now() - t0}ms`);
+    this.logger.log(` Pipeline completed in ${Date.now() - t0}ms`);
 
     return {
       message: reranked.answer,

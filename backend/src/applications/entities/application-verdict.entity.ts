@@ -98,7 +98,6 @@ export class ApplicationVerdict {
   @CreateDateColumn({ name: 'computed_at', type: 'timestamptz' })
   computedAt: Date;
 
-  // ── Relations ────────────────────────────────────────────────────
   @ManyToOne(() => Application, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'application_id' })
   application: Application;

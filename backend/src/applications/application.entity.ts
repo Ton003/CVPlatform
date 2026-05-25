@@ -26,14 +26,12 @@ export class Application {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // ── Foreign keys ────────────────────────────────────────────────
   @Column({ name: 'job_id', type: 'uuid' })
   jobId: string;
 
   @Column({ name: 'candidate_id', type: 'uuid' })
   candidateId: string;
 
-  // ── Pipeline stage ───────────────────────────────────────────────
   @Column({
     type: 'varchar',
     length: 50,
@@ -41,15 +39,12 @@ export class Application {
   })
   stage: ApplicationStage;
 
-  // ── Source — how candidate entered the system ────────────────────
   @Column({ type: 'varchar', length: 100, nullable: true })
   source: string | null; // 'cv_upload' | 'manual' | 'referral'
 
-  // ── Cover letter or additional notes at application time ─────────
   @Column({ type: 'text', name: 'cover_note', nullable: true })
   coverNote: string | null;
 
-  // ── Timestamps ───────────────────────────────────────────────────
   @Column({ name: 'match_score', type: 'float', nullable: true })
   matchScore: number | null;
 
@@ -62,7 +57,6 @@ export class Application {
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
   updatedAt: Date;
 
-  // ── Relations ────────────────────────────────────────────────────
   @ManyToOne(() => Candidate, { onDelete: 'CASCADE', eager: false })
   @JoinColumn({ name: 'candidate_id' })
   candidate: Candidate;

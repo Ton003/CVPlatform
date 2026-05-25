@@ -7,9 +7,7 @@ import { UserContext } from './jwt.strategy';
 export class PolicyService {
   private readonly logger = new Logger(PolicyService.name);
 
-  constructor(@InjectDataSource() private readonly ds: DataSource) {}
-
-  // ─── Role helpers ──────────────────────────────────────────────────────────
+  constructor(@InjectDataSource() private readonly ds: DataSource) {}
 
   isHrOrAdmin(user: UserContext): boolean {
     return user.role === 'admin' || user.role === 'hr';
@@ -33,9 +31,7 @@ export class PolicyService {
         'Your manager account is not linked to a department. Contact an administrator.',
       );
     }
-  }
-
-  // ─── Job access ────────────────────────────────────────────────────────────
+  }
 
   /**
    * Managers can only access jobs where job.hiring_manager = their employeeId.
@@ -54,9 +50,7 @@ export class PolicyService {
         `You are not the hiring manager for job ${jobId}`,
       );
     }
-  }
-
-  // ─── Application access ────────────────────────────────────────────────────
+  }
 
   /**
    * Managers can only access applications linked to a job they own.
@@ -82,9 +76,7 @@ export class PolicyService {
         `Application ${applicationId} not found or not accessible`,
       );
     }
-  }
-
-  // ─── Employee access ───────────────────────────────────────────────────────
+  }
 
   /**
    * Managers can only access employees in their own department.
@@ -106,9 +98,7 @@ export class PolicyService {
         `Employee ${employeeId} is not in your department`,
       );
     }
-  }
-
-  // ─── Scoping helpers ───────────────────────────────────────────────────────
+  }
 
   /**
    * Returns the list of job_offer UUIDs the calling manager owns.

@@ -9,20 +9,20 @@ import * as path from 'path';
 
 @Injectable()
 export class CandidatesService {
-  private readonly logger = new Logger(CandidatesService.name);
+ private readonly logger = new Logger(CandidatesService.name);
 
-  constructor(
-    @InjectRepository(Candidate)
-    private readonly candidateRepo: Repository<Candidate>,
-    @InjectRepository(Cv)
-    private readonly cvRepo: Repository<Cv>,
-    @InjectDataSource()
-    private readonly dataSource: DataSource,
-  ) {}
+ constructor(
+ @InjectRepository(Candidate)
+ private readonly candidateRepo: Repository<Candidate>,
+ @InjectRepository(Cv)
+ private readonly cvRepo: Repository<Cv>,
+ @InjectDataSource()
+ private readonly dataSource: DataSource,
+ ) {}
 
-  /**
-   * ✅ List candidates with search and pagination, excluding hired/converted staff
-   * ABAC: Supports scoping to a manager's jobs.
+ /**
+ * List candidates with search and pagination, excluding hired/converted staff
+ * ABAC: Supports scoping to a manager's jobs.
    */
   async list(
     search?: string,
@@ -76,24 +76,24 @@ export class CandidatesService {
       ORDER BY c.created_at DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}
     `,
-      params,
-    );
+ params,
+ );
 
-    return {
-      data: rows,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
-  }
+ return {
+ data: rows,
+ total,
+ page,
+ limit,
+ totalPages: Math.ceil(total / limit),
+ };
+ }
 
-  /**
-   * ✅ Fetch full candidate dossier including latest parsed CV data
-   */
-  async getProfile(id: string) {
-    const rows = await this.dataSource.query(
-      `
+ /**
+ * Fetch full candidate dossier including latest parsed CV data
+ */
+ async getProfile(id: string) {
+ const rows = await this.dataSource.query(
+ `
       SELECT
         c.id::text           AS "candidateId",
         c.first_name         AS "firstName",
@@ -125,20 +125,20 @@ export class CandidatesService {
     return {
       ...r,
       name: `${r.firstName || ''} ${r.lastName || ''}`.trim() || 'Unknown',
-      skills: Array.isArray(r.skills) ? r.skills : [],
-      education: Array.isArray(r.education) ? r.education : [],
-      experience: Array.isArray(r.experience) ? r.experience : [],
-      languages: Array.isArray(r.languages) ? r.languages : [],
-      competencySnapshot: r.competencySnapshot || {},
-    };
-  }
+ skills: Array.isArray(r.skills) ? r.skills : [],
+ education: Array.isArray(r.education) ? r.education : [],
+ experience: Array.isArray(r.experience) ? r.experience : [],
+ languages: Array.isArray(r.languages) ? r.languages : [],
+ competencySnapshot: r.competencySnapshot || {},
+ };
+ }
 
-  /**
-   * ✅ Destructive delete: removes candidate, all CVs, parsed data, and local PDF files
-   */
-  async delete(id: string) {
-    const candidate = await this.candidateRepo.findOne({ where: { id } });
-    if (!candidate) throw new NotFoundException(`Candidate ${id} not found`);
+ /**
+ * Destructive delete: removes candidate, all CVs, parsed data, and local PDF files
+ */
+ async delete(id: string) {
+ const candidate = await this.candidateRepo.findOne({ where: { id } });
+ if (!candidate) throw new NotFoundException(`Candidate ${id} not found`);
 
     const cvs = await this.cvRepo.find({ where: { candidateId: id } });
 

@@ -1,4 +1,4 @@
-// ─── Root ──────────────────────────────────────────────────────────────────
+
 .pipeline-root {
   display: flex;
   flex-direction: column;
@@ -6,9 +6,7 @@
   width: 100%;
   overflow: hidden;
   background: var(--bg-base);
-}
-
-// ─── Header ────────────────────────────────────────────────────────────────
+}
 .pipeline-header {
   min-height: 4.5rem;
   padding: 1rem 1.5rem;
@@ -156,9 +154,7 @@
   .spinning {
     animation: spin 0.8s linear infinite;
   }
-}
-
-// ─── Error ─────────────────────────────────────────────────────────────────
+}
 .pipeline-error {
   display: flex;
   align-items: center;
@@ -186,9 +182,7 @@
       background: rgba(244, 63, 94, 0.12);
     }
   }
-}
-
-// ─── Board ─────────────────────────────────────────────────────────────────
+}
 .pipeline-board {
   display: flex;
   gap: 0;
@@ -209,9 +203,7 @@
     background: var(--border-default);
     border-radius: 3px;
   }
-}
-
-// ─── Stage Column ──────────────────────────────────────────────────────────
+}
 .stage-column {
   display: flex;
   flex-direction: column;
@@ -253,9 +245,7 @@
       opacity: 0.75;
     }
   }
-}
-
-// ─── Column Header ─────────────────────────────────────────────────────────
+}
 .column-header {
   display: flex;
   align-items: center;
@@ -298,9 +288,7 @@
   border-radius: var(--radius-full);
   font-size: 11px;
   font-weight: 700;
-}
-
-// ─── Drop Zone Hint ────────────────────────────────────────────────────────
+}
 .drop-zone-hint {
   margin: 8px 10px 0;
   padding: 10px;
@@ -323,9 +311,7 @@
   to {
     opacity: 1;
   }
-}
-
-// ─── Column Body ───────────────────────────────────────────────────────────
+}
 .column-body {
   flex: 1;
   overflow-y: auto;
@@ -358,9 +344,7 @@
   border: 1px dashed var(--border-subtle);
   border-radius: var(--radius-md);
   margin-top: 4px;
-}
-
-// ─── Application Card ──────────────────────────────────────────────────────
+}
 .app-card {
   position: relative;
   background: var(--bg-elevated);
@@ -584,9 +568,7 @@
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
-}
-
-// ─── Skeleton ──────────────────────────────────────────────────────────────
+}
 .skeleton-col {
   .column-header {
     pointer-events: none;
@@ -649,9 +631,7 @@
   flex-direction: column;
   gap: 6px;
   padding-top: 3px;
-}
-
-// ─── Animations ────────────────────────────────────────────────────────────
+}
 @keyframes shimmer {
   from {
     background-position: 200% 0;
@@ -666,9 +646,7 @@
   to {
     transform: rotate(360deg);
   }
-}
-
-// ─── Buttons ───────────────────────────────────────────────────────────────
+}
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -695,9 +673,7 @@
     opacity: 0.5;
     cursor: not-allowed;
   }
-}
-
-// ─── Modal ─────────────────────────────────────────────────────────────────
+}
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -946,9 +922,7 @@
   to {
     opacity: 1;
   }
-}
-
-// ─── Side Panel ────────────────────────────────────────────────────────────
+}
 .side-panel-overlay {
   position: fixed;
   inset: 0;
@@ -978,11 +952,7 @@
 @keyframes slideInRight {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
-}
-
-
-
-// ─── Side Panel (sp-* shorthand aliases) ─────────────────────────────────────
+}
 .side-panel-loading {
   display: flex;
   align-items: center;
@@ -1154,9 +1124,7 @@
   font-family: var(--font-body);
   transition: background 0.15s;
   &:hover { background: rgba(244, 63, 94, 0.08); }
-}
-
-// ─── Search modal ─────────────────────────────────────────────────────────────
+}
 .search-input {
   flex: 1;
   padding: 12px 16px;
@@ -1222,9 +1190,7 @@
 
 .result-name { margin: 0; font-size: 13px; font-weight: 600; color: var(--text-primary); }
 .result-meta { margin: 2px 0 0; font-size: 11px; color: var(--text-muted); }
-.result-add-btn { flex-shrink: 0; margin-left: auto; padding: 0 14px; height: 30px; font-size: 12px; }
-
-// ─── Promotion Lifecycle ───────────────────────────────────────────────────
+.result-add-btn { flex-shrink: 0; margin-left: auto; padding: 0 14px; height: 30px; font-size: 12px; }
 .btn-promote {
   display: flex;
   align-items: center;
@@ -1294,9 +1260,7 @@
   button {
     min-width: 100px;
   }
-}
-
-// ─── Enriched Side Panel ───────────────────────────────────────────────────
+}
 
 .sp-score-section {
   display: flex;

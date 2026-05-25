@@ -73,49 +73,42 @@ export class CvUploadService {
     options: UploadOptions = {},
   ): Promise<ParsedCvDto> {
     this.logger.log('════════════════════════════════════════');
-    this.logger.log(`   CV PARSING PIPELINE [AI API]`);
-    this.logger.log('════════════════════════════════════════');
-
-    // ── Step 1: PDF Text Extraction ───────────────────────────────────────
-    this.logger.log('📄 STEP 1 — PDF Text Extraction...');
+    this.logger.log(` CV PARSING PIPELINE [AI API]`);
+    this.logger.log('════════════════════════════════════════');
+    this.logger.log(' STEP 1 — PDF Text Extraction...');
     const rawText = await this.pdfExtractor.extractText(pdfBuffer);
-    this.logger.log(`✅ STEP 1 DONE — ${rawText.length} characters`);
-
-    // ── Step 1b: Regex Extraction ─────────────────────────────────────────
-    this.logger.log('🔍 STEP 1b — Regex Extraction...');
-    const regexData = this.regexExtractor.extract(rawText);
-
-    // ── Step 2: AI Parsing ────────────────────────────────────────────────
+    this.logger.log(` STEP 1 DONE — ${rawText.length} characters`);
+    this.logger.log(' STEP 1b — Regex Extraction...');
+    const regexData = this.regexExtractor.extract(rawText);
     if (!options.apiKey) {
-      this.logger.error('❌ Missing AI API Key — cannot proceed with parsing');
+      this.logger.error(' Missing AI API Key — cannot proceed with parsing');
       throw new Error('AI API Key is required for CV parsing.');
     }
 
-    this.logger.log('🤖 STEP 2 — AI CV Parsing...');
+    this.logger.log(' STEP 2 — AI CV Parsing...');
     const aiResult = await this.aiCvParser.parse(rawText, {
       apiKey: options.apiKey,
-    });
-
-    // ── Step 3: Regex always wins for email/phone/linkedin ────────────────
+    });
     const email = regexData.email ?? null;
     const phone = regexData.phone ?? null;
-    const linkedinUrl = regexData.linkedin_url ?? null;
-
-    // ── Step 4: SFIA Inference for Career Entries ─────────────────────────
-    this.logger.log('🧠 STEP 4 — SFIA Inference for Career Entries...');
-    await Promise.all(
+    const linkedinUrl = regexData.linkedin_url ?? null;
+    this.logger.log(' STEP 4 — SFIA Inference for Career Entries...');
+    await Promise.allSettled(
       aiResult.experience.map(async (entry) => {
         if (entry.description) {
-          entry['inferredTags'] = await this.aiCvParser.inferProficiencyLevels(
-            entry.description,
-            { apiKey: options.apiKey! },
-          );
+          try {
+            entry['inferredTags'] = await this.aiCvParser.inferProficiencyLevels(
+              entry.description,
+              { apiKey: options.apiKey! },
+            );
+          } catch (e) {
+            this.logger.warn(`Failed to infer tags for an experience entry: ${e.message}`);
+            entry['inferredTags'] = [];
+          }
         }
       }),
-    );
-
-    // ── Step 5: Assemble ParsedCvDto ──────────────────────────────────────
-    this.logger.log('📦 STEP 5 — Assembling result...');
+    );
+    this.logger.log(' STEP 5 — Assembling result...');
     const result: ParsedCvDto = {
       firstName: aiResult.first_name,
       lastName: aiResult.last_name,
@@ -135,7 +128,7 @@ export class CvUploadService {
     };
 
     this.logger.log('════════════════════════════════════════');
-    this.logger.log('   AI PIPELINE COMPLETE');
+    this.logger.log(' AI PIPELINE COMPLETE');
     this.logger.log('════════════════════════════════════════');
 
     return result;

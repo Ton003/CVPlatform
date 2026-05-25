@@ -35,9 +35,7 @@ export class VerdictService {
 
     @InjectDataSource()
     private readonly dataSource: DataSource,
-  ) {}
-
-  // ── Public API ───────────────────────────────────────────────────
+  ) {}
 
   /** Get cached verdict, or compute if stale/missing. */
   async getVerdict(applicationId: string): Promise<ApplicationVerdict> {
@@ -89,16 +87,13 @@ export class VerdictService {
       where: { applicationId },
       order: { computedAt: 'DESC' },
     });
-  }
-
-  // ── Core Computation ─────────────────────────────────────────────
+  }
 
   private async computeAndSave(
     applicationId: string,
     triggeredBy: string | null,
     trigger: string,
-  ): Promise<ApplicationVerdict> {
-    // ── 1. Load all required data ──────────────────────────────────
+  ): Promise<ApplicationVerdict> {
     const appRows = await this.dataSource.query(
       `
       SELECT
@@ -126,9 +121,7 @@ export class VerdictService {
 
     if (!appRows.length)
       throw new NotFoundException(`Application ${applicationId} not found`);
-    const app = appRows[0];
-
-    // ── 2. Load competency requirements + candidate ratings ────────
+    const app = appRows[0];
     const compRows = await this.dataSource.query(
       `
       SELECT
@@ -151,9 +144,7 @@ export class VerdictService {
       WHERE jcr."jobRoleLevelId" = $1::uuid
     `,
       [app.jobRoleLevelId, applicationId],
-    );
-
-    // ── 3. Load completed interview scores ─────────────────────────
+    );
     const interviewRows = await this.dataSource.query(
       `
       SELECT technical_score, communication_score
@@ -161,9 +152,7 @@ export class VerdictService {
       WHERE application_id = $1::uuid AND status = 'completed'
     `,
       [applicationId],
-    );
-
-    // ── 4. Calculate component scores ─────────────────────────────
+    );
     const totalComps = compRows.length;
     const ratedComps = compRows.filter((r: any) => r.evaluatedLevel !== null);
     const ratedCount = ratedComps.length;
@@ -200,9 +189,7 @@ export class VerdictService {
     const experienceScore = Math.min(
       Math.round((yearsExp / minYears) * 100),
       100,
-    );
-
-    // ── 5. Weighted final score ────────────────────────────────────
+    );
     let w_comp = 0,
       w_int = 0,
       w_exp = 0;
@@ -237,14 +224,10 @@ export class VerdictService {
       experience: experienceScore,
       final: finalScore,
       weights: { competency: w_comp, interview: w_int, experience: w_exp },
-    };
-
-    // ── 6. Confidence ──────────────────────────────────────────────
+    };
     const coverageRatio = totalComps > 0 ? ratedCount / totalComps : 0;
     const confidence: VerdictConfidence =
-      coverageRatio >= 0.75 ? 'HIGH' : coverageRatio >= 0.4 ? 'MEDIUM' : 'LOW';
-
-    // ── 7. Strengths & Gaps ────────────────────────────────────────
+      coverageRatio >= 0.75 ? 'HIGH' : coverageRatio >= 0.4 ? 'MEDIUM' : 'LOW';
     const strengths: VerdictStrength[] = [];
     const gaps: VerdictGap[] = [];
 
@@ -305,9 +288,7 @@ export class VerdictService {
     gaps.sort(
       (a, b) =>
         impactOrder[a.impact] - impactOrder[b.impact] || a.delta - b.delta,
-    );
-
-    // ── 8. Risk Flags ─────────────────────────────────────────────
+    );
     const riskFlags: RiskFlag[] = [];
 
     if (ratedCount === 0 && totalComps > 0) {
@@ -350,9 +331,7 @@ export class VerdictService {
         message:
           'CV skills could not be extracted. Some scoring signals may be missing.',
       });
-    }
-
-    // ── 9. Recommendation ─────────────────────────────────────────
+    }
     let recommendation: VerdictRecommendation;
 
     if (coverageRatio < 0.4 && totalComps > 0) {
@@ -367,9 +346,7 @@ export class VerdictService {
       recommendation = 'HOLD';
     } else {
       recommendation = 'REJECT';
-    }
-
-    // ── 10. Persist verdict (upsert) ──────────────────────────────
+    }
     const verdictData = {
       applicationId,
       matchScore: finalScore,
@@ -384,9 +361,7 @@ export class VerdictService {
     };
 
     await this.verdictRepo.upsert(verdictData, ['applicationId']);
-    const saved = await this.verdictRepo.findOne({ where: { applicationId } });
-
-    // ── 11. Write audit log ────────────────────────────────────────
+    const saved = await this.verdictRepo.findOne({ where: { applicationId } });
     setImmediate(async () => {
       try {
         await this.auditRepo.save(

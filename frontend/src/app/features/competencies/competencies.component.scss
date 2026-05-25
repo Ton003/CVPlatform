@@ -7,8 +7,6 @@
 
 $transition: 200ms cubic-bezier(.4, 0, .2, 1);
 
-// ── Root ──────────────────────────────────────────────────────────────────
-
 .cm-root {
   font-family: 'Inter', system-ui, sans-serif;
   padding: 28px 32px 48px;
@@ -17,8 +15,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
 
   *, *::before, *::after { box-sizing: border-box; }
 }
-
-// ── Header ────────────────────────────────────────────────────────────────
 
 .cm-header {
   display: flex;
@@ -94,8 +90,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
   }
 }
 
-// ── Tabs ──────────────────────────────────────────────────────────────────
-
 .cm-tabs {
   display: inline-flex;
   gap: 4px;
@@ -149,16 +143,12 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
   }
 }
 
-// ── Layout ────────────────────────────────────────────────────────────────
-
 .cm-layout {
   display: grid;
   grid-template-columns: 268px 1fr;
   gap: 18px;
   align-items: stretch;
 }
-
-// ── Panel shared ──────────────────────────────────────────────────────────
 
 .cm-panel {
   background: var(--bg-surface);
@@ -193,8 +183,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
     margin: 0;
   }
 }
-
-// ── Search ────────────────────────────────────────────────────────────────
 
 .cm-search {
   position: relative;
@@ -252,8 +240,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
   }
 }
 
-// ── Badge ─────────────────────────────────────────────────────────────────
-
 .cm-badge {
   display: inline-flex;
   align-items: center;
@@ -277,8 +263,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
   background: var(--bg-raised);
   color: var(--text-muted);
 }
-
-// ── Breadcrumb ────────────────────────────────────────────────────────────
 
 .cm-breadcrumb {
   display: flex;
@@ -306,8 +290,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
     font-weight: 500;
   }
 }
-
-// ── Family list ───────────────────────────────────────────────────────────
 
 .cm-family-list {
   list-style: none;
@@ -385,8 +367,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
     pointer-events: none;
   }
 }
-
-// ── Accordion cards ───────────────────────────────────────────────────────
 
 .cm-accordion {
   display: flex;
@@ -507,8 +487,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
   to   { opacity: 1; transform: none; }
 }
 
-// ── Levels display ────────────────────────────────────────────────────────
-
 .cm-levels {
   display: flex;
   flex-direction: column;
@@ -593,8 +571,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
   padding: 20px 0;
 }
 
-// ── Levels editor ─────────────────────────────────────────────────────────
-
 .cm-levels-editor {
   display: flex;
   flex-direction: column;
@@ -639,8 +615,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
     white-space: nowrap;
   }
 }
-
-// ── Empty states ──────────────────────────────────────────────────────────
 
 .cm-empty {
   display: flex;
@@ -697,8 +671,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
   }
 }
 
-// ── Skeleton ──────────────────────────────────────────────────────────────
-
 @keyframes shimmer {
   from { background-position: -200% 0; }
   to   { background-position:  200% 0; }
@@ -724,8 +696,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
   &--family     { height: 38px; border-radius: var(--radius-md); }
   &--competence { height: 56px; border-radius: var(--radius-md); }
 }
-
-// ── Buttons ───────────────────────────────────────────────────────────────
 
 .btn-primary {
   display: inline-flex;
@@ -823,8 +793,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
   }
 }
 
-// ── Form inputs ───────────────────────────────────────────────────────────
-
 .cm-field {
   display: flex;
   flex-direction: column;
@@ -869,8 +837,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
   margin-top: -2px;
 }
 
-// ── Chip group (category radio) ───────────────────────────────────────────
-
 .cm-chip-group {
   display: flex;
   gap: 8px;
@@ -899,8 +865,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
     color: var(--chip-color);
   }
 }
-
-// ── Modal overlay ─────────────────────────────────────────────────────────
 
 .cm-overlay {
   position: fixed;
@@ -984,8 +948,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
   to   { opacity: 1; transform: none scale(1); }
 }
 
-// ── Spinner ───────────────────────────────────────────────────────────────
-
 .spinner {
   width: 14px;
   height: 14px;
@@ -998,8 +960,6 @@ $transition: 200ms cubic-bezier(.4, 0, .2, 1);
 }
 
 @keyframes spin { to { transform: rotate(360deg); } }
-
-// ── Responsive ────────────────────────────────────────────────────────────
 
 @media (max-width: 768px) {
   .cm-root   { padding: 16px; }

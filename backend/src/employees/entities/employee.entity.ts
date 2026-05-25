@@ -126,9 +126,7 @@ export class Employee {
   llmSummary: string | null;
 
   @Column({ type: 'text', nullable: true })
-  embedding: string | null;
-
-  // ── Succession & Risk Management ────────────────────────────────
+  embedding: string | null;
   @Column({
     name: 'succession_readiness',
     type: 'varchar',

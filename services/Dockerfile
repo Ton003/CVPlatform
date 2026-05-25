@@ -21,11 +21,14 @@ RUN pip install --no-cache-dir --default-timeout=600 -r requirements.txt
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 RUN python -c "from sentence_transformers import CrossEncoder; CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')"
 
+# Install gunicorn for production scaling
+RUN pip install gunicorn
+
 # Copy application code
 COPY main.py .
 
 # Expose port
 EXPOSE 8002
 
-# Start service
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002"]
+# Start service with multiple workers to handle concurrent semantic search requests
+CMD ["gunicorn", "main:app", "--workers", "4", "--worker-class", "uvicorn.workers.UvicornWorker", "--bind", "0.0.0.0:8002", "--timeout", "120"]

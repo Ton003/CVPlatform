@@ -3,9 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 
 const AI_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const AI_API_MODEL = 'llama-3.3-70b-versatile';
-
-// ── Output types ──────────────────────────────────────────────────────────────
+const AI_API_MODEL = 'llama-3.3-70b-versatile';
 
 export interface ExperienceEntry {
   title: string;
@@ -52,9 +50,7 @@ export interface AiParsedCv {
 
 export interface AiParseOptions {
   apiKey: string;
-}
-
-// ── Validation limits ─────────────────────────────────────────────────────────
+}
 // Sanity-check values before saving to DB
 
 const MAX_YEARS_EXPERIENCE = 50;
@@ -68,12 +64,10 @@ const MAX_LANGUAGES = 6;
 export class AiCvParserService {
   private readonly logger = new Logger(AiCvParserService.name);
 
-  constructor(private readonly httpService: HttpService) {}
-
-  // ── Main entry point ──────────────────────────────────────────────────────
+  constructor(private readonly httpService: HttpService) {}
 
   async parse(rawText: string, options: AiParseOptions): Promise<AiParsedCv> {
-    this.logger.log(`🤖 AI CV parsing — ${rawText.length} chars`);
+    this.logger.log(` AI CV parsing — ${rawText.length} chars`);
 
     const prompt = this.buildPrompt(rawText);
 
@@ -98,11 +92,11 @@ export class AiCvParserService {
       );
 
       const raw = response.data?.choices?.[0]?.message?.content ?? '';
-      this.logger.log(`✅ AI responded — ${raw.length} chars`);
+      this.logger.log(` AI responded — ${raw.length} chars`);
 
       return this.parseAndValidate(raw, rawText);
     } catch (err) {
-      this.logger.error(`❌ AI CV parsing failed: ${err.message}`);
+      this.logger.error(` AI CV parsing failed: ${err.message}`);
       return this.emptyResult();
     }
   }
@@ -169,9 +163,7 @@ Return ONLY a JSON array of objects:
       this.logger.warn(`Inference failed: ${err.message}`);
       return [];
     }
-  }
-
-  // ── Prompt ────────────────────────────────────────────────────────────────
+  }
   // Single prompt that extracts EVERYTHING in one call.
   // Key improvements over old version:
   //   - Full CV text (up to 5000 chars instead of 3000)
@@ -282,9 +274,7 @@ Return ONLY this JSON, no markdown, no explanation:
   "years_experience": null,
   "summary": ""
 }`;
-  }
-
-  // ── Parse + validate response ─────────────────────────────────────────────
+  }
 
   private parseAndValidate(raw: string, originalText: string): AiParsedCv {
     let parsed: any = null;
@@ -316,9 +306,7 @@ Return ONLY this JSON, no markdown, no explanation:
 
     // Step 2: validate and sanitize each field
     return this.sanitize(parsed, originalText);
-  }
-
-  // ── Sanitize / validate ─────────────────────────────────────────────
+  }
 
   private sanitize(p: any, originalText: string): AiParsedCv {
     // Names — Title Case, never null for both
@@ -388,30 +376,28 @@ Return ONLY this JSON, no markdown, no explanation:
     };
 
     // Log what we got
-    this.logger.log(`✅ Parsed & validated:`);
+    this.logger.log(` Parsed & validated:`);
     this.logger.log(
       `   Name          : ${result.first_name ?? '?'} ${result.last_name ?? ''}`,
     );
     this.logger.log(
       `   Title         : ${result.current_title ?? 'NOT FOUND'}`,
     );
-    this.logger.log(`   Location      : ${result.location ?? 'NOT FOUND'}`);
+    this.logger.log(` Location : ${result.location ?? 'NOT FOUND'}`);
     this.logger.log(
       `   Skills        : ${result.skills_technical.length} → [${result.skills_technical.slice(0, 8).join(', ')}...]`,
     );
-    this.logger.log(`   Soft skills   : [${result.skills_soft.join(', ')}]`);
-    this.logger.log(`   Languages     : ${result.languages.length}`);
-    this.logger.log(`   Education     : ${result.education.length} entries`);
-    this.logger.log(`   Experience    : ${result.experience.length} entries`);
-    this.logger.log(`   Years exp     : ${result.years_experience ?? 'N/A'}`);
+    this.logger.log(` Soft skills : [${result.skills_soft.join(', ')}]`);
+    this.logger.log(` Languages : ${result.languages.length}`);
+    this.logger.log(` Education : ${result.education.length} entries`);
+    this.logger.log(` Experience : ${result.experience.length} entries`);
+    this.logger.log(` Years exp : ${result.years_experience ?? 'N/A'}`);
     this.logger.log(
       `   Summary       : ${result.llm_summary ? result.llm_summary.substring(0, 80) + '...' : 'EMPTY'}`,
     );
 
     return result;
-  }
-
-  // ── Field cleaners ────────────────────────────────────────────────────────
+  }
 
   private cleanName(val: any): string | null {
     if (typeof val !== 'string' || !val.trim()) return null;
@@ -512,9 +498,7 @@ Return ONLY this JSON, no markdown, no explanation:
             : null,
       }))
       .filter((e) => e.title.length > 0);
-  }
-
-  // ── Experience months calculator ──────────────────────────────────────────
+  }
 
   private calculateMonths(experience: ExperienceEntry[]): number | null {
     if (!experience.length) return null;
@@ -602,9 +586,7 @@ Return ONLY this JSON, no markdown, no explanation:
     // Fallback to native Date parser
     const d = new Date(raw);
     return isNaN(d.getTime()) ? null : d;
-  }
-
-  // ── Robust fallback extractor ─────────────────────────────────────────────
+  }
   // Used when JSON.parse fails — tries to extract individual fields
 
   private robustExtract(raw: string): any {
@@ -669,9 +651,7 @@ Return ONLY this JSON, no markdown, no explanation:
       education: extractArray('education'),
       experience: extractArray('experience'),
     };
-  }
-
-  // ── Empty result fallback ─────────────────────────────────────────────────
+  }
 
   private emptyResult(): AiParsedCv {
     return {

@@ -1,4 +1,4 @@
-// ── Base ───────────────────────────────────────────────────────────────────
+
 .detail-root {
   font-family: var(--font-body);
   color: var(--text-primary);
@@ -88,9 +88,7 @@
     cursor: not-allowed;
     box-shadow: none;
   }
-}
-
-// ── Buttons ────────────────────────────────────────────────────────────────
+}
 .btn-primary {
   display: inline-flex;
   align-items: center;
@@ -164,9 +162,7 @@
     color: var(--text-secondary);
     border-color: var(--border-default);
   }
-}
-
-// ── Dossier Header ──────────────────────────────────────────────────────────
+}
 .dossier-header {
   display: flex;
   align-items: flex-start;
@@ -354,9 +350,7 @@
     color: var(--danger);
     background: rgba(244, 63, 94, 0.05);
   }
-}
-
-// ── Stage Select ────────────────────────────────────────────────────────────
+}
 .stage-select-wrap {
   position: relative;
 }
@@ -386,9 +380,7 @@
   &.stage--offer { background-color: rgba(34, 197, 94, .15); color: var(--success); border-color: rgba(34, 197, 94, .3); }
   &.stage--hired { background-color: rgba(16, 185, 129, .15); color: #10b981; border-color: rgba(16, 185, 129, .3); }
   &.stage--rejected { background-color: rgba(244, 63, 94, .15); color: var(--danger); border-color: rgba(244, 63, 94, .3); }
-}
-
-// ── Quick Stats Bar ────────────────────────────────────────────────────────
+}
 .quick-stats-bar {
   display: flex;
   align-items: center;
@@ -414,9 +406,7 @@
 .qs-info { display: flex; flex-direction: column; }
 .qs-val { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); line-height: 1.2; }
 .qs-lbl { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
-.qs-divider { width: 1px; height: 24px; background: var(--border-subtle); flex-shrink: 0; }
-
-// ── Tabs ───────────────────────────────────────────────────────────────────
+.qs-divider { width: 1px; height: 24px; background: var(--border-subtle); flex-shrink: 0; }
 .tabs-bar {
   display: flex;
   gap: 0.5rem;
@@ -463,9 +453,7 @@
   flex-direction: column;
   gap: 1.25rem;
   animation: fadeUp .2s ease both;
-}
-
-// ── Grid Layout ────────────────────────────────────────────────────────────
+}
 .overview-grid {
   display: grid;
   grid-template-columns: 1fr 300px;
@@ -477,9 +465,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
-}
-
-// ── Cards ──────────────────────────────────────────────────────────────────
+}
 .card {
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
@@ -508,9 +494,7 @@
   font-size: .875rem;
   color: var(--text-secondary);
   line-height: 1.8;
-}
-
-// ── Aside Cards ────────────────────────────────────────────────────────────
+}
 .aside-card {
   background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
@@ -538,9 +522,7 @@
 }
 
 .aside-key { font-size: .75rem; color: var(--text-muted); }
-.aside-val { font-size: .8rem; color: var(--text-primary); text-align: right; font-weight: 500; }
-
-// ── Timeline ───────────────────────────────────────────────────────────────
+.aside-val { font-size: .8rem; color: var(--text-primary); text-align: right; font-weight: 500; }
 .timeline {
   padding: 0.5rem 1.25rem 1.25rem;
   display: flex;
@@ -591,9 +573,7 @@
 .tcard-title { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin: 0; }
 .tcard-company { font-size: 0.8rem; color: var(--accent-soft); font-weight: 500; margin: 2px 0 0; }
 .tcard-date { font-size: 0.72rem; color: var(--text-muted); font-weight: 500; background: var(--bg-raised); padding: 2px 6px; border-radius: var(--radius-sm); white-space: nowrap; }
-.tcard-desc { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; margin: 0.5rem 0 0; }
-
-// ── Tasks ──────────────────────────────────────────────────────────────────
+.tcard-desc { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.6; margin: 0.5rem 0 0; }
 .tasks-card {
   .task-input-row { display: flex; gap: 8px; margin-bottom: 1rem; }
   .task-input {
@@ -618,9 +598,7 @@
   .task-label { font-size: .85rem; color: var(--text-secondary); flex: 1; }
   .task-done .task-label { text-decoration: line-through; opacity: .5; }
   .task-del { border: none; background: none; color: var(--text-muted); cursor: pointer; opacity: 0; transition: all .1s; &:hover { color: var(--danger); } }
-}
-
-// ── Skills & Languages ─────────────────────────────────────────────────────
+}
 .skills-wrap { padding: 1.25rem; display: flex; flex-wrap: wrap; gap: .6rem; }
 .skill-chip {
   padding: .4rem 1rem; border-radius: var(--radius-full); font-size: .8rem; font-weight: 500; border: 1px solid var(--border-subtle); background: var(--bg-raised); color: var(--text-secondary);
@@ -634,9 +612,7 @@
 .lang-name { font-size: .85rem; font-weight: 600; color: var(--text-primary); }
 .lang-level { font-size: .75rem; color: var(--text-muted); text-transform: capitalize; }
 .lang-track { height: 6px; border-radius: 10px; background: var(--bg-raised); overflow: hidden; }
-.lang-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--accent), #9b4dfa); transition: width .5s ease; }
-
-// ── Education ──────────────────────────────────────────────────────────────
+.lang-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--accent), #9b4dfa); transition: width .5s ease; }
 .edu-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -685,9 +661,7 @@
 
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-
-// ── Evaluation / Competency Matrix ──────────────────────────────────────────
+}
 .eval-actions-bar {
   display: flex;
   align-items: center;
@@ -874,9 +848,7 @@
   min-width: 40px;
   text-shadow: 0 1px 2px rgba(0,0,0,0.1);
   background: var(--border-default);
-}
-
-// ── Notes Tab ──────────────────────────────────────────────────────────────
+}
 .note-form {
   padding: 1.25rem;
   display: flex;
@@ -1113,9 +1085,7 @@
     color: var(--text-secondary);
     white-space: pre-wrap;
   }
-}
-
-// ── Tasks Tab ──────────────────────────────────────────────────────────────
+}
 .task-input-wrap {
   display: flex;
   gap: 1rem;
@@ -1284,9 +1254,7 @@
       color: var(--danger);
     }
   }
-}
-
-// ── Common States ──────────────────────────────────────────────────────────
+}
 .loading-row {
   display: flex;
   align-items: center;
@@ -1345,9 +1313,7 @@
   font-weight: 700;
   color: var(--text-primary);
   margin: 0;
-}
-
-// ── Scoring / Fit Score ────────────────────────────────────────────────────
+}
 .score-hero {
   display: flex;
   align-items: center;
@@ -1577,9 +1543,7 @@
       border: 1px solid rgba(244, 63, 94, 0.2);
     }
   }
-}
-
-// ── Interviews ─────────────────────────────────────────────────────────────
+}
 .interviews-header {
   display: flex;
   justify-content: space-between;
@@ -1751,9 +1715,7 @@
       }
     }
   }
-}
-
-// ── Activity Log ───────────────────────────────────────────────────────────
+}
 .activity-list {
   padding: 1.5rem;
   display: flex;
@@ -1850,9 +1812,7 @@
       }
     }
   }
-}
-
-// ── Modals ─────────────────────────────────────────────────────────────────
+}
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -2025,9 +1985,7 @@
     border-radius: var(--radius-md);
     border-left: 4px solid var(--success);
   }
-}
-
-// ── Interview Feedback Modal ────────────────────────────────────────────────
+}
 .feedback-comp-list {
   display: flex;
   flex-direction: column;
@@ -2183,9 +2141,7 @@
   &:focus {
     border-color: var(--accent);
   }
-}
-
-// ── Interview Journey Timeline ──────────────────────────────────────────────
+}
 .interviews-header {
   display: flex;
   justify-content: space-between;

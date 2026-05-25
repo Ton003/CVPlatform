@@ -135,11 +135,9 @@ export class AiVerdictPanelComponent implements OnInit {
     });
   }
 
-  // ── Display helpers ──────────────────────────────────────────────
-
   get recommendationConfig(): { label: string; icon: string; cls: string; desc: string } {
     const map: Record<string, any> = {
-      ADVANCE:          { label: 'Advance to Next Stage', icon: '✅', cls: 'rec--advance', desc: 'Strong candidate — move forward in pipeline.' },
+      ADVANCE:          { label: 'Advance to Next Stage', icon: '', cls: 'rec--advance', desc: 'Strong candidate — move forward in pipeline.' },
       INTERVIEW:        { label: 'Schedule Interview',    icon: '💬', cls: 'rec--interview', desc: 'Promising profile — validate with a structured interview.' },
       HOLD:             { label: 'Place on Hold',         icon: '⏸️', cls: 'rec--hold',    desc: 'Borderline fit — gather more information before deciding.' },
       REJECT:           { label: 'Not Recommended',       icon: '❌', cls: 'rec--reject',  desc: 'Significant gaps detected for this role.' },
@@ -173,7 +171,7 @@ export class AiVerdictPanelComponent implements OnInit {
   }
 
   riskSeverityIcon(severity: string): string {
-    return severity === 'HIGH' ? '🚩' : severity === 'MEDIUM' ? '⚠️' : 'ℹ️';
+    return severity === 'HIGH' ? '🚩' : severity === 'MEDIUM' ? '' : 'ℹ️';
   }
 
   formatWeight(w: number): string {

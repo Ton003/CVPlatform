@@ -267,7 +267,7 @@ export class AiService {
   }
 
   async parseIntent(query: string, apiKey: string): Promise<AiIntentResult> {
-    this.logger.log(`🌐 parseIntent: "${query.substring(0, 60)}"`);
+    this.logger.log(` parseIntent: "${query.substring(0, 60)}"`);
 
     const prompt = `Extract structured job requirements from this recruiting query. Return ONLY valid JSON, no markdown.
 
@@ -329,7 +329,7 @@ Rules:
         response.data?.choices?.[0]?.message?.content ?? '{}',
       );
       this.logger.log(
-        `✅ parseIntent: skills=[${parsed.skills?.join(', ')}] loc=${parsed.location}`,
+        ` parseIntent: skills=[${parsed.skills?.join(', ')}] loc=${parsed.location}`,
       );
       return {
         filters: {
@@ -520,7 +520,7 @@ DESCRIPTION:
   ): Promise<RagAnalysis> {
     const ordered = preScoredByRank ?? candidates;
     const domain = getRoleDomain(query);
-    this.logger.log(`📝 Narrative for ${ordered.length} candidates`);
+    this.logger.log(` Narrative for ${ordered.length} candidates`);
 
     const profiles = ordered
       .slice(0, 8)
@@ -656,7 +656,7 @@ Return ONLY valid JSON, no markdown:
           : ordered.map((c: any) => c.name);
 
       this.logger.log(
-        `✅ Narrative done — top: ${rankedOrder[0]} | notes: ${notes.length}`,
+        ` Narrative done — top: ${rankedOrder[0]} | notes: ${notes.length}`,
       );
 
       return {

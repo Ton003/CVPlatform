@@ -79,15 +79,15 @@ export class AuthController {
   @SkipThrottle()
   @ApiOperation({ summary: 'Get current authenticated user profile' })
   @ApiResponse({ status: 200, description: 'Profile returned successfully.' })
-  async getProfile(@Request() req: { user: { id: string } }) {
-    return this.authService.getProfile(req.user.id);
-  }
+ async getProfile(@Request() req: { user: { id: string } }) {
+ return this.authService.getProfile(req.user.id);
+ }
 
-  /**
-   * ✅ Centralized helper to ensure consistent security flags for the auth token
-   */
-  private setAuthCookie(res: Response, token: string): void {
-    res.cookie('biat_access_token', token, {
+ /**
+ * Centralized helper to ensure consistent security flags for the auth token
+ */
+ private setAuthCookie(res: Response, token: string): void {
+ res.cookie('biat_access_token', token, {
       httpOnly: true,
       secure: this.isProd,
       sameSite: 'lax',

@@ -10,14 +10,10 @@ import pdfplumber
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sentence_transformers import SentenceTransformer, CrossEncoder
-
-# ── Logging ───────────────────────────────────────────────────────────────────
+from sentence_transformers import SentenceTransformer, CrossEncoder
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-logger = logging.getLogger(__name__)
-
-# ── App ───────────────────────────────────────────────────────────────────────
+logger = logging.getLogger(__name__)
 
 app = FastAPI(title="CV Extractor + Embedder + Reranker", version="3.0.0")
 
@@ -26,21 +22,16 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
-)
-
-# ── Load models once at startup ───────────────────────────────────────────────
+)
 
 logger.info("Loading MiniLM embedding model...")
 embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-logger.info("✅ MiniLM ready")
+logger.info(" MiniLM ready")
 
 logger.info("Loading cross-encoder reranking model...")
 rerank_model = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
-logger.info("✅ Cross-encoder ready")
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Request / Response schemas
-# ──────────────────────────────────────────────────────────────────────────────
+logger.info(" Cross-encoder ready")
+# Request / Response schemas
 
 class ExtractRequest(BaseModel):
     pdf_base64: str
@@ -79,11 +70,8 @@ class RerankResult(BaseModel):
 
 
 class RerankResponse(BaseModel):
-    results: List[RerankResult]
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Health check
-# ──────────────────────────────────────────────────────────────────────────────
+    results: List[RerankResult]
+# Health check
 
 @app.get("/health")
 def health():
@@ -91,11 +79,8 @@ def health():
         "status": "ok",
         "minilm": "ready",
         "cross_encoder": "ready",
-    }
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Standard CV extraction
-# ──────────────────────────────────────────────────────────────────────────────
+    }
+# Standard CV extraction
 
 @app.post("/extract", response_model=ExtractResponse)
 def extract(body: ExtractRequest):
@@ -115,32 +100,49 @@ def extract(body: ExtractRequest):
         text=text,
         page_count=count_pages(pdf_bytes),
         char_count=len(text),
-    )
-
-# ──────────────────────────────────────────────────────────────────────────────
-# Embedding
-# ──────────────────────────────────────────────────────────────────────────────
+    )
+# Embedding
 
 @app.post("/embed", response_model=EmbedResponse)
 def embed(body: EmbedRequest):
 
-    if not body.text.strip():
+    text = body.text.strip()
+    if not text:
         raise HTTPException(status_code=400, detail="Text cannot be empty")
 
-    text = body.text.strip()[:2000]
-    vector = embedding_model.encode(text).tolist()
+    import numpy as np
 
-    return EmbedResponse(embedding=vector, dimensions=len(vector))
+    max_length = 300  # Words (approximate token limit)
+    overlap = 50
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Reranking
-# ──────────────────────────────────────────────────────────────────────────────
+    words = text.split()
+    if not words:
+        raise HTTPException(status_code=400, detail="Text contains no valid words")
+
+    chunks = []
+    i = 0
+    while i < len(words):
+        chunk = " ".join(words[i : i + max_length])
+        chunks.append(chunk)
+        i += (max_length - overlap)
+
+    # Encode all chunks
+    vectors = embedding_model.encode(chunks)
+
+    # Mean pooling to get a single vector representation for the whole document
+    mean_vector = np.mean(vectors, axis=0).tolist()
+
+    return EmbedResponse(embedding=mean_vector, dimensions=len(mean_vector))
+# Reranking
 
 @app.post("/rerank", response_model=RerankResponse)
 def rerank(body: RerankRequest):
 
     if not body.query or not body.candidates:
         raise HTTPException(status_code=400, detail="query and candidates are required")
+        
+    if len(body.candidates) > 100:
+        raise HTTPException(status_code=400, detail="Cannot rerank more than 100 candidates at once to prevent memory exhaustion")
 
     pairs = [(body.query, c.profileText) for c in body.candidates]
 
@@ -160,11 +162,8 @@ def rerank(body: RerankRequest):
 
     scored.sort(key=lambda x: x["score"], reverse=True)
 
-    return RerankResponse(results=[RerankResult(**r) for r in scored])
-
-# ──────────────────────────────────────────────────────────────────────────────
-# PDF text extraction helpers
-# ──────────────────────────────────────────────────────────────────────────────
+    return RerankResponse(results=[RerankResult(**r) for r in scored])
+# PDF text extraction helpers
 
 def extract_text_from_pdf(pdf_bytes: bytes) -> str:
 

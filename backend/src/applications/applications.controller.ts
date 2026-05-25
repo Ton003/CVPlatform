@@ -281,8 +281,6 @@ export class ApplicationsController {
     return this.svc.updateCompetencyRating(id, compId, evaluatedLevel);
   }
 
-  // ─── Assessments (Formal Evaluations) ──────────────────────────────────────
-
   @Get(':id/assessments')
   getAssessments(@Param('id', ParseUUIDPipe) id: string) {
     return this.svc.getAssessments(id);
@@ -313,8 +311,6 @@ export class ApplicationsController {
   submitAssessment(@Param('id', ParseUUIDPipe) id: string) {
     return this.svc.submitAssessment(id);
   }
-
-  // ─── Interviews ────────────────────────────────────────────────────────────
 
   @Get(':id/interviews')
   getInterviews(@Param('id', ParseUUIDPipe) id: string) {

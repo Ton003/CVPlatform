@@ -606,9 +606,7 @@ export class JobPipelineComponent implements OnInit {
   onCvUploaded(_res: any): void {
     this.closeAddCandidateModal();
     this.loadApplications();
-  }
-
-  // ─── Promotion Lifecycle ──────────────────────────────────────────────────
+  }
 
   openPromoteModal(): void {
     if (!this.selectedApplicationId || !this.selectedApplicationDetails) return;
@@ -662,8 +660,8 @@ export class JobPipelineComponent implements OnInit {
       next: (result: PromotionResult) => {
         this.lastPromotionSource = result.competencySource;
         const sourceLabel = result.competencySource === 'manual'
-          ? '✅ Skills migrated from HR evaluations.'
-          : '⚠️ Skills estimated from AI CV parse — manual review recommended.';
+          ? ' Skills migrated from HR evaluations.'
+          : ' Skills estimated from AI CV parse — manual review recommended.';
         this.toast.success(`Promoted to Employee! ${sourceLabel}`);
         this.closePromoteModal();
         this.closeSidePanel();

@@ -4,28 +4,28 @@ import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 
 export interface RerankCandidate {
-  candidateId: string;
-  name: string;
-  profileText: string;
+ candidateId: string;
+ name: string;
+ profileText: string;
 }
 
 export interface RerankResult {
-  candidateId: string;
-  name: string;
-  score: number;
+ candidateId: string;
+ name: string;
+ score: number;
 }
 
 @Injectable()
 export class PdfExtractorService {
-  private readonly logger = new Logger(PdfExtractorService.name);
-  private readonly pythonUrl: string; // ✅ from env, not hardcoded
+ private readonly logger = new Logger(PdfExtractorService.name);
+ private readonly pythonUrl: string; // from env, not hardcoded
 
-  constructor(
-    private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
-  ) {
-    this.pythonUrl =
-      this.configService.getOrThrow<string>('PYTHON_SERVICE_URL');
+ constructor(
+ private readonly httpService: HttpService,
+ private readonly configService: ConfigService,
+ ) {
+ this.pythonUrl =
+ this.configService.getOrThrow<string>('PYTHON_SERVICE_URL');
   }
 
   async extractText(pdfBuffer: Buffer): Promise<string> {
@@ -40,10 +40,10 @@ export class PdfExtractorService {
         ),
       );
       const text: string = response.data.text ?? '';
-      this.logger.log(`✅ PDF extracted — ${text.length} characters`);
+      this.logger.log(` PDF extracted — ${text.length} characters`);
       return text;
     } catch (err) {
-      this.logger.error(`❌ PDF extraction failed: ${err.message}`);
+      this.logger.error(` PDF extraction failed: ${err.message}`);
       throw new Error(`PDF extraction failed: ${err.message}`);
     }
   }
@@ -59,11 +59,11 @@ export class PdfExtractorService {
       );
       const embedding: number[] = response.data.embedding ?? [];
       this.logger.log(
-        `✅ Embedding generated — ${embedding.length} dimensions`,
+        ` Embedding generated — ${embedding.length} dimensions`,
       );
       return embedding;
     } catch (err) {
-      this.logger.warn(`⚠️ Embedding failed: ${err.message} — skipping vector`);
+      this.logger.warn(` Embedding failed: ${err.message} — skipping vector`);
       return [];
     }
   }
@@ -85,13 +85,13 @@ export class PdfExtractorService {
 
       const results: RerankResult[] = response.data.results ?? [];
       this.logger.log(
-        `✅ Reranked ${results.length} candidates — ` +
+        ` Reranked ${results.length} candidates — ` +
           `top: ${results[0]?.name} (${results[0]?.score?.toFixed(2)})`,
       );
       return results;
     } catch (err) {
       this.logger.warn(
-        `⚠️ Reranking failed: ${err.message} — returning original order`,
+        ` Reranking failed: ${err.message} — returning original order`,
       );
       return candidates.map((c) => ({
         candidateId: c.candidateId,

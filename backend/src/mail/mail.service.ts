@@ -75,9 +75,9 @@ export class MailService {
         subject: `Interview Invitation: ${jobTitle} - ${type}`,
         html,
       });
-      this.logger.log(`✅ Interview invitation sent to ${to}`);
+      this.logger.log(` Interview invitation sent to ${to}`);
     } catch (error) {
-      this.logger.error(`❌ Failed to send email to ${to}`, error);
+      this.logger.error(` Failed to send email to ${to}`, error);
     }
   }
 
@@ -96,7 +96,7 @@ export class MailService {
         <p>We are writing to update you on your application for the <strong>${jobTitle}</strong> position.</p>
         
         <div style="background-color: #f5f3ff; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6d55fa;">
-          <p style="margin: 5px 0;">🚀 <strong>Current Stage:</strong> <span style="text-transform: capitalize;">${newStage}</span></p>
+          <p style="margin: 5px 0;"> <strong>Current Stage:</strong> <span style="text-transform: capitalize;">${newStage}</span></p>
         </div>
         
         <p>Our team is currently reviewing your profile for this next step. We will reach out soon with more details regarding the next steps.</p>
@@ -116,7 +116,7 @@ export class MailService {
         subject: `Application Update: ${jobTitle}`,
         html,
       });
-      this.logger.log(`✅ Status update email sent to ${to}`);
+      this.logger.log(` Status update email sent to ${to}`);
     } catch (error) {
       this.logger.error(
         `❌ Failed to send status update email to ${to}`,
@@ -159,9 +159,9 @@ export class MailService {
         subject: `Update regarding your application for ${jobTitle}`,
         html,
       });
-      this.logger.log(`✅ Rejection email sent to ${to}`);
+      this.logger.log(` Rejection email sent to ${to}`);
     } catch (error) {
-      this.logger.error(`❌ Failed to send rejection email to ${to}`, error);
+      this.logger.error(` Failed to send rejection email to ${to}`, error);
     }
   }
 }

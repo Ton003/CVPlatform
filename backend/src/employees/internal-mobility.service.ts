@@ -243,12 +243,12 @@ export class InternalMobilityService {
    */
   async refreshAllRecommendations() {
     this.logger.log(
-      '🚀 Starting batch refresh of internal mobility recommendations...',
+      ' Starting batch refresh of internal mobility recommendations...',
     );
     const employees = await this.employeeRepo.find({ select: ['id'] });
     for (const emp of employees) {
       await this.getRecommendations(emp.id);
     }
-    this.logger.log('✅ Batch refresh complete.');
+    this.logger.log(' Batch refresh complete.');
   }
 }

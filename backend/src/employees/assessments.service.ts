@@ -47,9 +47,7 @@ export class AssessmentsService {
 
     @InjectDataSource()
     private readonly dataSource: DataSource,
-  ) {}
-
-  // ─── Permission Check ────────────────────────────────────────────────────────
+  ) {}
 
   /**
    * Verifies whether the requesting user is allowed to evaluate the given employee.
@@ -94,9 +92,7 @@ export class AssessmentsService {
     throw new ForbiddenException(
       'You do not have permission to submit assessments.',
     );
-  }
-
-  // ─── 1. Create Draft ─────────────────────────────────────────────────────────
+  }
 
   async createDraft(
     employeeId: string,
@@ -120,9 +116,7 @@ export class AssessmentsService {
     });
 
     return this.assessRepo.save(assessment);
-  }
-
-  // ─── 2. Update Items (DRAFT only, no employee_competencies touched) ───────────
+  }
 
   async updateItems(
     assessmentId: string,
@@ -169,9 +163,7 @@ export class AssessmentsService {
       where: { id: assessmentId },
       relations: ['items', 'items.competence'],
     }) as Promise<EmployeeAssessment>;
-  }
-
-  // ─── 3. Submit Assessment ────────────────────────────────────────────────────
+  }
 
   async submit(
     assessmentId: string,
@@ -318,9 +310,7 @@ export class AssessmentsService {
     }
 
     await this.assessRepo.remove(assessment);
-  }
-
-  // ─── 4. Get Assessment with Summary ─────────────────────────────────────────
+  }
 
   async findOne(assessmentId: string): Promise<any> {
     const assessment = await this.assessRepo.findOne({
@@ -332,9 +322,7 @@ export class AssessmentsService {
       throw new NotFoundException(`Assessment ${assessmentId} not found`);
 
     return this.withSummary(assessment);
-  }
-
-  // ─── 5. List History for Employee ────────────────────────────────────────────
+  }
 
   async listForEmployee(employeeId: string): Promise<any[]> {
     const assessments = await this.assessRepo.find({
@@ -353,9 +341,7 @@ export class AssessmentsService {
     });
 
     return assessments;
-  }
-
-  // ─── Helper: Compute Summary ─────────────────────────────────────────────────
+  }
 
   private withSummary(assessment: EmployeeAssessment): any {
     const items = assessment.items ?? [];

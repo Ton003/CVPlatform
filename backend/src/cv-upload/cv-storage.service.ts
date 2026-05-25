@@ -36,7 +36,7 @@ export class CvStorageService {
     gdprConsent: boolean = false,
   ): Promise<any> {
     const fileHash = this.generateFileHash(file.buffer);
-    this.logger.log(`💾 STORAGE — file hash: ${fileHash.substring(0, 12)}...`);
+    this.logger.log(` STORAGE — file hash: ${fileHash.substring(0, 12)}...`);
 
     // 1. Duplicate Detection
     const duplicateResult = await this.checkExistingCv(fileHash);
@@ -137,7 +137,7 @@ export class CvStorageService {
     if (parsed.language) cv.language = parsed.language;
     await this.cvRepo.save(cv);
 
-    this.logger.log(`✅ CV ${cvId} parsing finalized.`);
+    this.logger.log(` CV ${cvId} parsing finalized.`);
   }
 
   async updateStatus(
@@ -172,14 +172,14 @@ export class CvStorageService {
     });
     if (!existingCv) return null;
 
-    this.logger.log(`⚠️  Duplicate CV metadata found — cvId: ${existingCv.id}`);
+    this.logger.log(` Duplicate CV metadata found — cvId: ${existingCv.id}`);
     const existingCandidate = await this.candidateRepo.findOne({
       where: { id: existingCv.candidateId },
     });
 
     if (existingCandidate) {
       this.logger.log(
-        `✅ Associated candidate found: ${existingCandidate.id} (Status: ${existingCandidate.status})`,
+        ` Associated candidate found: ${existingCandidate.id} (Status: ${existingCandidate.status})`,
       );
 
       // If candidate is hired, block with a duplicate message.
@@ -197,7 +197,7 @@ export class CvStorageService {
       };
     }
 
-    this.logger.warn(`🛑 Orphaned CV detected (no candidate) — cleaning up...`);
+    this.logger.warn(` Orphaned CV detected (no candidate) — cleaning up...`);
     await this.cvRepo.remove(existingCv);
     this.logger.log(
       `🧹 Orphaned CV record removed. Proceeding with fresh upload.`,
@@ -270,7 +270,7 @@ export class CvStorageService {
 
     const fullPath = path.join(uploadDir, fileName);
     await fs.promises.writeFile(fullPath, buffer);
-    this.logger.log(`💾 PDF saved to disk: ${fileName}`);
+    this.logger.log(` PDF saved to disk: ${fileName}`);
 
     return `/uploads/${fileName}`;
   }
@@ -297,12 +297,12 @@ export class CvStorageService {
       uploadedBy: uploadedById,
     });
     const saved = await this.cvRepo.save(cv);
-    this.logger.log(`✅ CV record saved — cvId: ${saved.id}`);
+    this.logger.log(` CV record saved — cvId: ${saved.id}`);
     return saved;
   }
 
   private async generateEmbedding(parsed: ParsedCvDto): Promise<number[]> {
-    this.logger.log(`🔢 Generating CV embedding...`);
+    this.logger.log(` Generating CV embedding...`);
     const text = this.buildEmbeddingText(parsed);
     return this.pdfExtractor.embedText(text);
   }
@@ -326,7 +326,7 @@ export class CvStorageService {
       embedding: embedding.length > 0 ? `[${embedding.join(',')}]` : null,
     });
     const saved = await this.parsedRepo.save(parsedData);
-    this.logger.log(`✅ Parsed data + embedding saved`);
+    this.logger.log(` Parsed data + embedding saved`);
     return saved;
   }
 
@@ -336,7 +336,7 @@ export class CvStorageService {
   ): Promise<void> {
     if (!experience.length) return;
 
-    this.logger.log(`📜 Saving ${experience.length} career entries...`);
+    this.logger.log(` Saving ${experience.length} career entries...`);
     const careerEntries = experience.map((exp) => {
       const tags = exp.inferredTags || [];
       const avgConfidence =
@@ -358,7 +358,7 @@ export class CvStorageService {
       });
     });
     await this.careerEntryRepo.save(careerEntries);
-    this.logger.log(`✅ Career entries saved`);
+    this.logger.log(` Career entries saved`);
   }
 
   private buildResponse(

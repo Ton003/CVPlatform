@@ -3,12 +3,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 
-// ─── Shared enums & types ─────────────────────────────────────────────────────
-
 export type CompetencyCategory = 'technical' | 'behavioral' | 'cognitive';
 export type CompetenceCategory = 'TECHNICAL' | 'BEHAVIORAL' | 'MANAGERIAL';
-
-// ─── Old models (kept for backward-compat with job-offer scoring) ─────────────
 
 export interface Competency {
   id:          string;
@@ -24,8 +20,6 @@ export interface JobCompetency {
   requiredLevel: number;
   competency:    Competency;
 }
-
-// ─── New Competence Management models ────────────────────────────────────────
 
 export interface CompetenceFamily {
   id:        string;
@@ -53,8 +47,6 @@ export interface Competence {
   updatedAt:   string;
 }
 
-// ─── Service ──────────────────────────────────────────────────────────────────
-
 @Injectable({ providedIn: 'root' })
 export class CompetencyService {
   private base        = `${environment.apiUrl}/competencies`;
@@ -62,8 +54,6 @@ export class CompetencyService {
   private competBase  = `${environment.apiUrl}/competences`;
 
   constructor(private http: HttpClient) {}
-
-  // ── Old API (job-offer scoring) ────────────────────────────────────────────
 
   getAll(category?: CompetencyCategory): Observable<Competency[]> {
     const url = category ? `${this.base}?category=${category}` : this.base;
@@ -93,8 +83,6 @@ export class CompetencyService {
   deleteMaster(id: string): Observable<void> {
     return this.http.delete<void>(`${this.base}/${id}`);
   }
-
-  // ── New Competence Management API ─────────────────────────────────────────
 
   /** GET /families?category=TECHNICAL */
   getFamilies(category?: CompetenceCategory): Observable<CompetenceFamily[]> {

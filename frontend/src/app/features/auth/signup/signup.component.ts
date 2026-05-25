@@ -3,7 +3,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { finalize } from 'rxjs'; // ✅ add this
+import { finalize } from 'rxjs'; // add this
 import { AuthService } from '../../../core/services/auth.service';
 import { JobArchitectureService, BusinessUnit, Department, JobRole, JobRoleLevel } from '../../../core/services/job-architecture.service';
 
@@ -82,11 +82,11 @@ export class SignupComponent {
     this.isLoading = true;
     this.errorMessage = '';
 
-    this.authService.signup(this.signupForm.value).pipe(
-      finalize(() => this.isLoading = false) // ✅ ALWAYS runs, success or error
-    ).subscribe({
-      next: () => {
-        this.router.navigate(['/dashboard']);
+ this.authService.signup(this.signupForm.value).pipe(
+ finalize(() => this.isLoading = false) // ALWAYS runs, success or error
+ ).subscribe({
+ next: () => {
+ this.router.navigate(['/dashboard']);
       },
       // signup.component.ts — sanitize the error message before displaying
     error: (err) => {

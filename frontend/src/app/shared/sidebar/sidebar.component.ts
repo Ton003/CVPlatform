@@ -81,9 +81,7 @@ export class SidebarComponent {
 
   showSettings = false;
   apiKeyInput  = '';
-  showApiKey   = false;
-
-  // ── Profile Settings ──────────────────────────────────────────
+  showApiKey   = false;
   showProfileModal = false;
   profileSaving = false;
   showProfilePassword = false;

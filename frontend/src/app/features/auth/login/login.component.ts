@@ -42,13 +42,13 @@ export class LoginComponent {
     this.isLoading    = true;
     this.errorMessage = '';
 
-    this.authService.login(this.loginForm.value)
-      .pipe(
-        finalize(() => { this.isLoading = false; }) // ✅ always resets spinner
-      )
-      .subscribe({
-        next: () => {
-          const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
+ this.authService.login(this.loginForm.value)
+ .pipe(
+ finalize(() => { this.isLoading = false; }) // always resets spinner
+ )
+ .subscribe({
+ next: () => {
+ const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/dashboard';
           this.router.navigateByUrl(returnUrl);
         },
         error: (err) => {

@@ -27,15 +27,15 @@ export class NotificationsGateway
 
   handleDisconnect(client: Socket) {
     this.logger.log(`Client disconnected: ${client.id}`);
-  }
+ }
 
-  /**
-   * ✅ Emit a notification to all connected clients
-   * For simplicity in this PFE, we broadcast.
-   * In production, we would use rooms for specific users.
-   */
-  emitNotification(action: string, data: any) {
-    this.server.emit('notification', {
+ /**
+ * Emit a notification to all connected clients
+ * For simplicity in this PFE, we broadcast.
+ * In production, we would use rooms for specific users.
+ */
+ emitNotification(action: string, data: any) {
+ this.server.emit('notification', {
       action,
       data,
       timestamp: new Date().toISOString(),

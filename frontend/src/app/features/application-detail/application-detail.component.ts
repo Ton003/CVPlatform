@@ -235,9 +235,7 @@ export class ApplicationDetailComponent implements OnInit {
     if (tab === 'evaluation') this.loadEvaluation();
     if (tab === 'tasks') this.loadTasks();
     this.cdr.detectChanges();
-  }
-
-  // ── Notes ──────────────────────────────────────────────────────
+  }
   loadNotes(): void {
     this.notesLoading = true;
     this.http
@@ -328,9 +326,7 @@ export class ApplicationDetailComponent implements OnInit {
         },
         error: () => { this.toast.error('Failed to update stage.'); },
       });
-  }
-
-  // ── Scoring ────────────────────────────────────────────────────
+  }
   loadScore(): void {
     this.scoreLoading = true;
     const headers = { 'x-ai-api-key': this.apiKeyService.get() };
@@ -349,9 +345,7 @@ export class ApplicationDetailComponent implements OnInit {
         },
         error: () => { this.score = null; this.cdr.detectChanges(); }
       });
-  }
-
-  // ── Interviews ─────────────────────────────────────────────────
+  }
   loadInterviews(): void {
     this.interviewsLoading = true;
     this.http
@@ -476,10 +470,7 @@ export class ApplicationDetailComponent implements OnInit {
         },
         error: () => this.toast.error('Failed to save feedback.')
       });
-  }
-
-
-  // ── Tasks ──────────────────────────────────────────────────────
+  }
   loadTasks(): void {
     this.tasksLoading = true;
     this.http
@@ -531,9 +522,7 @@ export class ApplicationDetailComponent implements OnInit {
     this.http.delete(`${environment.apiUrl}/applications/${this.applicationId}/tasks/${id}`).subscribe({
       next: () => { this.tasks = this.tasks.filter(t => t.id !== id); this.cdr.detectChanges(); }
     });
-  }
-
-  // ── Evaluation ────────────────────────────────────────────────
+  }
   loadEvaluation(): void {
     if (!this.app?.jobId) {
       this.evaluationLoading = false;
@@ -630,9 +619,7 @@ export class ApplicationDetailComponent implements OnInit {
     if (gap >= 0) return 'var(--success)';
     if (gap === -1) return 'var(--warning)';
     return 'var(--danger)';
-  }
-
-  // ── Activity ───────────────────────────────────────────────────
+  }
   loadActivity(): void {
     this.activityLoading = true;
     this.http
@@ -645,7 +632,7 @@ export class ApplicationDetailComponent implements OnInit {
     const map: Record<string, string> = {
       application_created: '📥', stage_changed: '🔀', note_added: '📝',
       assessfirst_uploaded: '🧠', score_calculated: '⭐', email_sent: '📧',
-      interview_scheduled: '📅', interview_completed: '✅', task_created: '📌',
+      interview_scheduled: '📅', interview_completed: '', task_created: '📌',
       task_completed: '✔️', note_deleted: '🗑️',
     };
     return map[action] ?? '🔹';
@@ -653,9 +640,7 @@ export class ApplicationDetailComponent implements OnInit {
 
   formatActivityLabel(action: string): string {
     return action.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-  }
-
-  // ── Promote to Employee (modal-based) ──────────────────────────
+  }
   openPromoteModal(): void {
     if (!this.app) {
       this.toast.error('Application data not loaded yet.');
@@ -713,9 +698,7 @@ export class ApplicationDetailComponent implements OnInit {
           this.toast.error(err.error?.message || 'Failed to promote candidate.');
         }
       });
-  }
-
-  // ── Navigation ─────────────────────────────────────────────────
+  }
   goBack(): void {
     const from = this.route.snapshot.queryParamMap.get('from');
     if (from === 'compare' && this.app?.jobId) {
@@ -749,9 +732,7 @@ export class ApplicationDetailComponent implements OnInit {
     if (!this.app?.skills || !skill) return false;
     const s = skill.toLowerCase();
     return this.app.skills.some((cs: string) => cs.toLowerCase() === s || cs.toLowerCase().includes(s));
-  }
-
-  // ── Score helpers ──────────────────────────────────────────────
+  }
   scoreColor(score: number): string {
     if (score >= 80) return '#22c55e';
     if (score >= 65) return '#6d55fa';
@@ -776,17 +757,13 @@ export class ApplicationDetailComponent implements OnInit {
     if (score >= 60) return 'Strong';
     if (score >= 40) return 'Fair';
     return 'Weak';
-  }
-
-  // ── Interview icon helper (case-insensitive) ───────────────────
+  }
   getInterviewIcon(type: string): string {
     const t = (type || '').toLowerCase();
     if (t === 'technical') return '⚙️';
     if (t === 'final') return '🏁';
     return '💬';
-  }
-
-  // ── Misc helpers ───────────────────────────────────────────────
+  }
   getInitials(name: string): string {
     return (name || '?').split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase();
   }

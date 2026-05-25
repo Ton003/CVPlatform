@@ -217,29 +217,7 @@ export class JobOffersService {
   }
   async remove(id: string) {
     await this.findOne(id);
-    await this.dataSource.transaction(async (manager) => {
-      // Cascade deletions for associated recruiter data
-      await manager.query(
-        `DELETE FROM interviews WHERE application_id IN (SELECT id FROM applications WHERE job_id = $1::uuid)`,
-        [id],
-      );
-      await manager.query(
-        `DELETE FROM application_notes WHERE application_id IN (SELECT id FROM applications WHERE job_id = $1::uuid)`,
-        [id],
-      );
-      await manager.query(
-        `DELETE FROM activity_log WHERE application_id IN (SELECT id FROM applications WHERE job_id = $1::uuid)`,
-        [id],
-      );
-      await manager.query(
-        `DELETE FROM tasks WHERE application_id IN (SELECT id FROM applications WHERE job_id = $1::uuid)`,
-        [id],
-      );
-      await manager.query(`DELETE FROM applications WHERE job_id = $1::uuid`, [
-        id,
-      ]);
-      await manager.query(`DELETE FROM job_offers WHERE id = $1::uuid`, [id]);
-    });
+    await this.dataSource.query(`DELETE FROM job_offers WHERE id = $1::uuid`, [id]);
   }
 
   async matchCandidates(id: string, apiKey?: string) {

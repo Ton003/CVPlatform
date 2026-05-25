@@ -68,7 +68,6 @@ export class ApplicationCompetencyScore {
   @Column({ name: 'impact_label', type: 'varchar', length: 10, nullable: true })
   impactLabel: string | null;
 
-  // ── Relations ────────────────────────────────────────────────────────
   @ManyToOne(() => Application, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'application_id' })
   application: Application;

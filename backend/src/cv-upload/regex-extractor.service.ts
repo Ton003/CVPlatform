@@ -17,10 +17,10 @@ export class RegexExtractorService {
       linkedin_url: this.extractLinkedIn(text),
     };
 
-    this.logger.log(`🔍 Regex extracted:`);
-    this.logger.log(`   Email    : ${result.email ?? 'NOT FOUND'}`);
-    this.logger.log(`   Phone    : ${result.phone ?? 'NOT FOUND'}`);
-    this.logger.log(`   LinkedIn : ${result.linkedin_url ?? 'NOT FOUND'}`);
+    this.logger.log(` Regex extracted:`);
+    this.logger.log(` Email : ${result.email ?? 'NOT FOUND'}`);
+    this.logger.log(` Phone : ${result.phone ?? 'NOT FOUND'}`);
+    this.logger.log(` LinkedIn : ${result.linkedin_url ?? 'NOT FOUND'}`);
 
     return result;
   }

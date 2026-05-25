@@ -11,8 +11,6 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-// ─── Create Assessment (Draft) ────────────────────────────────────────────────
-
 export class CreateAssessmentDto {
   /** e.g. "Q2 2026 Annual Review" */
   @IsOptional()
@@ -23,8 +21,6 @@ export class CreateAssessmentDto {
   @IsString()
   notes?: string;
 }
-
-// ─── Assessment Item (one competency rating) ──────────────────────────────────
 
 export class AssessmentItemDto {
   @IsUUID()
@@ -41,8 +37,6 @@ export class AssessmentItemDto {
   @IsString()
   notes?: string;
 }
-
-// ─── Update Items Payload ─────────────────────────────────────────────────────
 
 export class UpdateAssessmentItemsDto {
   @IsArray()

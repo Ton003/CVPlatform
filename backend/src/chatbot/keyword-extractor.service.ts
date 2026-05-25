@@ -9,9 +9,7 @@ export interface ExtractedFilters {
   degree: string | null;
   institution: string | null;
   language: string | null;
-}
-
-// ── Conflict groups — if a longer skill matches, block the shorter one ─────────
+}
 // Order matters: first match in a group wins
 const SKILL_CONFLICT_GROUPS: string[][] = [
   ['typescript', 'javascript', 'java'], // "javascript" blocks "java"

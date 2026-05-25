@@ -39,7 +39,6 @@ export class JobCompetencyWeight {
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  // ── Relations ────────────────────────────────────────────────────
   @ManyToOne(() => JobRoleLevel, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'job_role_level_id' })
   jobRoleLevel: JobRoleLevel;

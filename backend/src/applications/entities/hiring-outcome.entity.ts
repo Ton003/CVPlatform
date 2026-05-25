@@ -59,7 +59,6 @@ export class HiringOutcome {
   @Column({ name: 'recorded_by', type: 'uuid', nullable: true })
   recordedBy: string | null;
 
-  // ── Post-hire performance (filled ~6 months after hire) ──────────
   @Column({ name: 'performance_rating', type: 'smallint', nullable: true })
   performanceRating: number | null; // 1–5
 
@@ -72,7 +71,6 @@ export class HiringOutcome {
   @CreateDateColumn({ name: 'recorded_at', type: 'timestamptz' })
   recordedAt: Date;
 
-  // ── Relations ────────────────────────────────────────────────────
   @ManyToOne(() => Application, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'application_id' })
   application: Application;

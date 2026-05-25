@@ -4,13 +4,13 @@ import { DataSource } from 'typeorm';
 
 @Injectable()
 export class DashboardService {
-  private readonly logger = new Logger(DashboardService.name);
+ private readonly logger = new Logger(DashboardService.name);
 
-  constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
+ constructor(@InjectDataSource() private readonly dataSource: DataSource) {}
 
-  /**
-   * ✅ Aggregates high-level system metrics and recent activities
-   * ABAC: Supports scoping to a manager's jobs.
+ /**
+ * Aggregates high-level system metrics and recent activities
+ * ABAC: Supports scoping to a manager's jobs.
    */
   async getStats(scopedJobIds: string[] = []) {
     const weekAgo = new Date();

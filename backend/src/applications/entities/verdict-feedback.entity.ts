@@ -44,7 +44,6 @@ export class VerdictFeedback {
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 
-  // ── Relations ────────────────────────────────────────────────────
   @ManyToOne(() => ApplicationVerdict, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'verdict_id' })
   verdict: ApplicationVerdict;

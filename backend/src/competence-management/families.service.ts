@@ -63,8 +63,6 @@ export class FamiliesService {
     await this.familyRepo.remove(family);
   }
 
-  // ── Private ─────────────────────────────────────────────────────────
-
   private async findOrFail(id: string): Promise<CompetenceFamily> {
     const f = await this.familyRepo.findOne({ where: { id } });
     if (!f) throw new NotFoundException(`Family ${id} not found.`);

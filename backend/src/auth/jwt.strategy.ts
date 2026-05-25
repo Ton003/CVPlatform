@@ -22,26 +22,26 @@ export interface UserContext {
   id: string; // user UUID — auth identity
   email: string;
   role: 'admin' | 'hr' | 'manager';
-  firstName: string;
-  lastName: string;
-  employeeId: string | null; // employee UUID — used as hiring_manager FK
-  departmentId: string | null; // derived from Employee.departmentId at login
+ firstName: string;
+ lastName: string;
+ employeeId: string | null; // employee UUID — used as hiring_manager FK
+ departmentId: string | null; // derived from Employee.departmentId at login
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly usersService: UsersService,
-  ) {
-    super({
-      // ✅ Allow both Cookies and Bearer tokens for flexibility
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        (req: Request) => req?.cookies?.biat_access_token || null,
-        ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ]),
-      ignoreExpiration: false,
-      secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
+ constructor(
+ private readonly configService: ConfigService,
+ private readonly usersService: UsersService,
+ ) {
+ super({
+ // Allow both Cookies and Bearer tokens for flexibility
+ jwtFromRequest: ExtractJwt.fromExtractors([
+ (req: Request) => req?.cookies?.biat_access_token || null,
+ ExtractJwt.fromAuthHeaderAsBearerToken(),
+ ]),
+ ignoreExpiration: false,
+ secretOrKey: configService.getOrThrow<string>('JWT_SECRET'),
     });
   }
 

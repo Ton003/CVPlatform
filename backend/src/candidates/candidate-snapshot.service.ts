@@ -27,7 +27,7 @@ export class CandidateSnapshotService {
    * Priority: Manual Evaluation > AI Inference.
    */
   async rebuildSnapshot(candidateId: string, activeApplicationId?: string) {
-    this.logger.log(`🔄 Rebuilding snapshot for candidate ${candidateId}`);
+    this.logger.log(` Rebuilding snapshot for candidate ${candidateId}`);
 
     const candidate = await this.candidateRepo.findOne({
       where: { id: candidateId },
@@ -145,7 +145,7 @@ export class CandidateSnapshotService {
     });
 
     this.logger.log(
-      `✅ Snapshot updated and synchronized for candidate ${candidateId}`,
+      ` Snapshot updated and synchronized for candidate ${candidateId}`,
     );
     return snapshot;
   }

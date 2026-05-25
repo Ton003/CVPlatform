@@ -58,9 +58,9 @@ async function bootstrap() {
   // 7. Initialize Server
   await app.listen(port);
 
-  logger.log(`🚀 BIAT TalentOS API running on http://localhost:${port}/api`);
-  logger.log(`🌍 CORS enabled for: ${corsOrigins.join(', ')}`);
-  logger.log(`🛡️  Payload protection active (50MB Limit)`);
+  logger.log(` BIAT TalentOS API running on http://localhost:${port}/api`);
+  logger.log(` CORS enabled for: ${corsOrigins.join(', ')}`);
+  logger.log(` Payload protection active (50MB Limit)`);
 }
 
 bootstrap().catch((err) => {

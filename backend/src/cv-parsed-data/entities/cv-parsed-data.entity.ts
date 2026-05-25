@@ -48,9 +48,7 @@ export class CvParsedData {
     default: null,
     name: 'parsed_at',
   })
-  parsedAt: Date | null;
-
-  // ── NEW: vector embedding for semantic search ─────────────────────────
+  parsedAt: Date | null;
   @Column({ type: 'text', nullable: true, default: null })
   embedding: string | null; // stored as "[0.1,0.2,...]" text, cast to vector in queries
 }

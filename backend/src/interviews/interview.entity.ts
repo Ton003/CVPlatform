@@ -49,9 +49,7 @@ export class Interview {
   status: InterviewStatus;
 
   @Column({ name: 'meeting_url', type: 'varchar', length: 512, nullable: true })
-  meetingUrl: string | null;
-
-  // ── Feedback (Added after interview) ───────────────────────────
+  meetingUrl: string | null;
   @Column({ name: 'technical_score', type: 'smallint', nullable: true })
   technicalScore: number | null; // 1-5
 
@@ -72,9 +70,7 @@ export class Interview {
   createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at', type: 'timestamptz' })
-  updatedAt: Date;
-
-  // ── Relations ────────────────────────────────────────────────────
+  updatedAt: Date;
   @ManyToOne(() => Application, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'application_id' })
   application: Application;

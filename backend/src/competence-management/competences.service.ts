@@ -158,8 +158,6 @@ export class CompetencesService {
     );
   }
 
-  // ── Private ─────────────────────────────────────────────────────────
-
   private async findOrFail(id: string): Promise<Competence> {
     const c = await this.competenceRepo.findOne({
       where: { id },

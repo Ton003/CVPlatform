@@ -1,11 +1,14 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ScheduleModule } from '@nestjs/schedule';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 
 // Infrastructure Modules
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
+import { CsrfMiddleware } from './auth/csrf.middleware';
 
 // Domain Feature Modules
 import { CvUploadModule } from './cv-upload/cv-upload.module';
@@ -31,6 +34,10 @@ import { AppService } from './app.service';
       envFilePath: '.env',
     }),
     ScheduleModule.forRoot(),
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 100,
+    }]),
 
     // 2. Database Persistence
     TypeOrmModule.forRootAsync({
@@ -44,15 +51,15 @@ import { AppService } from './app.service';
           password: cfg.get<string>('DB_PASSWORD'),
           database: cfg.get<string>('DB_DATABASE'),
 
-          // ✅ STRATEGY: Automate entity discovery to eliminate manual imports
-          autoLoadEntities: true,
+ // STRATEGY: Automate entity discovery to eliminate manual imports
+ autoLoadEntities: true,
 
-          // ✅ SAFETY: Keep synchronize for dev, should be false in prod
-          synchronize: cfg.get<string>('NODE_ENV') !== 'production',
+ // SAFETY: Keep synchronize for dev, should be false in prod
+ synchronize: cfg.get<string>('NODE_ENV') !== 'production',
 
-          // ✅ PERFORMANCE: Logging and optimization
-          logging:
-            cfg.get<string>('NODE_ENV') === 'development'
+ // PERFORMANCE: Logging and optimization
+ logging:
+ cfg.get<string>('NODE_ENV') === 'development'
               ? ['error', 'warn']
               : ['error'],
           ssl:
@@ -79,6 +86,18 @@ import { AppService } from './app.service';
     NotificationsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // Apply CSRF protection globally to all routes
+    consumer.apply(CsrfMiddleware).forRoutes('*');
+  }
+}
+

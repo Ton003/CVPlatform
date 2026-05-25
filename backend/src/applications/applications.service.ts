@@ -149,11 +149,11 @@ export class ApplicationsService {
         action: 'application_created',
         description: params.description,
         metadata: { source: params.source ?? 'manual' },
-      }),
-    );
+ }),
+ );
 
-    // ✅ Real-time notification
-    this.notifications.emitNotification('application_created', {
+ // Real-time notification
+ this.notifications.emitNotification('application_created', {
       applicationId: saved.id,
       jobId: saved.jobId,
       candidateId: saved.candidateId,
@@ -270,22 +270,22 @@ export class ApplicationsService {
         userId,
         action: 'stage_changed',
         description: `Stage changed from ${oldStage} to ${newStage}`,
-        metadata: { from: oldStage, to: newStage },
-      }),
-    );
+ metadata: { from: oldStage, to: newStage },
+ }),
+ );
 
-    // ✅ Real-time notification
-    this.notifications.emitNotification('stage_changed', {
-      applicationId: id,
-      from: oldStage,
-      to: newStage,
-    });
+ // Real-time notification
+ this.notifications.emitNotification('stage_changed', {
+ applicationId: id,
+ from: oldStage,
+ to: newStage,
+ });
 
-    // ✅ Automated Emails
-    try {
-      const fullApp = await this.appRepo.findOne({
-        where: { id },
-        relations: ['candidate', 'job'],
+ // Automated Emails
+ try {
+ const fullApp = await this.appRepo.findOne({
+ where: { id },
+ relations: ['candidate', 'job'],
       });
 
       if (
