@@ -208,7 +208,7 @@
       <div class="sp-footer">
         <button 
           class="btn-promote sp-btn-full mb-1" 
-          *ngIf="selectedApplicationDetails.stage === 'offer'"
+          *ngIf="selectedApplicationDetails.stage === 'offer' && userRole !== 'manager'"
           (click)="openPromoteModal()"
         >
           Promote to Employee ✨

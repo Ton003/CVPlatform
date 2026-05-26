@@ -14,6 +14,7 @@ import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { ToastService } from '../../core/services/toast.service';
 import { EmployeeService, PromotionResult } from '../../core/services/employee.service';
+import { AuthService } from '../../core/services/auth.service';
 
 export type PipelineStage =
   | 'applied'
@@ -89,6 +90,11 @@ export class JobPipelineComponent implements OnInit {
   private cdr = inject(ChangeDetectorRef);
   private toast = inject(ToastService);
   private employeeService = inject(EmployeeService);
+  private auth = inject(AuthService);
+
+  get userRole(): string {
+    return this.auth.getCurrentUser()?.role || 'hr';
+  }
 
   jobId = '';
   job: JobDetail | null = null;

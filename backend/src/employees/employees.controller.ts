@@ -56,11 +56,12 @@ export class EmployeesController {
     @Query('limit') limit = 10,
     @Request() req?: { user: UserContext },
   ) {
-    // ABAC: If user is a manager, force department scoping.
+    // ABAC: If user is a manager, restrict to their subordinates.
     let targetDeptId = departmentId;
+    let targetManagerId: string | undefined = undefined;
     if (req?.user && this.policyService.isManager(req.user)) {
-      if (!req.user.departmentId) {
-        // Manager has no department link -> return empty results
+      if (!req.user.employeeId) {
+        // Manager has no employee link -> return empty results
         return {
           data: [],
           total: 0,
@@ -69,7 +70,7 @@ export class EmployeesController {
           totalPages: 0,
         };
       }
-      targetDeptId = req.user.departmentId;
+      targetManagerId = req.user.employeeId;
     }
 
     return this.employeesService.list({
@@ -79,6 +80,7 @@ export class EmployeesController {
       search,
       page: Number(page),
       limit: Number(limit),
+      managerId: targetManagerId,
     });
   }
 

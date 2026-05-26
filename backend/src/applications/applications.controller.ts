@@ -248,6 +248,17 @@ export class ApplicationsController {
     return this.svc.getTasks(id);
   }
 
+  @Get(':id/activity')
+  @ApiOperation({ summary: 'List application activity log' })
+  async getActivity(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Request() req?: { user: UserContext },
+  ) {
+    if (req?.user)
+      await this.policyService.assertApplicationAccess(req.user, id);
+    return this.svc.getActivity(id);
+  }
+
   @Post(':id/tasks')
   @ApiOperation({ summary: 'Add a new task to the application' })
   addTask(

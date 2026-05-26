@@ -198,7 +198,7 @@ export class ApplicationsService {
       });
 
     if (scopedJobIds && scopedJobIds.length > 0) {
-      qb.andWhere('a.job_id IN (:...scopedIds)', { scopedIds: scopedJobIds });
+      qb.andWhere('a.job_id::text IN (:...scopedIds)', { scopedIds: scopedJobIds });
     } else if (scopedJobIds && scopedJobIds.length === 0) {
       // If we are a manager but have no jobs, we MUST see nothing
       return { data: [], total: 0, page, limit };
@@ -323,6 +323,13 @@ export class ApplicationsService {
     const app = await this.appRepo.findOne({ where: { id } });
     if (!app) throw new NotFoundException(`Application ${id} not found`);
     await this.appRepo.remove(app);
+  }
+
+  async getActivity(applicationId: string) {
+    return this.logRepo.find({
+      where: { applicationId },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   async getNotes(applicationId: string) {
@@ -527,11 +534,7 @@ export class ApplicationsService {
     const outcome = await this.outcomeRepo.findOne({
       where: { applicationId },
     });
-    if (!outcome)
-      throw new NotFoundException(
-        'Hiring outcome not recorded for this application',
-      );
-    return outcome;
+    return outcome || null;
   }
 
   async getCompetencies(applicationId: string) {

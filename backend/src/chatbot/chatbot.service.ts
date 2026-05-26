@@ -49,6 +49,17 @@ export class ChatbotService {
   ): Promise<RecommendationResultDto> {
     const t0 = Date.now();
 
+    // 0. Relevance Check
+    const intent = await this.aiService.parseIntent(dto.message, dto.apiKey!);
+    if (!intent.isRelevant) {
+      return {
+        message: "I'm a recruiting assistant. Please ask me about finding candidates, skills, or job roles.",
+        total: 0,
+        candidates: [],
+        mode: 'groq',
+      };
+    }
+
     // 1. Embedding & Search
     const queryEmbedding = await this.pdfExtractor.embedText(dto.message);
     const filters = this.keywordExtractor.extract(dto.message);
@@ -82,15 +93,35 @@ export class ChatbotService {
       }),
     );
 
+    // 2.5. LLM Scoring
+    const llmScores = await this.aiService.scoreWithLLM(dto.message, enriched, dto.apiKey!);
+
+    const scored = enriched
+      .map((c) => {
+        const llmScore = llmScores.find((s) => s.candidateId === c.candidateId);
+        return { ...c, similarity: (llmScore?.score ?? 0) / 100 };
+      })
+      .filter((c) => (c.similarity ?? 0) >= 0.20)
+      .sort((a, b) => (b.similarity ?? 0) - (a.similarity ?? 0));
+
+    if (!scored.length) {
+      return {
+        message: 'No candidates matched your specific requirements. Try broadening your search.',
+        total: 0,
+        candidates: [],
+        mode: 'groq',
+      };
+    }
+
     const reranked = await this.aiService.rerank(
       dto.message,
-      enriched,
+      scored,
       dto.apiKey!,
       dto.history || [],
       [],
     );
 
-    const candidates: CandidateMatchDto[] = enriched.map((c) => ({
+    const candidates: CandidateMatchDto[] = scored.map((c) => ({
       candidateId: c.candidateId,
       name: c.name,
       email: c.email,

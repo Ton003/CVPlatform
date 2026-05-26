@@ -50,6 +50,7 @@ export class EmployeesService {
     search?: string;
     page: number;
     limit: number;
+    managerId?: string;
   }) {
     const qb = this.employeeRepo
       .createQueryBuilder('e')
@@ -58,6 +59,42 @@ export class EmployeesService {
       .leftJoinAndSelect('e.manager', 'manager')
       .leftJoinAndSelect('e.department', 'dept')
       .orderBy('e.lastName', 'ASC');
+
+    if (filters.managerId) {
+      const subResults = await this.dataSource.query(
+        `
+        WITH RECURSIVE subordinates AS (
+            SELECT id FROM employees WHERE manager_id = $1::uuid
+          UNION
+            SELECT e.id FROM employees e
+            INNER JOIN subordinates s ON e.manager_id = s.id
+        )
+        SELECT id FROM subordinates;
+        `,
+        [filters.managerId],
+      );
+
+      const subIds = subResults.map((r: any) => r.id);
+      if (subIds.length === 0) {
+        qb.andWhere('e.id IS NULL');
+      } else {
+        qb.andWhere('e.id IN (:...subIds)', { subIds });
+      }
+    }
+
+    if (filters.buId) {
+      qb.andWhere('dept.businessUnitId = :buId', { buId: filters.buId });
+    }
+
+    if (filters.departmentId) {
+      qb.andWhere('e.departmentId = :departmentId', {
+        departmentId: filters.departmentId,
+      });
+    }
+
+    if (filters.roleId) {
+      qb.andWhere('e.jobRoleId = :roleId', { roleId: filters.roleId });
+    }
 
     if (filters.search) {
       qb.andWhere(

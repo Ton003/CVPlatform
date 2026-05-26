@@ -79,7 +79,7 @@ export class PolicyService {
   }
 
   /**
-   * Managers can only access employees in their own department.
+   * Managers can only access employees who report to them directly or indirectly.
    */
   async assertEmployeeAccess(
     user: UserContext,
@@ -88,14 +88,24 @@ export class PolicyService {
     if (this.isHrOrAdmin(user)) return;
     this.assertManagerHasDepartment(user);
 
+    if (employeeId === user.employeeId) return;
+
     const rows = await this.ds.query(
-      `SELECT id FROM employees WHERE id = $1::uuid AND department_id = $2::uuid`,
-      [employeeId, user.departmentId],
+      `
+      WITH RECURSIVE subordinates AS (
+          SELECT id FROM employees WHERE manager_id = $1::uuid
+        UNION
+          SELECT e.id FROM employees e
+          INNER JOIN subordinates s ON e.manager_id = s.id
+      )
+      SELECT id FROM subordinates WHERE id = $2::uuid;
+      `,
+      [user.employeeId, employeeId],
     );
 
     if (!rows.length) {
       throw new ForbiddenException(
-        `Employee ${employeeId} is not in your department`,
+        `Employee ${employeeId} is not in your reporting hierarchy`,
       );
     }
   }
