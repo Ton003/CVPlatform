@@ -30,12 +30,6 @@ export interface RagAnalysis {
   rankedOrder: string[];
 }
 
-export interface FollowUpResult {
-  isFollowUp: boolean;
-  searchAgain: boolean;
-  newQuery: string;
-}
-
 export interface PreScoredCandidate {
   candidateId: string;
   name: string;

@@ -1,12 +1,9 @@
 fastapi
 uvicorn
 pydantic
-httpx
-requests
 sentence-transformers==3.0.1
 transformers==4.44.2
 scikit-learn
-spacy
 pdfplumber
 numpy
 tqdm

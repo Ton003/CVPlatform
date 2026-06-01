@@ -83,6 +83,3 @@ export class RecommendDto {
   limit?: number;
 }
 
-// Aliases for compatibility
-export type ConversationMessage = ConversationMessageDto;
-export type LastCandidate = LastCandidateDto;

@@ -14,7 +14,3 @@ export interface GapItem {
   gap: number; // current - required
 }
 
-export interface DevelopmentPlan {
-  priorityGaps: GapItem[];
-  suggestedAction: GapAction;
-}
